@@ -61,7 +61,7 @@ const TREE_SHAPES: Shape[] = [
 const HERB_SHAPES: Shape[] = [
   { preset: "Bush 1", seed: 2203, leafTint: 0xc4dc92, tall: [0.9, 1.7], fruiting: false },
   { preset: "Bush 2", seed: 8801, leafTint: 0xd2e3a2, tall: [0.8, 1.5], fruiting: false },
-  { preset: "Bush 3", seed: 6113, leafTint: 0xb6d184, tall: [1.0, 1.9], fruiting: false },
+  { preset: "Bush 2", seed: 6113, leafTint: 0xb6d184, tall: [1.0, 1.9], fruiting: false },
 ];
 
 function makePrototype(shape: Shape): Prototype {
@@ -69,6 +69,8 @@ function makePrototype(shape: Shape): Prototype {
   tree.loadPreset(shape.preset);
   tree.options.seed = shape.seed;
   tree.options.leaves.tint = shape.leafTint;
+  // A lower cut-off keeps the foliage full when the tree is far away and its leaf texture is drawn small.
+  tree.options.leaves.alphaTest = 0.2;
   tree.generate();
 
   const box = new THREE.Box3().setFromObject(tree);
@@ -88,8 +90,17 @@ function makePrototype(shape: Shape): Prototype {
   return { tree, height, fruitSpots, shape };
 }
 
+// Far-off plants are drawn more simply, since the detail cannot be seen: distances in metres.
+const FRUIT_SEEN_WITHIN = 240;
+const TREE_BRANCHES_WITHIN = 420;
+const TREE_SEEN_WITHIN = 1150;
+const HERB_BRANCHES_WITHIN = 70;
+const HERB_SEEN_WITHIN = 260;
+
 interface Planted {
   group: THREE.Group;
+  branches: THREE.Mesh;
+  herb: boolean;
   leaves: THREE.Mesh;
   fruit: THREE.InstancedMesh | null;
   spots: THREE.Vector3[];
@@ -104,7 +115,7 @@ interface Planted {
 export interface Orchard {
   group: THREE.Group;
   /** reach: how far growth has come along the route (the view's own position once plants are called for). */
-  update(reach: number, time: number): void;
+  update(reach: number, time: number, eye: THREE.Vector3): void;
   dispose(): void;
 }
 
@@ -182,6 +193,8 @@ export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number
       const near = Math.abs(side) < nearest + 9;
       planted.push({
         group: tree,
+        branches,
+        herb: !prototype.shape.fruiting,
         leaves,
         fruit,
         spots,
@@ -203,18 +216,20 @@ export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number
 
   return {
     group,
-    update(reach: number, time: number) {
+    update(reach: number, time: number, eye: THREE.Vector3) {
       for (const p of prototypes) p.tree.update(time); // the leaves' own wind sway
 
       for (const t of planted) {
         const growth = Math.min(Math.max((reach + t.lead - t.progress) / t.span, 0), 1);
-        if (growth === t.lastGrowth) continue;
+        const away = Math.hypot(t.group.position.x - eye.x, t.group.position.z - eye.z);
+        const seen = growth > 0 && away < (t.herb ? HERB_SEEN_WITHIN : TREE_SEEN_WITHIN);
+        t.group.visible = seen;
+        if (!seen) continue;
+        t.branches.visible = away < (t.herb ? HERB_BRANCHES_WITHIN : TREE_BRANCHES_WITHIN);
+        const fruitNear = away < FRUIT_SEEN_WITHIN;
+        if (t.fruit && !fruitNear) t.fruit.visible = false;
+        if (growth === t.lastGrowth && (!t.fruit || !fruitNear || t.fruit.visible || growth <= 0.55)) continue;
         t.lastGrowth = growth;
-        if (growth <= 0) {
-          t.group.visible = false;
-          continue;
-        }
-        t.group.visible = true;
 
         // Trunk and branches push up first, thin, and fill out as they rise.
         const rise = easeOut(growth / 0.45);
@@ -229,7 +244,7 @@ export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number
         // Fruit swells last, with a slight overshoot as it fills.
         if (!t.fruit) continue;
         const ripe = smoothstep(0.55, 1.0, growth);
-        t.fruit.visible = ripe > 0.001;
+        t.fruit.visible = fruitNear && ripe > 0.001;
         if (t.fruit.visible) {
           size.copy(t.fruitSize).multiplyScalar(ripe * (1 + 0.18 * Math.sin(ripe * Math.PI)));
           for (let i = 0; i < t.spots.length; i++) {

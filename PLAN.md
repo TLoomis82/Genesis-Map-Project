@@ -80,6 +80,8 @@ Day 3 (1:9-13) first pass was rejected as generic: a noise island with a green c
 
 Second pass built the same day (`src/opening/landscape/`): a coast and winding valley, a fixed flight route with banking, grass drawn blade by blade in stretches near the view, flower heads, shrubs, and fruit trees (EZ-Tree shapes) that rise, leaf and fruit. Growth runs ahead of the view in layers: the ground greens far ahead, distant trees rise early, and grass and the trees beside the route rise close in. Checked in still screenshots only; motion and frame rate still need judging on the Mac and iPhone. Desktop draws about 2.3 to 2.6 million triangles a frame in the growth scenes; phones get fewer blades and trees and have not been measured.
 
+Day 4 first pass (Gen 1:14-19), same day: the view rises at the head of the valley and turns to look back to the sea. A sun, moon and stars are drawn in the sky shader and move with an "hour" value; the land's light follows them (warm at sunset, cool by moonlight). The rise and fade to the globe now happens at the end of day 4, not day 3. Far-off trees are drawn more simply to keep the cost down. Checked in stills only.
+
 Still to do on day 3: judge the growth in motion; more natural ground (stones, better textures); shadows; the coast view at 1:10; leftover ripple patterns on the water near the shore; check frame rate on the iPhone and tune counts.
 
 Working method from here: the workspace can now install packages, type check, build and take its own screenshots (software rendering, about 2 fps, so frame rates are still measured on the Mac and iPhone).

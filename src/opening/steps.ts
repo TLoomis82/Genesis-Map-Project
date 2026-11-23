@@ -15,7 +15,7 @@ export interface Depiction {
 }
 
 export interface OpeningStep extends OpeningEvents {
-  sceneId: "before" | "day-1" | "day-2" | "day-3";
+  sceneId: "before" | "day-1" | "day-2" | "day-3" | "day-4";
   reference: string;
   text: string;
   targets: OpeningTargets;
@@ -46,6 +46,11 @@ const growth: Depiction = {
   note: "The land, the kinds of fruit and the speed of growth are illustrative. The text says the earth brought them forth on the third day.",
 };
 
+const lights: Depiction = {
+  badge: "Illustration",
+  note: "The paths of the sun, moon and stars and the speed of the day are illustrative. The text says they were set in the firmament to rule the day and the night.",
+};
+
 const globeView: Depiction = {
   badge: "Placeholder",
   note: "The globe is a modern view of the same land and seas. The continents shown are today's, standing in until the pre-flood land model is added.",
@@ -53,6 +58,10 @@ const globeView: Depiction = {
 
 // Day 2 ends with the vault open and the view tilted up. Day 3 brings the view back down.
 const openSky = { light: 1, haze: 0, divide: 0, vault: VAULT_OPEN } as const;
+
+// From the end of day 3: the land risen and green, the view at the head of the valley.
+// On day 4 the view rises a little and turns to look back down the valley to the sea.
+const grownLand = { ...openSky, wind: 0.7, ...SURFACE, land: 1, green: 1, flight: 1, turn: Math.PI, altitude: 30 } as const;
 
 export const openingSteps: OpeningStep[] = [
   {
@@ -146,19 +155,69 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-3",
     reference: "Genesis 1:12",
     text: "And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good.",
-    targets: { ...openSky, wind: 0.8, ...SURFACE, land: 1, green: 1, flight: 0.93, gaze: -14 },
-    hold: 24,
+    targets: { ...openSky, wind: 0.8, ...SURFACE, land: 1, green: 1, flight: 0.8, gaze: -14 },
+    hold: 12,
     depiction: growth,
   },
   {
     sceneId: "day-3",
     reference: "Genesis 1:13",
     text: "And the evening and the morning were the third day.",
-    targets: { ...openSky, wind: 0.6, ...SURFACE, land: 1, green: 1, flight: 1, gaze: -16 },
-    hold: 30,
-    duskSeconds: 10,
-    ascendAfter: 11,
-    fadeToGlobeAfter: 15,
+    targets: { ...openSky, wind: 0.6, ...SURFACE, land: 1, green: 1, flight: 1, gaze: -12 },
+    hold: 14,
+    duskSeconds: 11,
+    depiction: growth,
+  },
+
+  // Day 4. The view rests above the head of the valley, looking back over the land to the sea.
+  {
+    sceneId: "day-4",
+    reference: "Genesis 1:14",
+    text: "And God said, Let there be lights in the firmament of the heaven to divide the day from the night; and let them be for signs, and for seasons, and for days, and years:",
+    targets: { ...grownLand, sun: 1, hour: 8.2, gaze: 2 },
+    hold: 13,
+    depiction: lights,
+  },
+  {
+    sceneId: "day-4",
+    reference: "Genesis 1:15",
+    text: "And let them be for lights in the firmament of the heaven to give light upon the earth: and it was so.",
+    targets: { ...grownLand, sun: 1, hour: 12.5, gaze: -12 },
+    hold: 10,
+    depiction: lights,
+  },
+  {
+    sceneId: "day-4",
+    reference: "Genesis 1:16",
+    text: "And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also.",
+    targets: { ...grownLand, sun: 1, hour: 21.5, gaze: 4 },
+    hold: 15,
+    depiction: lights,
+  },
+  {
+    sceneId: "day-4",
+    reference: "Genesis 1:17",
+    text: "And God set them in the firmament of the heaven to give light upon the earth,",
+    targets: { ...grownLand, sun: 1, hour: 24.5, gaze: 2 },
+    hold: 9,
+    depiction: lights,
+  },
+  {
+    sceneId: "day-4",
+    reference: "Genesis 1:18",
+    text: "And to rule over the day and over the night, and to divide the light from the darkness: and God saw that it was good.",
+    targets: { ...grownLand, sun: 1, hour: 31.2, gaze: 0 },
+    hold: 12,
+    depiction: lights,
+  },
+  {
+    sceneId: "day-4",
+    reference: "Genesis 1:19",
+    text: "And the evening and the morning were the fourth day.",
+    targets: { ...grownLand, sun: 1, hour: 35, gaze: -10 },
+    hold: 28,
+    ascendAfter: 8,
+    fadeToGlobeAfter: 12,
     depiction: globeView,
   },
 ];

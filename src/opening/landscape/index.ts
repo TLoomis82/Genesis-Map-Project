@@ -25,10 +25,15 @@ export interface LandscapeState {
   land: number;
   /** 0 = bare, 1 = growth is running ahead of the view. */
   green: number;
-  /** Where the view is along the route, 0..1. */
+  /** Where the view is along the route, 0..1, and its position. */
   flight: number;
-  /** Light level after evening and morning are applied, 0..1. */
+  eye: THREE.Vector3;
+  /** Overall light level after evening, morning, sun and moon are applied, 0..1. */
   light: number;
+  /** Direction the direct light comes from, its colour, and its strength 0..1. */
+  lightDir: THREE.Vector3;
+  lightColor: THREE.Color;
+  direct: number;
   wind: number;
   /** Fog colour as it should appear on screen. */
   fogColor: THREE.Color;
@@ -78,10 +83,13 @@ export class Landscape {
     g.uFogColor.value.copy(state.fogColor);
     g.uFogDensity.value = state.fogDensity;
 
-    this.orchard.update(reach, state.time);
+    this.orchard.update(reach, state.time, state.eye);
 
-    this.sunLike.intensity = 2.4 * state.light;
+    this.sunLike.position.copy(state.lightDir).multiplyScalar(1000);
+    this.sunLike.color.copy(state.lightColor);
+    this.sunLike.intensity = 2.4 * state.direct;
     this.skyLight.intensity = 1.1 * state.light;
+    g.uTint.value.copy(state.lightColor);
   }
 
   dispose() {

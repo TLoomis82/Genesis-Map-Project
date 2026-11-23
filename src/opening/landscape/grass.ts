@@ -63,6 +63,7 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   uniform float uLight;
+  uniform vec3 uTint;       // colour of the light: warm at sunset, cool by moonlight
   uniform vec3 uFogColor;
   uniform float uFogDensity;
 
@@ -88,7 +89,7 @@ const fragmentShader = /* glsl */ `
                : vec3(0.88, 0.22, 0.25);
     color = mix(color, petal, flower);
 
-    color *= mix(0.55, 1.1, vAlong) * mix(0.84, 1.08, vFacing) * uLight;
+    color *= mix(0.55, 1.1, vAlong) * mix(0.84, 1.08, vFacing) * uLight * mix(vec3(1.0), uTint, 0.6);
 
     float fog = 1.0 - exp(-uFogDensity * uFogDensity * vDepth * vDepth);
     gl_FragColor = vec4(mix(color, uFogColor, fog), 1.0);
@@ -104,6 +105,7 @@ export interface Grass {
     uLift: { value: number };
     uWind: { value: number };
     uLight: { value: number };
+    uTint: { value: THREE.Color };
     uFogColor: { value: THREE.Color };
     uFogDensity: { value: number };
   };
@@ -151,6 +153,7 @@ export function buildGrass(flight: Flight, terrain: Terrain, stretches: number, 
     uLift: { value: 0 },
     uWind: { value: 1 },
     uLight: { value: 1 },
+    uTint: { value: new THREE.Color(1, 1, 1) },
     uFogColor: { value: new THREE.Color() },
     uFogDensity: { value: 0.0011 },
   };
