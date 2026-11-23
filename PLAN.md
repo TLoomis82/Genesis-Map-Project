@@ -49,11 +49,21 @@ Vite, React 18, TypeScript strict, Mapbox GL JS 3 (globe projection), three.js. 
 | M6 | Flood and ending | Flood calendar, breakup, the four ending shots |
 | M7 | Polish and launch | Source review complete; outside reader has checked the verse table; pitch demo ready |
 
-## M0 globe test
+## M0 result (passed 2026-11-23)
 
-1. Mapbox globe with a custom Terrain-RGB source and one three.js custom layer. Does it render, stay aligned while spinning, and hold 30+ fps on the phone?
-2. A standalone three.js water and sky scene crossfading into the Mapbox canvas. Is the handoff seamless?
-3. If step 1 fails, repeat on MapLibre GL JS, which documents custom layers on its globe.
+Tested on a MacBook Pro in Chrome and on an iPhone in Safari.
+
+- **three.js custom layers work on the Mapbox globe.** We stay on Mapbox.
+- **How it works** (from Mapbox's source, `src/render/draw_custom.ts`): on globe, the layer gets the mercator matrix plus a globe-to-mercator matrix. The camera is `matrix x globeToMercator`, with globe coordinates on a sphere of radius `8192 / (2 * PI)`, y pointing south. See `src/spike/globeLayerTest.ts`.
+- **Hiding the far side:** clip against the horizon plane Mapbox passes as the eighth argument (`globeClippingPlane`), with depth testing off.
+- **A separate three.js canvas crossfades into the globe smoothly**, on desktop and phone.
+- **Frame rate:** 120 fps on the MacBook for both the globe and the water. Phone confirmed working; exact frame rate not recorded.
+- **Base style is `mapbox/standard`.** Classic satellite tiles (`mapbox.satellite`) return HTTP 429 on this Mapbox account. Ask Mapbox support why before the ending shots, which want satellite imagery.
+
+Still open from M0:
+
+- Depth testing against the globe hid the test rings on the near side. Layers that must be hidden by terrain (not only by the globe's curve) need this understood before M2.
+- Between zoom 5 and 6 Mapbox blends the globe into flat mercator. The test layer does not handle that blend yet.
 
 ## Open items
 
