@@ -220,3 +220,15 @@ body,
   font-size: 12px;
   background: rgba(0, 0, 0, 0.45);
 }
+
+.verse-depiction {
+  margin: 8px auto 0;
+  max-width: 520px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+.tier-scholarly {
+  border-style: dashed;
+}

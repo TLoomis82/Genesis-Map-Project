@@ -5,7 +5,8 @@ import { scenes } from "../data/scenes.ts";
 import { useFps } from "../useFps.ts";
 
 // Plays the opening (Gen 1:1-8) one verse at a time. Tap Next, use the arrow keys, or press Play.
-// Everything shown here is tier "text": it comes straight from the verses.
+// The verses are tier "text". Where the picture goes beyond the words (the divided sky, the vault),
+// a short note under the verse says so and names the source.
 
 export default function OpeningPlayer() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -35,7 +36,8 @@ export default function OpeningPlayer() {
 
   // Each step sets where the scene glides to.
   useEffect(() => {
-    scene.current?.setTargets(openingSteps[index].targets);
+    const s = openingSteps[index];
+    scene.current?.setTargets(s.targets, s.sweepSeconds);
   }, [index]);
 
   // Auto-advance while playing; stop at the end.
@@ -87,6 +89,12 @@ export default function OpeningPlayer() {
           <span className="tier-badge">Text</span>
           {step.reference} (KJV)
         </p>
+        {step.depiction && (
+          <p className="verse-depiction">
+            {step.depiction.tier === "scholarly" && <span className="tier-badge tier-scholarly">Scholarly reading</span>}
+            {step.depiction.note}
+          </p>
+        )}
       </div>
 
       <div className="opening-controls">
