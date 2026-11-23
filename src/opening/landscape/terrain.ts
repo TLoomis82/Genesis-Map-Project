@@ -19,15 +19,16 @@ export const LAND = {
 const ROUTE: [number, number, number][] = [
   [0, 0, 3.2], // on the water, where days 1 and 2 are seen from
   [0, -90, 3.6],
-  [14, -190, 30], // rising before the shore, to take in the land and the sea
-  [42, -300, 38],
-  [12, -420, 12], // down into the valley
-  [-58, -560, 5],
-  [-108, -700, 4.5],
-  [-62, -850, 5],
-  [28, -980, 5],
-  [88, -1120, 6],
-  [58, -1260, 9],
+  [4, -190, 28], // rising before the shore, to take in the land and the sea
+  [6, -300, 32],
+  [-8, -430, 16], // easing down into the valley
+  // The valley winds gently: wide, slow curves, so the flight never swings from side to side.
+  [-30, -560, 6.5],
+  [-52, -700, 6],
+  [-30, -850, 6.5],
+  [14, -980, 6.5],
+  [42, -1120, 7],
+  [28, -1260, 10],
   [0, -1400, 34], // lifting over the head of the valley
 ];
 

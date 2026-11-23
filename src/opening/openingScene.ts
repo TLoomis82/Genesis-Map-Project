@@ -305,6 +305,8 @@ export class OpeningScene {
   private eye = new THREE.Vector3();
   private heading = new THREE.Vector3();
   private headingAhead = new THREE.Vector3();
+  private headingFar = new THREE.Vector3();
+  private bank = 0;
   private lookAt = new THREE.Vector3();
   private time = 0;
   private running = false;
@@ -391,6 +393,8 @@ export class OpeningScene {
     this.ascendAt = null;
     this.dim = 0;
     this.flightSpeed = 0;
+    this.heading.set(0, 0, 0);
+    this.bank = 0;
     this.angle = SWEEP_FROM;
   }
 
@@ -488,11 +492,18 @@ export class OpeningScene {
     // The view: a point on the route, looking where the route is about to go.
     // On the water (flight = 0) this is the same floating view as days 1 and 2.
     const curve = this.flight.curve;
+    // The heading is not read straight off the route: it glides toward where the route is going,
+    // so turns begin early, build slowly and never snap.
     curve.getPointAt(c.flight, this.eye);
-    curve.getTangentAt(Math.min(c.flight + 0.012, 1), this.heading);
-    curve.getTangentAt(Math.min(c.flight + 0.04, 1), this.headingAhead);
-    this.heading.y *= 0.5;
-    this.heading.normalize();
+    curve.getTangentAt(Math.min(c.flight + 0.02, 1), this.headingAhead);
+    curve.getTangentAt(Math.min(c.flight + 0.06, 1), this.headingFar);
+    this.headingAhead.add(this.headingFar);
+    this.headingAhead.y *= 0.5;
+    this.headingAhead.normalize();
+    if (this.heading.lengthSq() === 0) this.heading.copy(this.headingAhead);
+    const yawBefore = Math.atan2(this.heading.x, -this.heading.z);
+    this.heading.lerp(this.headingAhead, 1 - Math.exp(-dt * 1.1)).normalize();
+    const yawRate = dt > 0 ? (Math.atan2(this.heading.x, -this.heading.z) - yawBefore) / dt : 0;
 
     const moving = THREE.MathUtils.clamp(Math.abs(this.flightSpeed) / FLIGHT_SPEED, 0, 1);
     const floating = 1 - THREE.MathUtils.smoothstep(c.flight, 0.0, 0.05);
@@ -506,11 +517,10 @@ export class OpeningScene {
     this.camera.up.set(0, 1, 0);
     this.camera.lookAt(this.lookAt);
 
-    // Bank into turns like something flying: roll follows how fast the heading is changing.
-    const turn =
-      Math.atan2(this.headingAhead.x, -this.headingAhead.z) - Math.atan2(this.heading.x, -this.heading.z);
-    const bank = THREE.MathUtils.clamp(-turn * 1.6, -0.3, 0.3) * moving;
-    this.camera.rotateZ(bank + Math.sin(time * 0.31) * 0.012 * c.wind);
+    // A slight lean into turns, following how fast the heading is changing, and itself smoothed.
+    const wantedBank = THREE.MathUtils.clamp(-yawRate * 0.7, -0.09, 0.09) * moving;
+    this.bank += (wantedBank - this.bank) * (1 - Math.exp(-dt * 1.2));
+    this.camera.rotateZ(this.bank + Math.sin(time * 0.31) * 0.012 * c.wind * (0.3 + 0.7 * floating));
 
     // Water and sky travel with the view so their edges are never reached.
     this.water.position.set(this.eye.x, 0, this.eye.z);

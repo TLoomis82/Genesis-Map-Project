@@ -195,7 +195,7 @@ export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number
       done++;
     }
   };
-  plant(trees, treeCount, 3.6, 6.5, 44);
+  plant(trees, treeCount, 3.6, 9.5, 44); // trees stand clear of the route, so the view passes between them
   plant(herbs, herbCount, 1.2, 3.5, 30);
 
   const noTurn = new THREE.Quaternion();
