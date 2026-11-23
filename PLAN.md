@@ -65,6 +65,21 @@ Still open from M0:
 - Depth testing against the globe hid the test rings on the near side. Layers that must be hidden by terrain (not only by the globe's curve) need this understood before M2.
 - Between zoom 5 and 6 Mapbox blends the globe into flat mercator. The test layer does not handle that blend yet.
 
+## M1 status and day 3 direction (2026-11-23)
+
+Done and reviewed on screen: Genesis 1:1-8 (darkness, light, divided light, evening and morning, the vault). Thirteen verse steps exist in `src/opening/steps.ts`.
+
+Day 3 (1:9-13) first pass was rejected as generic: a noise island with a green colour wash. New direction, agreed:
+
+- **Live 3D, as realistic as it can be made in the browser.** A film clip could replace the growth sequence later.
+- **A drone flight:** the camera skims low over the land along a curved path, through valleys, not hovering in front of an island.
+- **Real growth:** individual grass blades sprouting ahead of the camera, and trees rising from the ground, leafing and bearing fruit (apples, peaches, lemons and so on).
+- **Labels:** the land's shape, the choice of fruits and the speed of growth are illustration. The text says the earth brought forth grass, herbs and fruit trees bearing fruit within the third day (1:11-12); it names no fruits and gives no speed.
+- **Light without a sun.** Light has existed since day 1 (1:3) but the sun is not made until day 4, so the scene is lit with a direction but shows no sun disc.
+- **Assets must be free-licensed** and recorded in `ASSETS.md` with their source and license.
+
+Working method from here: the workspace can now install packages, type check, build and take its own screenshots (software rendering, about 2 fps, so frame rates are still measured on the Mac and iPhone).
+
 ## Open items
 
 - Written permission from Christopher Scotese (PALEOMAP) and from ICR (Clarey and Werner map) before M2.

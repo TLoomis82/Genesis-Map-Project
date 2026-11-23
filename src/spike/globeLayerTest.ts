@@ -17,7 +17,7 @@
 // relying on the depth buffer, which hid the rings on the near side too in the first run.
 
 import * as THREE from "three";
-import type mapboxgl from "mapbox-gl";
+import type { CustomLayerInterface, Map as MapboxMap } from "mapbox-gl";
 import { features } from "../data/features.ts";
 
 const GLOBE_RADIUS = 8192 / Math.PI / 2;
@@ -49,7 +49,7 @@ export interface LayerDebug {
 }
 
 export interface GlobeTestLayer {
-  layer: mapboxgl.CustomLayerInterface;
+  layer: CustomLayerInterface;
   debug: LayerDebug;
   setDepthTest(on: boolean): void;
 }
@@ -64,7 +64,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
   const horizon = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e9);
   const materials: THREE.Material[] = [];
   let renderer: THREE.WebGLRenderer | null = null;
-  let map: mapboxgl.Map | null = null;
+  let map: MapboxMap | null = null;
 
   const lift = GLOBE_RADIUS * 1.003; // just above the surface so lines are not buried
 
@@ -100,7 +100,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
     type: "custom",
     renderingMode: "3d",
 
-    onAdd(m: mapboxgl.Map, gl: WebGL2RenderingContext) {
+    onAdd(m: MapboxMap, gl: WebGL2RenderingContext) {
       map = m;
       try {
         renderer = new THREE.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true });
@@ -152,7 +152,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
   };
 
   return {
-    layer: layer as unknown as mapboxgl.CustomLayerInterface,
+    layer: layer as unknown as CustomLayerInterface,
     debug,
     setDepthTest(on: boolean) {
       for (const mat of materials) {
