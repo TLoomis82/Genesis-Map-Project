@@ -43,11 +43,33 @@ Vite, React 18, TypeScript strict, Mapbox GL JS 3 (globe projection), three.js. 
 | M0 | Setup and globe test | App builds and deploys; data check passes; we know whether three.js custom layers work on the Mapbox globe on an iPhone |
 | M1 | Days 1 to 3 | Water, light, expanse in three.js; seamless handoff to the globe; steady 30+ fps on iPhone |
 | M2 | Pre-flood land | Model layer with Clarey and Werner as default, Rodinia and Pannotia toggle, "no data" regions faint; permissions on file |
-| M3 | App shell and scene engine | Scroll and play through scenes; tier styling; info cards; "text only" switch |
+| M3 | App shell and scene engine | Scroll and play through scenes; tier styling; info cards; "text only" switch; each scene has a slot for an explore mode (see M8) |
 | M4 | Days 4 to 7 | Lights, sea and sky, land life, rest |
 | M5 | Eden to the ark | Scenes `eden` through `ark`, with all alternatives shown |
 | M6 | Flood and ending | Flood calendar, breakup, the four ending shots |
 | M7 | Polish and launch | Source review complete; outside reader has checked the verse table; pitch demo ready |
+| M8 | Explore mode for the creation days | Each of days 1 to 3 can be played with as well as watched, on mouse and touch, at a steady 30+ fps on iPhone |
+
+## M8: explore mode (idea agreed 2026-11-23, to build after the other milestones)
+
+Every creation day becomes something to play with, not only to watch, so the piece can carry a lesson. The verse-by-verse story stays the default; each day gets an "explore" button.
+
+| Day | What the visitor can do | Size | Notes |
+| --- | --- | --- | --- |
+| 1, the deep (1:2) | Swipe across the water and it sloshes | Moderate | Needs a ripple simulation that reacts to the pointer; today's water is fixed wave patterns |
+| 1, light and dark (1:4-5) | Drag to move around the divided light and darkness | Easy | The divided sky already has an angle; tie it to the drag |
+| 2, the firmament (1:6-8) | Look down below the water and up to the top of the vault | Moderate | Needs an underwater view and free up-and-down look |
+| 3, the land (1:9-13) | Fly into the land to see the grass and trees up close | Moderate | The flight exists; let the visitor steer or scrub it and look around |
+
+Each day opens from an overview framed like the globe view, but with no sphere before the text gives one: a boundless water surface seen from above. The hard part is one continuous dive from that overview down to the trees.
+
+Rough size: 25 to 40 hours.
+
+To settle before building:
+
+- **Who the visitor is in the scene.** The visitor explores what the verse describes; they do not do what the text says God did. Moving your view around the divided light is fine. A swipe that stirs the waters needs careful wording, since 1:2 says the Spirit of God moved on the waters. BibleProject may be sensitive to this.
+- **Touch as well as mouse**, and the extra load of a ripple simulation on phones.
+- **Later days** (4 to 6) could get explore modes too; not designed yet.
 
 ## M0 result (passed 2026-11-23)
 
