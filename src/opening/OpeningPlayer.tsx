@@ -3,8 +3,10 @@ import { OpeningScene } from "./openingScene.ts";
 import { openingSteps } from "./steps.ts";
 import { scenes } from "../data/scenes.ts";
 import { useFps } from "../useFps.ts";
+import HandoffGlobe from "./HandoffGlobe.tsx";
 
-// Plays the opening (Gen 1:1-8) one verse at a time. Tap Next, use the arrow keys, or press Play.
+// Plays the opening (Gen 1:1-13) one verse at a time. At the end of day 3 the scene rises,
+// whitens and fades away to show the globe underneath. Tap Next, use the arrow keys, or press Play.
 // The verses are tier "text". Where the picture goes beyond the words (the divided sky, the vault),
 // a short note under the verse says so and names the source.
 
@@ -13,11 +15,14 @@ export default function OpeningPlayer() {
   const scene = useRef<OpeningScene | null>(null);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [faded, setFaded] = useState(false);
   const fps = useFps();
 
   const step = openingSteps[index];
   const sceneTitle = scenes.find((s) => s.id === step.sceneId)?.title ?? "";
   const isLast = index === openingSteps.length - 1;
+  // Load the globe a few steps before it is needed, so it is ready for the fade.
+  const globeNeeded = index >= openingSteps.length - 4;
 
   // Create the scene once.
   useEffect(() => {
@@ -37,8 +42,27 @@ export default function OpeningPlayer() {
   // Each step sets where the scene glides to.
   useEffect(() => {
     const s = openingSteps[index];
-    scene.current?.setTargets(s.targets, s.sweepSeconds, s.duskSeconds);
+    scene.current?.setTargets(s.targets, { sweepSeconds: s.sweepSeconds, duskSeconds: s.duskSeconds, ascendAfter: s.ascendAfter });
   }, [index]);
+
+  // The fade to the globe: only on a step that asks for it, and undone when leaving that step.
+  useEffect(() => {
+    setFaded(false);
+    const after = openingSteps[index].fadeToGlobeAfter;
+    if (after === undefined) return;
+    const timer = window.setTimeout(() => setFaded(true), after * 1000);
+    return () => window.clearTimeout(timer);
+  }, [index]);
+
+  // The scene keeps drawing only while it can be seen (the fade itself takes 3.5 seconds).
+  useEffect(() => {
+    if (!faded) {
+      scene.current?.play();
+      return;
+    }
+    const timer = window.setTimeout(() => scene.current?.pause(), 3600);
+    return () => window.clearTimeout(timer);
+  }, [faded]);
 
   // Auto-advance while playing; stop at the end.
   useEffect(() => {
@@ -76,7 +100,8 @@ export default function OpeningPlayer() {
 
   return (
     <>
-      <canvas ref={canvas} className="opening-canvas" />
+      {globeNeeded && <HandoffGlobe />}
+      <canvas ref={canvas} className={`opening-canvas ${faded ? "is-faded" : ""}`} />
 
       <div className="opening-meta">
         <span>{sceneTitle}</span>
@@ -91,7 +116,7 @@ export default function OpeningPlayer() {
         </p>
         {step.depiction && (
           <p className="verse-depiction">
-            {step.depiction.tier === "scholarly" && <span className="tier-badge tier-scholarly">Scholarly reading</span>}
+            {step.depiction.badge && <span className="tier-badge tier-scholarly">{step.depiction.badge}</span>}
             {step.depiction.note}
           </p>
         )}

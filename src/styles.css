@@ -104,6 +104,13 @@ body,
   width: 100%;
   height: 100%;
   display: block;
+  transition: opacity 3.5s ease-in-out;
+}
+
+/* Faded away to show the globe underneath; touches pass through so the globe can be spun. */
+.opening-canvas.is-faded {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .opening-meta {

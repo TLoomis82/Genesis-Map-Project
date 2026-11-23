@@ -10,7 +10,16 @@
 //           Where it is open you see clear air and, beyond it, the waters above   (Gen 1:6-8)
 // A step can also ask for one of two passing events:
 //   sweep  the light/dark boundary crosses the sky once: evening, then morning   (Gen 1:5)
-//   dusk   the light fades to night and returns once: evening, then morning      (Gen 1:8)
+//   dusk   the light fades to night and returns once: evening, then morning      (Gen 1:8, 1:13)
+//   ascend after a delay, the view rises high above the land and whitens, ready to fade to the globe
+//
+// Day 3 adds:
+//   land      0 = under the water, 1 = fully risen                           (Gen 1:9)
+//   green     0 = bare rock, 1 = grass, herbs and trees have spread          (Gen 1:11-12)
+//   altitude  height of the view above the water
+//   gaze      where the view looks: height of the look-at point, 100 units ahead, relative to the view
+//   veil      0 = clear, 1 = the whole frame is a bright haze (used for the fade to the globe)
+// The land's shape is illustrative only: the text does not describe it.
 
 import * as THREE from "three";
 
@@ -20,7 +29,23 @@ export interface OpeningTargets {
   wind: number;
   divide: number;
   vault: number;
+  land: number;
+  green: number;
+  altitude: number;
+  gaze: number;
+  veil: number;
 }
+
+export interface OpeningEvents {
+  /** One pass of the light/dark boundary across the sky, in seconds. */
+  sweepSeconds?: number;
+  /** The light fades to night and returns once, in seconds. */
+  duskSeconds?: number;
+  /** Seconds after the step starts at which the view rises and whitens. */
+  ascendAfter?: number;
+}
+
+export const SURFACE = { land: 0, green: 0, altitude: 3.2, gaze: -10, veil: 0 } as const;
 
 export const VAULT_CLOSED = -0.05;
 export const VAULT_OPEN = 1.2;
@@ -34,6 +59,9 @@ const common = /* glsl */ `
   uniform float uDivide;
   uniform float uDivideAngle;
   uniform float uVault;
+  uniform float uLand;
+  uniform float uGreen;
+  uniform float uVeil;
   uniform vec3 uCamera;
 
   const vec3 DARK = vec3(0.0, 0.002, 0.005);
@@ -99,6 +127,36 @@ const common = /* glsl */ `
 
     vec3 clear = mix(above, clearHorizon, pow(1.0 - y, 4.0));
     return mix(mistColor(l), clear, expanseOpen(y));
+  }
+
+  // The bright haze the view rises into before the globe appears.
+  vec3 applyVeil(vec3 color, vec3 dir) {
+    return mix(color, mix(DARK, vec3(0.86, 0.90, 0.96), localLight(dir)), uVeil);
+  }
+
+  // Density of mist between the view and a point.
+  float mistAmount(float dist) {
+    return 1.0 - exp(-dist * mix(0.0012, 0.020, uHaze));
+  }
+
+  // The land. Its shape is illustrative: ridged noise inside an oval, rising out of the water.
+  float landNoise(vec2 p) {
+    float n = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 4; i++) {
+      n += a * (1.0 - abs(2.0 * vnoise(p) - 1.0));
+      p = p * 2.03 + 17.1;
+      a *= 0.5;
+    }
+    return n / 0.9375;
+  }
+
+  float landHeight(vec2 p) {
+    vec2 c = (p - vec2(0.0, -640.0)) / vec2(680.0, 430.0);
+    float inside = 1.0 - smoothstep(0.25, 1.0, length(c));
+    float n = landNoise(p * 0.006);
+    float raw = (0.25 + 0.75 * n * n) * inside;
+    return raw * 150.0 - 24.0 - (1.0 - uLand) * 140.0;
   }
 
   void addWave(vec2 p, vec2 dir, float len, float amp, float speed, inout float h, inout vec2 slope) {
@@ -181,9 +239,60 @@ const waterFragment = /* glsl */ `
     vec3 color = mix(deep, skyColor(reflected, 0.25), fresnel);
 
     // Mist: thick when haze is high, so the water melts into the sky with no horizon line.
-    float density = mix(0.0012, 0.020, uHaze);
-    float fog = 1.0 - exp(-dist * density);
-    gl_FragColor = vec4(mix(color, horizonColor(-view), fog), 1.0);
+    color = mix(color, horizonColor(-view), mistAmount(dist));
+    gl_FragColor = vec4(applyVeil(color, -view), 1.0);
+  }
+`;
+
+const landVertex = /* glsl */ `
+  ${common}
+  varying vec3 vWorld;
+
+  void main() {
+    vec3 pos = position;
+    pos.y = landHeight(pos.xz);
+    vWorld = pos;
+    gl_Position = projectionMatrix * viewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+const landFragment = /* glsl */ `
+  ${common}
+  varying vec3 vWorld;
+
+  void main() {
+    vec2 p = vWorld.xz;
+    float y = vWorld.y;
+
+    // Normal from the height function itself, so the land is smooth whatever the mesh.
+    float e = 2.5;
+    float hx = landHeight(p + vec2(e, 0.0)) - landHeight(p - vec2(e, 0.0));
+    float hz = landHeight(p + vec2(0.0, e)) - landHeight(p - vec2(0.0, e));
+    vec3 normal = normalize(vec3(-hx, 2.0 * e, -hz));
+
+    vec3 toPoint = vWorld - uCamera;
+    float dist = length(toPoint);
+    vec3 dir = toPoint / dist;
+    float l = localLight(dir);
+
+    // Bare rock: darker where it is still wet near the waterline, paler on the heights.
+    float grain = vnoise(p * 0.15);
+    vec3 rock = mix(vec3(0.16, 0.14, 0.13), vec3(0.44, 0.40, 0.35), grain * 0.6 + 0.4 * smoothstep(20.0, 110.0, y));
+    rock *= mix(1.0, 0.45, 1.0 - smoothstep(0.0, 7.0, y));
+
+    // Green spreads in patches from the lowlands, on gentler slopes, and stays off the peaks.
+    float cover = vnoise(p * 0.02) * 0.6 + vnoise(p * 0.07) * 0.4;
+    float spread = smoothstep(cover - 0.15, cover + 0.15, uGreen * 1.3);
+    float fertile = smoothstep(0.62, 0.85, normal.y) * (1.0 - smoothstep(55.0, 100.0, y)) * smoothstep(1.5, 6.0, y);
+    vec3 green = mix(vec3(0.07, 0.19, 0.05), vec3(0.24, 0.40, 0.12), vnoise(p * 0.11));
+    vec3 color = mix(rock, green, spread * fertile);
+
+    // Light from the whole sky: there is no sun until day 4.
+    float skyLight = mix(0.35, 1.0, smoothstep(0.3, 1.0, normal.y));
+    color *= l * skyLight * 1.5;
+
+    color = mix(color, horizonColor(dir), mistAmount(dist));
+    gl_FragColor = vec4(applyVeil(color, dir), 1.0);
   }
 `;
 
@@ -199,7 +308,8 @@ const skyFragment = /* glsl */ `
   ${common}
   varying vec3 vDir;
   void main() {
-    gl_FragColor = vec4(skyColor(normalize(vDir), 1.0), 1.0);
+    vec3 dir = normalize(vDir);
+    gl_FragColor = vec4(applyVeil(skyColor(dir, 1.0), dir), 1.0);
   }
 `;
 
@@ -238,15 +348,19 @@ export class OpeningScene {
     uDivide: { value: 0 },
     uDivideAngle: { value: SWEEP_FROM },
     uVault: { value: VAULT_CLOSED },
+    uLand: { value: 0 },
+    uGreen: { value: 0 },
+    uVeil: { value: 0 },
     uCamera: { value: new THREE.Vector3(0, 3.2, 0) },
   };
   private disposables: { dispose(): void }[] = [];
-  private current: OpeningTargets = { light: 0, haze: 1, wind: 1, divide: 0, vault: VAULT_CLOSED };
+  private current: OpeningTargets = { light: 0, haze: 1, wind: 1, divide: 0, vault: VAULT_CLOSED, ...SURFACE };
   private target: OpeningTargets = { ...this.current };
   private angle = SWEEP_FROM;
   private sweep: { start: number; seconds: number } | null = null;
   private dusk: { start: number; seconds: number } | null = null;
   private dim = 0; // 0 = full light, 1 = night; glides like everything else
+  private ascendAt: number | null = null;
   private time = 0;
   private running = false;
   private frame = 0;
@@ -273,8 +387,15 @@ export class OpeningScene {
     sky.frustumCulled = false;
     sky.renderOrder = -1;
 
-    this.scene.add(sky, water);
-    this.disposables.push(waterGeometry, waterMaterial, skyGeometry, skyMaterial);
+    const landGeometry = new THREE.PlaneGeometry(1500, 1000, 240, 160);
+    landGeometry.rotateX(-Math.PI / 2);
+    landGeometry.translate(0, 0, -640);
+    const landMaterial = new THREE.ShaderMaterial({ vertexShader: landVertex, fragmentShader: landFragment, uniforms: this.uniforms });
+    const land = new THREE.Mesh(landGeometry, landMaterial);
+    land.frustumCulled = false;
+
+    this.scene.add(sky, water, land);
+    this.disposables.push(waterGeometry, waterMaterial, skyGeometry, skyMaterial, landGeometry, landMaterial);
     this.resize();
   }
 
@@ -286,18 +407,14 @@ export class OpeningScene {
     this.camera.updateProjectionMatrix();
   };
 
-  /**
-   * Where the scene should glide to. Changes are never applied instantly.
-   * sweepSeconds asks for one pass of the light/dark boundary across the sky
-   * (evening, then morning), after which the whole sky is light.
-   * duskSeconds asks for the light to fade to night and return once.
-   */
-  setTargets(t: OpeningTargets, sweepSeconds?: number, duskSeconds?: number) {
+  /** Where the scene should glide to, plus any passing events. Changes are never applied instantly. */
+  setTargets(t: OpeningTargets, events: OpeningEvents = {}) {
     this.target = { ...t };
-    this.dusk = duskSeconds ? { start: this.time, seconds: duskSeconds } : null;
-    if (sweepSeconds) {
+    this.dusk = events.duskSeconds ? { start: this.time, seconds: events.duskSeconds } : null;
+    this.ascendAt = events.ascendAfter !== undefined ? this.time + events.ascendAfter : null;
+    if (events.sweepSeconds) {
       this.angle = SWEEP_FROM;
-      this.sweep = { start: this.time, seconds: sweepSeconds };
+      this.sweep = { start: this.time, seconds: events.sweepSeconds };
     } else {
       this.sweep = null;
       // Outside a sweep the boundary rests straight ahead. Only reset it while it cannot be seen.
@@ -311,6 +428,7 @@ export class OpeningScene {
     this.current = { ...t };
     this.sweep = null;
     this.dusk = null;
+    this.ascendAt = null;
     this.dim = 0;
     this.angle = SWEEP_FROM;
   }
@@ -336,6 +454,14 @@ export class OpeningScene {
         }
       }
 
+      // The ascent: rise high above the land, look down, and let the bright haze close in.
+      if (this.ascendAt !== null && time >= this.ascendAt) {
+        this.ascendAt = null;
+        this.target.altitude = 1500;
+        this.target.gaze = -220;
+        this.target.veil = 1;
+      }
+
       // Evening and morning: the dim level rises to night and falls back, then the event ends.
       let dimTarget = 0;
       if (this.dusk) {
@@ -354,6 +480,11 @@ export class OpeningScene {
       c.wind += (g.wind - c.wind) * ease;
       c.divide += (g.divide - c.divide) * ease;
       c.vault += (g.vault - c.vault) * ease;
+      c.land += (g.land - c.land) * ease;
+      c.green += (g.green - c.green) * ease;
+      c.altitude += (g.altitude - c.altitude) * ease;
+      c.gaze += (g.gaze - c.gaze) * ease;
+      c.veil += (g.veil - c.veil) * ease;
 
       const u = this.uniforms;
       u.uTime.value = time;
@@ -363,14 +494,15 @@ export class OpeningScene {
       u.uDivide.value = c.divide;
       u.uDivideAngle.value = this.angle;
       u.uVault.value = c.vault;
+      u.uLand.value = c.land;
+      u.uGreen.value = c.green;
+      u.uVeil.value = c.veil;
 
-      // A slow drift, as if floating: continuous, never re-aimed. The view tilts up a little
-      // as the expanse opens, so the vault is in frame.
+      // A slow drift, as if floating: continuous, never re-aimed.
       const cam = u.uCamera.value;
-      cam.set(0, 3.2 + Math.sin(time * 0.45) * 0.3 * c.wind, 0);
+      cam.set(0, c.altitude + Math.sin(time * 0.45) * 0.3 * c.wind, 0);
       this.camera.position.copy(cam);
-      const opened = THREE.MathUtils.clamp((c.vault - VAULT_CLOSED) / (VAULT_OPEN - VAULT_CLOSED), 0, 1);
-      this.camera.lookAt(Math.sin(time * 0.11) * 6, -7 + 26 * opened, -100);
+      this.camera.lookAt(Math.sin(time * 0.11) * 6, cam.y + c.gaze, -100);
       this.camera.rotation.z = Math.sin(time * 0.31) * 0.012 * c.wind;
 
       this.renderer.render(this.scene, this.camera);

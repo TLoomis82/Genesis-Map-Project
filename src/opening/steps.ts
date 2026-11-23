@@ -1,71 +1,81 @@
-import { VAULT_CLOSED, VAULT_OPEN, type OpeningTargets } from "./openingScene.ts";
-import type { Tier } from "../data/types.ts";
+import { SURFACE, VAULT_CLOSED, VAULT_OPEN, type OpeningEvents, type OpeningTargets } from "./openingScene.ts";
 
 // The opening, one verse at a time. Each step names the scene it belongs to in
-// src/data/scenes.ts, the verse shown on screen, and the state the water and sky glide to.
+// src/data/scenes.ts, the verse shown on screen, and the state the scene glides to.
 // Verse text is the King James Version (public domain).
 // Open item: check every verse string against a KJV source file before launch.
 
 /** Says plainly how a verse has been pictured, when the picture goes beyond the words. */
 export interface Depiction {
-  tier: Tier;
+  /** Short label shown in a badge, e.g. "Scholarly reading". Omit for a plain note. */
+  badge?: string;
   note: string;
-  /** Source id from src/data/sources.ts, required when tier is 'scholarly' or 'model'. */
+  /** Source id from src/data/sources.ts, when the picture follows a named source. */
   source?: string;
 }
 
-export interface OpeningStep {
-  sceneId: "before" | "day-1" | "day-2";
+export interface OpeningStep extends OpeningEvents {
+  sceneId: "before" | "day-1" | "day-2" | "day-3";
   reference: string;
   text: string;
   targets: OpeningTargets;
   /** Seconds to hold before auto-advancing when playing. */
   hold: number;
-  /** One pass of the light/dark boundary across the sky, in seconds. */
-  sweepSeconds?: number;
-  /** The light fades to night and returns once, in seconds. */
-  duskSeconds?: number;
+  /** Seconds after the step starts at which the scene fades away to show the globe. */
+  fadeToGlobeAfter?: number;
   depiction?: Depiction;
 }
 
 const divided: Depiction = {
-  tier: "text",
   note: "Light and darkness are pictured as two halves of the sky. The text does not say how they were divided.",
 };
 
 const vault: Depiction = {
-  tier: "scholarly",
+  badge: "Scholarly reading",
   note: "Pictured as a vault with water beyond it, the way the ancient world saw the sky (BibleProject, Ancient Cosmology).",
   source: "bibleproject-cosmology",
 };
+
+const landShape: Depiction = {
+  badge: "Illustration",
+  note: "The shape of the land is illustrative. The text does not describe it.",
+};
+
+const globeView: Depiction = {
+  badge: "Placeholder",
+  note: "The globe is a modern view of the same land and seas. The continents shown are today's, standing in until the pre-flood land model is added.",
+};
+
+// Day 2 ends with the vault open and the view tilted up. Day 3 brings the view back down.
+const openSky = { light: 1, haze: 0, divide: 0, vault: VAULT_OPEN } as const;
 
 export const openingSteps: OpeningStep[] = [
   {
     sceneId: "before",
     reference: "Genesis 1:1",
     text: "In the beginning God created the heaven and the earth.",
-    targets: { light: 0, haze: 1, wind: 0.6, divide: 0, vault: VAULT_CLOSED },
+    targets: { light: 0, haze: 1, wind: 0.6, divide: 0, vault: VAULT_CLOSED, ...SURFACE },
     hold: 6,
   },
   {
     sceneId: "before",
     reference: "Genesis 1:2",
     text: "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
-    targets: { light: 0.07, haze: 0.9, wind: 1.3, divide: 0, vault: VAULT_CLOSED },
+    targets: { light: 0.07, haze: 0.9, wind: 1.3, divide: 0, vault: VAULT_CLOSED, ...SURFACE },
     hold: 11,
   },
   {
     sceneId: "day-1",
     reference: "Genesis 1:3",
     text: "And God said, Let there be light: and there was light.",
-    targets: { light: 1, haze: 0.85, wind: 1, divide: 0, vault: VAULT_CLOSED },
+    targets: { light: 1, haze: 0.85, wind: 1, divide: 0, vault: VAULT_CLOSED, ...SURFACE },
     hold: 10,
   },
   {
     sceneId: "day-1",
     reference: "Genesis 1:4",
     text: "And God saw the light, that it was good: and God divided the light from the darkness.",
-    targets: { light: 1, haze: 0.85, wind: 0.95, divide: 1, vault: VAULT_CLOSED },
+    targets: { light: 1, haze: 0.85, wind: 0.95, divide: 1, vault: VAULT_CLOSED, ...SURFACE },
     hold: 10,
     depiction: divided,
   },
@@ -73,7 +83,7 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-1",
     reference: "Genesis 1:5",
     text: "And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day.",
-    targets: { light: 1, haze: 0.85, wind: 0.9, divide: 1, vault: VAULT_CLOSED },
+    targets: { light: 1, haze: 0.85, wind: 0.9, divide: 1, vault: VAULT_CLOSED, ...SURFACE },
     hold: 14,
     sweepSeconds: 10,
     depiction: divided,
@@ -82,7 +92,7 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-2",
     reference: "Genesis 1:6",
     text: "And God said, Let there be a firmament in the midst of the waters, and let it divide the waters from the waters.",
-    targets: { light: 1, haze: 0.5, wind: 0.9, divide: 0, vault: 0.3 },
+    targets: { light: 1, haze: 0.5, wind: 0.9, divide: 0, vault: 0.3, ...SURFACE, gaze: -4 },
     hold: 10,
     depiction: vault,
   },
@@ -90,7 +100,7 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-2",
     reference: "Genesis 1:7",
     text: "And God made the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so.",
-    targets: { light: 1, haze: 0.05, wind: 0.85, divide: 0, vault: VAULT_OPEN },
+    targets: { ...openSky, haze: 0.05, wind: 0.85, ...SURFACE, gaze: 16 },
     hold: 12,
     depiction: vault,
   },
@@ -98,9 +108,52 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-2",
     reference: "Genesis 1:8",
     text: "And God called the firmament Heaven. And the evening and the morning were the second day.",
-    targets: { light: 1, haze: 0, wind: 0.7, divide: 0, vault: VAULT_OPEN },
+    targets: { ...openSky, wind: 0.7, ...SURFACE, gaze: 16 },
     hold: 16,
     duskSeconds: 12,
     depiction: vault,
+  },
+  {
+    sceneId: "day-3",
+    reference: "Genesis 1:9",
+    text: "And God said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so.",
+    targets: { ...openSky, wind: 0.8, land: 1, green: 0, altitude: 7, gaze: -3, veil: 0 },
+    hold: 14,
+    depiction: landShape,
+  },
+  {
+    sceneId: "day-3",
+    reference: "Genesis 1:10",
+    text: "And God called the dry land Earth; and the gathering together of the waters called he Seas: and God saw that it was good.",
+    targets: { ...openSky, wind: 0.7, land: 1, green: 0, altitude: 85, gaze: -42, veil: 0 },
+    hold: 12,
+    depiction: landShape,
+  },
+  {
+    sceneId: "day-3",
+    reference: "Genesis 1:11",
+    text: "And God said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so.",
+    targets: { ...openSky, wind: 0.7, land: 1, green: 0.45, altitude: 55, gaze: -34, veil: 0 },
+    hold: 13,
+    depiction: landShape,
+  },
+  {
+    sceneId: "day-3",
+    reference: "Genesis 1:12",
+    text: "And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good.",
+    targets: { ...openSky, wind: 0.7, land: 1, green: 1, altitude: 40, gaze: -28, veil: 0 },
+    hold: 12,
+    depiction: landShape,
+  },
+  {
+    sceneId: "day-3",
+    reference: "Genesis 1:13",
+    text: "And the evening and the morning were the third day.",
+    targets: { ...openSky, wind: 0.6, land: 1, green: 1, altitude: 60, gaze: -34, veil: 0 },
+    hold: 30,
+    duskSeconds: 10,
+    ascendAfter: 11,
+    fadeToGlobeAfter: 15,
+    depiction: globeView,
   },
 ];
