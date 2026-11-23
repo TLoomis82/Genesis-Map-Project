@@ -37,7 +37,7 @@ export default function OpeningPlayer() {
   // Each step sets where the scene glides to.
   useEffect(() => {
     const s = openingSteps[index];
-    scene.current?.setTargets(s.targets, s.sweepSeconds);
+    scene.current?.setTargets(s.targets, s.sweepSeconds, s.duskSeconds);
   }, [index]);
 
   // Auto-advance while playing; stop at the end.

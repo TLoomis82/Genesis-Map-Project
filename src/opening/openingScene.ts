@@ -8,8 +8,9 @@
 //   divide  0 = light everywhere; 1 = half the sky light, half dark        (Gen 1:4)
 //   vault   how far the expanse has opened, from the horizon (0) to overhead (1.2).
 //           Where it is open you see clear air and, beyond it, the waters above   (Gen 1:6-8)
-// A step can also ask for one sweep of the light/dark boundary across the sky:
-// evening, then morning (Gen 1:5).
+// A step can also ask for one of two passing events:
+//   sweep  the light/dark boundary crosses the sky once: evening, then morning   (Gen 1:5)
+//   dusk   the light fades to night and returns once: evening, then morning      (Gen 1:8)
 
 import * as THREE from "three";
 
@@ -77,7 +78,8 @@ const common = /* glsl */ `
     return mix(mistColor(l), clearHorizon, expanseOpen(0.0));
   }
 
-  vec3 skyColor(vec3 dir) {
+  // shimmerAmount: 1 for the sky itself, lower for its softer reflection in the water.
+  vec3 skyColor(vec3 dir, float shimmerAmount) {
     float l = localLight(dir);
     float y = clamp(dir.y, 0.0, 1.0);
 
@@ -93,7 +95,7 @@ const common = /* glsl */ `
     float r1 = 1.0 - abs(2.0 * w1 - 1.0);
     float r2 = 1.0 - abs(2.0 * w2 - 1.0);
     float shimmer = pow(r1 * r2, 2.0) * smoothstep(0.04, 0.40, y);
-    vec3 above = vaultBlue + vec3(0.40, 0.55, 0.70) * shimmer * 0.6 * l;
+    vec3 above = vaultBlue + vec3(0.40, 0.55, 0.70) * shimmer * 0.6 * shimmerAmount * l;
 
     vec3 clear = mix(above, clearHorizon, pow(1.0 - y, 4.0));
     return mix(mistColor(l), clear, expanseOpen(y));
@@ -112,6 +114,15 @@ const common = /* glsl */ `
     addWave(p, vec2(-0.37, 0.93), 47.0, 0.62, 0.70, h, slope);
     addWave(p, vec2(0.76, -0.65), 23.0, 0.30, 0.95, h, slope);
     addWave(p, vec2(-0.98, -0.20), 11.0, 0.13, 1.30, h, slope);
+  }
+
+  // The same swells for shading, with the short ones fading out with distance.
+  // Far away they are smaller than a pixel and would only show up as speckle.
+  void swellShaded(vec2 p, float dist, inout float h, inout vec2 slope) {
+    addWave(p, vec2(0.96, 0.28), 83.0, 1.10, 0.55, h, slope);
+    addWave(p, vec2(-0.37, 0.93), 47.0, 0.62 * (1.0 - smoothstep(350.0, 1100.0, dist)), 0.70, h, slope);
+    addWave(p, vec2(0.76, -0.65), 23.0, 0.30 * (1.0 - smoothstep(140.0, 600.0, dist)), 0.95, h, slope);
+    addWave(p, vec2(-0.98, -0.20), 11.0, 0.13 * (1.0 - smoothstep(70.0, 320.0, dist)), 1.30, h, slope);
   }
 
   // Small surface texture: irregular, so it never forms stripes. Shading only.
@@ -157,8 +168,8 @@ const waterFragment = /* glsl */ `
     // The normal is worked out per pixel: swells plus small chop that fades with distance.
     float h = 0.0;
     vec2 slope = vec2(0.0);
-    swell(vWorld.xz, h, slope);
-    slope += chopSlope(vWorld.xz) * 0.55 * (1.0 - smoothstep(50.0, 350.0, dist));
+    swellShaded(vWorld.xz, dist, h, slope);
+    slope += chopSlope(vWorld.xz) * 0.42 * (1.0 - smoothstep(25.0, 160.0, dist));
     vec3 normal = normalize(vec3(-slope.x * uWind, 1.0, -slope.y * uWind));
 
     vec3 reflected = reflect(-view, normal);
@@ -167,7 +178,7 @@ const waterFragment = /* glsl */ `
     float l = localLight(-view);
     float fresnel = 0.02 + 0.98 * pow(1.0 - max(dot(normal, view), 0.0), 5.0);
     vec3 deep = mix(vec3(0.0, 0.003, 0.006), vec3(0.01, 0.09, 0.13), l);
-    vec3 color = mix(deep, skyColor(reflected), fresnel);
+    vec3 color = mix(deep, skyColor(reflected, 0.25), fresnel);
 
     // Mist: thick when haze is high, so the water melts into the sky with no horizon line.
     float density = mix(0.0012, 0.020, uHaze);
@@ -188,7 +199,7 @@ const skyFragment = /* glsl */ `
   ${common}
   varying vec3 vDir;
   void main() {
-    gl_FragColor = vec4(skyColor(normalize(vDir)), 1.0);
+    gl_FragColor = vec4(skyColor(normalize(vDir), 1.0), 1.0);
   }
 `;
 
@@ -234,6 +245,8 @@ export class OpeningScene {
   private target: OpeningTargets = { ...this.current };
   private angle = SWEEP_FROM;
   private sweep: { start: number; seconds: number } | null = null;
+  private dusk: { start: number; seconds: number } | null = null;
+  private dim = 0; // 0 = full light, 1 = night; glides like everything else
   private time = 0;
   private running = false;
   private frame = 0;
@@ -277,9 +290,11 @@ export class OpeningScene {
    * Where the scene should glide to. Changes are never applied instantly.
    * sweepSeconds asks for one pass of the light/dark boundary across the sky
    * (evening, then morning), after which the whole sky is light.
+   * duskSeconds asks for the light to fade to night and return once.
    */
-  setTargets(t: OpeningTargets, sweepSeconds?: number) {
+  setTargets(t: OpeningTargets, sweepSeconds?: number, duskSeconds?: number) {
     this.target = { ...t };
+    this.dusk = duskSeconds ? { start: this.time, seconds: duskSeconds } : null;
     if (sweepSeconds) {
       this.angle = SWEEP_FROM;
       this.sweep = { start: this.time, seconds: sweepSeconds };
@@ -295,6 +310,8 @@ export class OpeningScene {
     this.target = { ...t };
     this.current = { ...t };
     this.sweep = null;
+    this.dusk = null;
+    this.dim = 0;
     this.angle = SWEEP_FROM;
   }
 
@@ -319,6 +336,15 @@ export class OpeningScene {
         }
       }
 
+      // Evening and morning: the dim level rises to night and falls back, then the event ends.
+      let dimTarget = 0;
+      if (this.dusk) {
+        const t = Math.min((time - this.dusk.start) / this.dusk.seconds, 1);
+        dimTarget = Math.pow(Math.sin(Math.PI * t), 2);
+        if (t >= 1) this.dusk = null;
+      }
+      this.dim += (dimTarget - this.dim) * (1 - Math.exp(-dt * 2.5));
+
       // Glide each value toward its target: smooth start, smooth stop, no jumps.
       const ease = 1 - Math.exp(-dt * 0.45);
       const c = this.current;
@@ -331,7 +357,7 @@ export class OpeningScene {
 
       const u = this.uniforms;
       u.uTime.value = time;
-      u.uLight.value = c.light;
+      u.uLight.value = c.light * (1 - 0.9 * this.dim);
       u.uHaze.value = c.haze;
       u.uWind.value = c.wind;
       u.uDivide.value = c.divide;

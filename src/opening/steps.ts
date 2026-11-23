@@ -23,6 +23,8 @@ export interface OpeningStep {
   hold: number;
   /** One pass of the light/dark boundary across the sky, in seconds. */
   sweepSeconds?: number;
+  /** The light fades to night and returns once, in seconds. */
+  duskSeconds?: number;
   depiction?: Depiction;
 }
 
@@ -97,7 +99,8 @@ export const openingSteps: OpeningStep[] = [
     reference: "Genesis 1:8",
     text: "And God called the firmament Heaven. And the evening and the morning were the second day.",
     targets: { light: 1, haze: 0, wind: 0.7, divide: 0, vault: VAULT_OPEN },
-    hold: 9,
+    hold: 16,
+    duskSeconds: 12,
     depiction: vault,
   },
 ];
