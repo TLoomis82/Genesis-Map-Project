@@ -10,6 +10,12 @@ import HandoffGlobe from "./HandoffGlobe.tsx";
 // The verses are tier "text". Where the picture goes beyond the words (the divided sky, the vault),
 // a short note under the verse says so and names the source.
 
+const FIRST_LAND_STEP = openingSteps.findIndex((s) => s.sceneId === "day-3");
+
+// For checks and screenshots only: with ?debug in the address, the page exposes a way to jump
+// to a step and run the scene forward without waiting.
+const DEBUG = new URLSearchParams(window.location.search).has("debug");
+
 export default function OpeningPlayer() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const scene = useRef<OpeningScene | null>(null);
@@ -31,6 +37,23 @@ export default function OpeningPlayer() {
     s.snapTo(openingSteps[0].targets);
     s.play();
     scene.current = s;
+    if (DEBUG) {
+      (window as unknown as { genesis: unknown }).genesis = {
+        async go(step: number, seconds: number) {
+          const target = openingSteps[step];
+          setIndex(step);
+          if (step >= FIRST_LAND_STEP - 2) await s.ensureLandscape();
+          s.setTargets(target.targets, {
+            sweepSeconds: target.sweepSeconds,
+            duskSeconds: target.duskSeconds,
+            ascendAfter: target.ascendAfter,
+          });
+          s.debugAdvance(seconds);
+        },
+        advance: (seconds: number) => s.debugAdvance(seconds),
+        info: () => s.debugInfo(),
+      };
+    }
     window.addEventListener("resize", s.resize);
     return () => {
       window.removeEventListener("resize", s.resize);
@@ -39,9 +62,10 @@ export default function OpeningPlayer() {
     };
   }, []);
 
-  // Each step sets where the scene glides to.
+  // Each step sets where the scene glides to. The land of day 3 is built a few steps early.
   useEffect(() => {
     const s = openingSteps[index];
+    if (index >= FIRST_LAND_STEP - 2) void scene.current?.ensureLandscape();
     scene.current?.setTargets(s.targets, { sweepSeconds: s.sweepSeconds, duskSeconds: s.duskSeconds, ascendAfter: s.ascendAfter });
   }, [index]);
 

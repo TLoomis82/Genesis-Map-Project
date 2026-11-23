@@ -41,6 +41,11 @@ const landShape: Depiction = {
   note: "The shape of the land is illustrative. The text does not describe it.",
 };
 
+const growth: Depiction = {
+  badge: "Illustration",
+  note: "The land, the kinds of fruit and the speed of growth are illustrative. The text says the earth brought them forth on the third day.",
+};
+
 const globeView: Depiction = {
   badge: "Placeholder",
   note: "The globe is a modern view of the same land and seas. The continents shown are today's, standing in until the pre-flood land model is added.",
@@ -117,39 +122,39 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-3",
     reference: "Genesis 1:9",
     text: "And God said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so.",
-    targets: { ...openSky, wind: 0.8, land: 1, green: 0, altitude: 7, gaze: -3, veil: 0 },
-    hold: 14,
+    targets: { ...openSky, wind: 0.8, ...SURFACE, land: 1, flight: 0.05, gaze: -5 },
+    hold: 18,
     depiction: landShape,
   },
   {
     sceneId: "day-3",
     reference: "Genesis 1:10",
     text: "And God called the dry land Earth; and the gathering together of the waters called he Seas: and God saw that it was good.",
-    targets: { ...openSky, wind: 0.7, land: 1, green: 0, altitude: 85, gaze: -42, veil: 0 },
-    hold: 12,
+    targets: { ...openSky, wind: 0.7, ...SURFACE, land: 1, flight: 0.145, gaze: -24 },
+    hold: 16,
     depiction: landShape,
   },
   {
     sceneId: "day-3",
     reference: "Genesis 1:11",
     text: "And God said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so.",
-    targets: { ...openSky, wind: 0.7, land: 1, green: 0.45, altitude: 55, gaze: -34, veil: 0 },
-    hold: 13,
-    depiction: landShape,
+    targets: { ...openSky, wind: 0.8, ...SURFACE, land: 1, green: 1, flight: 0.6, gaze: -14 },
+    hold: 26,
+    depiction: growth,
   },
   {
     sceneId: "day-3",
     reference: "Genesis 1:12",
     text: "And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good.",
-    targets: { ...openSky, wind: 0.7, land: 1, green: 1, altitude: 40, gaze: -28, veil: 0 },
-    hold: 12,
-    depiction: landShape,
+    targets: { ...openSky, wind: 0.8, ...SURFACE, land: 1, green: 1, flight: 0.93, gaze: -14 },
+    hold: 24,
+    depiction: growth,
   },
   {
     sceneId: "day-3",
     reference: "Genesis 1:13",
     text: "And the evening and the morning were the third day.",
-    targets: { ...openSky, wind: 0.6, land: 1, green: 1, altitude: 60, gaze: -34, veil: 0 },
+    targets: { ...openSky, wind: 0.6, ...SURFACE, land: 1, green: 1, flight: 1, gaze: -16 },
     hold: 30,
     duskSeconds: 10,
     ascendAfter: 11,

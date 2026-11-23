@@ -78,6 +78,10 @@ Day 3 (1:9-13) first pass was rejected as generic: a noise island with a green c
 - **Light without a sun.** Light has existed since day 1 (1:3) but the sun is not made until day 4, so the scene is lit with a direction but shows no sun disc.
 - **Assets must be free-licensed** and recorded in `ASSETS.md` with their source and license.
 
+Second pass built the same day (`src/opening/landscape/`): a coast and winding valley, a fixed flight route with banking, grass drawn blade by blade in stretches near the view, flower heads, shrubs, and fruit trees (EZ-Tree shapes) that rise, leaf and fruit. Growth runs ahead of the view in layers: the ground greens far ahead, distant trees rise early, and grass and the trees beside the route rise close in. Checked in still screenshots only; motion and frame rate still need judging on the Mac and iPhone. Desktop draws about 2.3 to 2.6 million triangles a frame in the growth scenes; phones get fewer blades and trees and have not been measured.
+
+Still to do on day 3: judge the growth in motion; more natural ground (stones, better textures); shadows; the coast view at 1:10; leftover ripple patterns on the water near the shore; check frame rate on the iPhone and tune counts.
+
 Working method from here: the workspace can now install packages, type check, build and take its own screenshots (software rendering, about 2 fps, so frame rates are still measured on the Mac and iPhone).
 
 ## Open items

@@ -13,15 +13,18 @@
 //   dusk   the light fades to night and returns once: evening, then morning      (Gen 1:8, 1:13)
 //   ascend after a delay, the view rises high above the land and whitens, ready to fade to the globe
 //
-// Day 3 adds:
+// Day 3 adds the land (see ./landscape), flown over along a fixed route:
 //   land      0 = under the water, 1 = fully risen                           (Gen 1:9)
-//   green     0 = bare rock, 1 = grass, herbs and trees have spread          (Gen 1:11-12)
-//   altitude  height of the view above the water
+//   green     0 = bare ground, 1 = growth runs ahead of the view             (Gen 1:11-12)
+//   flight    how far along the route the view is, 0..1. It moves at a steady, limited speed.
+//   altitude  extra height above the route (used for the final rise)
 //   gaze      where the view looks: height of the look-at point, 100 units ahead, relative to the view
 //   veil      0 = clear, 1 = the whole frame is a bright haze (used for the fade to the globe)
 // The land's shape is illustrative only: the text does not describe it.
 
 import * as THREE from "three";
+import { buildFlight } from "./landscape/terrain.ts";
+import type { Landscape } from "./landscape/index.ts";
 
 export interface OpeningTargets {
   light: number;
@@ -31,6 +34,7 @@ export interface OpeningTargets {
   vault: number;
   land: number;
   green: number;
+  flight: number;
   altitude: number;
   gaze: number;
   veil: number;
@@ -45,7 +49,7 @@ export interface OpeningEvents {
   ascendAfter?: number;
 }
 
-export const SURFACE = { land: 0, green: 0, altitude: 3.2, gaze: -10, veil: 0 } as const;
+export const SURFACE = { land: 0, green: 0, flight: 0, altitude: 0, gaze: -10, veil: 0 } as const;
 
 export const VAULT_CLOSED = -0.05;
 export const VAULT_OPEN = 1.2;
@@ -59,8 +63,6 @@ const common = /* glsl */ `
   uniform float uDivide;
   uniform float uDivideAngle;
   uniform float uVault;
-  uniform float uLand;
-  uniform float uGreen;
   uniform float uVeil;
   uniform vec3 uCamera;
 
@@ -139,26 +141,6 @@ const common = /* glsl */ `
     return 1.0 - exp(-dist * mix(0.0012, 0.020, uHaze));
   }
 
-  // The land. Its shape is illustrative: ridged noise inside an oval, rising out of the water.
-  float landNoise(vec2 p) {
-    float n = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 4; i++) {
-      n += a * (1.0 - abs(2.0 * vnoise(p) - 1.0));
-      p = p * 2.03 + 17.1;
-      a *= 0.5;
-    }
-    return n / 0.9375;
-  }
-
-  float landHeight(vec2 p) {
-    vec2 c = (p - vec2(0.0, -640.0)) / vec2(680.0, 430.0);
-    float inside = 1.0 - smoothstep(0.25, 1.0, length(c));
-    float n = landNoise(p * 0.006);
-    float raw = (0.25 + 0.75 * n * n) * inside;
-    return raw * 150.0 - 24.0 - (1.0 - uLand) * 140.0;
-  }
-
   void addWave(vec2 p, vec2 dir, float len, float amp, float speed, inout float h, inout vec2 slope) {
     float k = 6.2831853 / len;
     float phase = dot(p, dir) * k + uTime * speed;
@@ -179,8 +161,8 @@ const common = /* glsl */ `
   void swellShaded(vec2 p, float dist, inout float h, inout vec2 slope) {
     addWave(p, vec2(0.96, 0.28), 83.0, 1.10, 0.55, h, slope);
     addWave(p, vec2(-0.37, 0.93), 47.0, 0.62 * (1.0 - smoothstep(350.0, 1100.0, dist)), 0.70, h, slope);
-    addWave(p, vec2(0.76, -0.65), 23.0, 0.30 * (1.0 - smoothstep(140.0, 600.0, dist)), 0.95, h, slope);
-    addWave(p, vec2(-0.98, -0.20), 11.0, 0.13 * (1.0 - smoothstep(70.0, 320.0, dist)), 1.30, h, slope);
+    addWave(p, vec2(0.76, -0.65), 23.0, 0.30 * (1.0 - smoothstep(90.0, 380.0, dist)), 0.95, h, slope);
+    addWave(p, vec2(-0.98, -0.20), 11.0, 0.13 * (1.0 - smoothstep(35.0, 170.0, dist)), 1.30, h, slope);
   }
 
   // Small surface texture: irregular, so it never forms stripes. Shading only.
@@ -204,7 +186,8 @@ const waterVertex = /* glsl */ `
   varying vec3 vWorld;
 
   void main() {
-    vec3 pos = position;
+    // The water mesh follows the view, so waves are worked out from where each point is in the world.
+    vec3 pos = (modelMatrix * vec4(position, 1.0)).xyz;
     float h = 0.0;
     vec2 slope = vec2(0.0);
     swell(pos.xz, h, slope);
@@ -227,7 +210,7 @@ const waterFragment = /* glsl */ `
     float h = 0.0;
     vec2 slope = vec2(0.0);
     swellShaded(vWorld.xz, dist, h, slope);
-    slope += chopSlope(vWorld.xz) * 0.42 * (1.0 - smoothstep(25.0, 160.0, dist));
+    slope += chopSlope(vWorld.xz) * 0.42 * (1.0 - smoothstep(12.0, 85.0, dist));
     vec3 normal = normalize(vec3(-slope.x * uWind, 1.0, -slope.y * uWind));
 
     vec3 reflected = reflect(-view, normal);
@@ -244,63 +227,11 @@ const waterFragment = /* glsl */ `
   }
 `;
 
-const landVertex = /* glsl */ `
-  ${common}
-  varying vec3 vWorld;
-
-  void main() {
-    vec3 pos = position;
-    pos.y = landHeight(pos.xz);
-    vWorld = pos;
-    gl_Position = projectionMatrix * viewMatrix * vec4(pos, 1.0);
-  }
-`;
-
-const landFragment = /* glsl */ `
-  ${common}
-  varying vec3 vWorld;
-
-  void main() {
-    vec2 p = vWorld.xz;
-    float y = vWorld.y;
-
-    // Normal from the height function itself, so the land is smooth whatever the mesh.
-    float e = 2.5;
-    float hx = landHeight(p + vec2(e, 0.0)) - landHeight(p - vec2(e, 0.0));
-    float hz = landHeight(p + vec2(0.0, e)) - landHeight(p - vec2(0.0, e));
-    vec3 normal = normalize(vec3(-hx, 2.0 * e, -hz));
-
-    vec3 toPoint = vWorld - uCamera;
-    float dist = length(toPoint);
-    vec3 dir = toPoint / dist;
-    float l = localLight(dir);
-
-    // Bare rock: darker where it is still wet near the waterline, paler on the heights.
-    float grain = vnoise(p * 0.15);
-    vec3 rock = mix(vec3(0.16, 0.14, 0.13), vec3(0.44, 0.40, 0.35), grain * 0.6 + 0.4 * smoothstep(20.0, 110.0, y));
-    rock *= mix(1.0, 0.45, 1.0 - smoothstep(0.0, 7.0, y));
-
-    // Green spreads in patches from the lowlands, on gentler slopes, and stays off the peaks.
-    float cover = vnoise(p * 0.02) * 0.6 + vnoise(p * 0.07) * 0.4;
-    float spread = smoothstep(cover - 0.15, cover + 0.15, uGreen * 1.3);
-    float fertile = smoothstep(0.62, 0.85, normal.y) * (1.0 - smoothstep(55.0, 100.0, y)) * smoothstep(1.5, 6.0, y);
-    vec3 green = mix(vec3(0.07, 0.19, 0.05), vec3(0.24, 0.40, 0.12), vnoise(p * 0.11));
-    vec3 color = mix(rock, green, spread * fertile);
-
-    // Light from the whole sky: there is no sun until day 4.
-    float skyLight = mix(0.35, 1.0, smoothstep(0.3, 1.0, normal.y));
-    color *= l * skyLight * 1.5;
-
-    color = mix(color, horizonColor(dir), mistAmount(dist));
-    gl_FragColor = vec4(applyVeil(color, dir), 1.0);
-  }
-`;
-
 const skyVertex = /* glsl */ `
   varying vec3 vDir;
   void main() {
     vDir = position;
-    gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
   }
 `;
 
@@ -329,6 +260,9 @@ function buildWaterGeometry(): THREE.BufferGeometry {
   return geometry;
 }
 
+/** Fastest the flight moves, as a share of the route per second (about 24 metres a second). */
+const FLIGHT_SPEED = 0.016;
+
 const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
 // With the camera looking toward -z: at angle 0 the boundary runs straight ahead
@@ -348,8 +282,6 @@ export class OpeningScene {
     uDivide: { value: 0 },
     uDivideAngle: { value: SWEEP_FROM },
     uVault: { value: VAULT_CLOSED },
-    uLand: { value: 0 },
-    uGreen: { value: 0 },
     uVeil: { value: 0 },
     uCamera: { value: new THREE.Vector3(0, 3.2, 0) },
   };
@@ -361,10 +293,22 @@ export class OpeningScene {
   private dusk: { start: number; seconds: number } | null = null;
   private dim = 0; // 0 = full light, 1 = night; glides like everything else
   private ascendAt: number | null = null;
+  private flight = buildFlight();
+  private flightSpeed = 0;
+  private landscape: Landscape | null = null;
+  private landscapeLoading: Promise<void> | null = null;
+  private disposed = false;
+  private water!: THREE.Mesh;
+  private sky!: THREE.Mesh;
+  private fog = new THREE.FogExp2(0x000000, 0.0011);
+  private fogDisplay = new THREE.Color();
+  private eye = new THREE.Vector3();
+  private heading = new THREE.Vector3();
+  private headingAhead = new THREE.Vector3();
+  private lookAt = new THREE.Vector3();
   private time = 0;
   private running = false;
   private frame = 0;
-  private started = performance.now();
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -387,16 +331,32 @@ export class OpeningScene {
     sky.frustumCulled = false;
     sky.renderOrder = -1;
 
-    const landGeometry = new THREE.PlaneGeometry(1500, 1000, 240, 160);
-    landGeometry.rotateX(-Math.PI / 2);
-    landGeometry.translate(0, 0, -640);
-    const landMaterial = new THREE.ShaderMaterial({ vertexShader: landVertex, fragmentShader: landFragment, uniforms: this.uniforms });
-    const land = new THREE.Mesh(landGeometry, landMaterial);
-    land.frustumCulled = false;
-
-    this.scene.add(sky, water, land);
-    this.disposables.push(waterGeometry, waterMaterial, skyGeometry, skyMaterial, landGeometry, landMaterial);
+    this.water = water;
+    this.sky = sky;
+    this.scene.add(sky, water);
+    this.scene.fog = this.fog; // applies to the land, grass and trees; water and sky do their own mist
+    this.disposables.push(waterGeometry, waterMaterial, skyGeometry, skyMaterial);
     this.resize();
+  }
+
+  /**
+   * Build the land, grass and trees of day 3. Heavy, so it is done once, shortly before it is needed.
+   * Phones get fewer blades and trees.
+   */
+  ensureLandscape(): Promise<void> {
+    // The code for the land (including the tree library) is fetched only now, so the opening itself loads fast.
+    this.landscapeLoading ??= import("./landscape/index.ts").then(({ Landscape }) => {
+      if (this.disposed) return;
+      const small = Math.min(window.innerWidth, window.innerHeight) < 600;
+      this.landscape = new Landscape(
+        this.flight,
+        small
+          ? { grassStretches: 60, bladesPerStretch: 9000, trees: 50, herbs: 90 }
+          : { grassStretches: 60, bladesPerStretch: 22000, trees: 84, herbs: 170 },
+      );
+      this.scene.add(this.landscape.group);
+    });
+    return this.landscapeLoading;
   }
 
   resize = () => {
@@ -430,6 +390,7 @@ export class OpeningScene {
     this.dusk = null;
     this.ascendAt = null;
     this.dim = 0;
+    this.flightSpeed = 0;
     this.angle = SWEEP_FROM;
   }
 
@@ -439,76 +400,137 @@ export class OpeningScene {
     let last = performance.now();
     const tick = (now: number) => {
       if (!this.running) return;
-      const dt = Math.min((now - last) / 1000, 0.1);
+      this.advance(Math.min((now - last) / 1000, 0.1));
       last = now;
-      this.time = (now - this.started) / 1000;
-      const time = this.time;
-
-      // One eased pass of the boundary; when it ends, the sky becomes fully light.
-      if (this.sweep) {
-        const t = Math.min((time - this.sweep.start) / this.sweep.seconds, 1);
-        this.angle = SWEEP_FROM + (SWEEP_TO - SWEEP_FROM) * smoother(t);
-        if (t >= 1) {
-          this.sweep = null;
-          this.target.divide = 0;
-        }
-      }
-
-      // The ascent: rise high above the land, look down, and let the bright haze close in.
-      if (this.ascendAt !== null && time >= this.ascendAt) {
-        this.ascendAt = null;
-        this.target.altitude = 1500;
-        this.target.gaze = -220;
-        this.target.veil = 1;
-      }
-
-      // Evening and morning: the dim level rises to night and falls back, then the event ends.
-      let dimTarget = 0;
-      if (this.dusk) {
-        const t = Math.min((time - this.dusk.start) / this.dusk.seconds, 1);
-        dimTarget = Math.pow(Math.sin(Math.PI * t), 2);
-        if (t >= 1) this.dusk = null;
-      }
-      this.dim += (dimTarget - this.dim) * (1 - Math.exp(-dt * 2.5));
-
-      // Glide each value toward its target: smooth start, smooth stop, no jumps.
-      const ease = 1 - Math.exp(-dt * 0.45);
-      const c = this.current;
-      const g = this.target;
-      c.light += (g.light - c.light) * ease;
-      c.haze += (g.haze - c.haze) * ease;
-      c.wind += (g.wind - c.wind) * ease;
-      c.divide += (g.divide - c.divide) * ease;
-      c.vault += (g.vault - c.vault) * ease;
-      c.land += (g.land - c.land) * ease;
-      c.green += (g.green - c.green) * ease;
-      c.altitude += (g.altitude - c.altitude) * ease;
-      c.gaze += (g.gaze - c.gaze) * ease;
-      c.veil += (g.veil - c.veil) * ease;
-
-      const u = this.uniforms;
-      u.uTime.value = time;
-      u.uLight.value = c.light * (1 - 0.9 * this.dim);
-      u.uHaze.value = c.haze;
-      u.uWind.value = c.wind;
-      u.uDivide.value = c.divide;
-      u.uDivideAngle.value = this.angle;
-      u.uVault.value = c.vault;
-      u.uLand.value = c.land;
-      u.uGreen.value = c.green;
-      u.uVeil.value = c.veil;
-
-      // A slow drift, as if floating: continuous, never re-aimed.
-      const cam = u.uCamera.value;
-      cam.set(0, c.altitude + Math.sin(time * 0.45) * 0.3 * c.wind, 0);
-      this.camera.position.copy(cam);
-      this.camera.lookAt(Math.sin(time * 0.11) * 6, cam.y + c.gaze, -100);
-      this.camera.rotation.z = Math.sin(time * 0.31) * 0.012 * c.wind;
-
       this.renderer.render(this.scene, this.camera);
       this.frame = requestAnimationFrame(tick);
     };
     this.frame = requestAnimationFrame(tick);
+  }
+
+  /** For checks: what the last frame cost to draw. */
+  debugInfo() {
+    const r = this.renderer.info.render;
+    return { triangles: r.triangles, drawCalls: r.calls };
+  }
+
+  /** For checks and screenshots: run the scene forward by some seconds at once, then draw one frame. */
+  debugAdvance(seconds: number) {
+    const stepSize = 1 / 30;
+    for (let t = 0; t < seconds; t += stepSize) this.advance(stepSize);
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Move everything forward by dt seconds. */
+  private advance(dt: number) {
+    this.time += dt;
+    const time = this.time;
+
+    // One eased pass of the boundary; when it ends, the sky becomes fully light.
+    if (this.sweep) {
+      const t = Math.min((time - this.sweep.start) / this.sweep.seconds, 1);
+      this.angle = SWEEP_FROM + (SWEEP_TO - SWEEP_FROM) * smoother(t);
+      if (t >= 1) {
+        this.sweep = null;
+        this.target.divide = 0;
+      }
+    }
+
+    // The ascent: rise high above the land, look down, and let the bright haze close in.
+    if (this.ascendAt !== null && time >= this.ascendAt) {
+      this.ascendAt = null;
+      this.target.altitude = 1500;
+      this.target.gaze = -220;
+      this.target.veil = 1;
+    }
+
+    // Evening and morning: the dim level rises to night and falls back, then the event ends.
+    let dimTarget = 0;
+    if (this.dusk) {
+      const t = Math.min((time - this.dusk.start) / this.dusk.seconds, 1);
+      dimTarget = Math.pow(Math.sin(Math.PI * t), 2);
+      if (t >= 1) this.dusk = null;
+    }
+    this.dim += (dimTarget - this.dim) * (1 - Math.exp(-dt * 2.5));
+
+    // Glide each value toward its target: smooth start, smooth stop, no jumps.
+    const ease = 1 - Math.exp(-dt * 0.45);
+    const slow = 1 - Math.exp(-dt * 0.2);
+    const c = this.current;
+    const g = this.target;
+    c.light += (g.light - c.light) * ease;
+    c.haze += (g.haze - c.haze) * ease;
+    c.wind += (g.wind - c.wind) * ease;
+    c.divide += (g.divide - c.divide) * ease;
+    c.vault += (g.vault - c.vault) * ease;
+    c.land += (g.land - c.land) * slow; // the land rises slowly
+    c.green += (g.green - c.green) * ease;
+    c.altitude += (g.altitude - c.altitude) * ease;
+    c.gaze += (g.gaze - c.gaze) * ease;
+    c.veil += (g.veil - c.veil) * ease;
+
+    // The flight moves at a steady, limited speed, easing in and out, however far away its target is.
+    const wanted = THREE.MathUtils.clamp((g.flight - c.flight) * 0.7, -FLIGHT_SPEED, FLIGHT_SPEED);
+    this.flightSpeed += (wanted - this.flightSpeed) * (1 - Math.exp(-dt * 1.4));
+    c.flight = THREE.MathUtils.clamp(c.flight + this.flightSpeed * dt, 0, 1);
+
+    const light = c.light * (1 - 0.9 * this.dim);
+    const u = this.uniforms;
+    u.uTime.value = time;
+    u.uLight.value = light;
+    u.uHaze.value = c.haze;
+    u.uWind.value = c.wind;
+    u.uDivide.value = c.divide;
+    u.uDivideAngle.value = this.angle;
+    u.uVault.value = c.vault;
+    u.uVeil.value = c.veil;
+
+    // The view: a point on the route, looking where the route is about to go.
+    // On the water (flight = 0) this is the same floating view as days 1 and 2.
+    const curve = this.flight.curve;
+    curve.getPointAt(c.flight, this.eye);
+    curve.getTangentAt(Math.min(c.flight + 0.012, 1), this.heading);
+    curve.getTangentAt(Math.min(c.flight + 0.04, 1), this.headingAhead);
+    this.heading.y *= 0.5;
+    this.heading.normalize();
+
+    const moving = THREE.MathUtils.clamp(Math.abs(this.flightSpeed) / FLIGHT_SPEED, 0, 1);
+    const floating = 1 - THREE.MathUtils.smoothstep(c.flight, 0.0, 0.05);
+    this.eye.y += c.altitude + Math.sin(time * 0.45) * 0.3 * c.wind * (0.25 + 0.75 * floating);
+    this.camera.position.copy(this.eye);
+    u.uCamera.value.copy(this.eye);
+
+    this.lookAt.copy(this.eye).addScaledVector(this.heading, 100);
+    this.lookAt.x += Math.sin(time * 0.11) * 6 * floating;
+    this.lookAt.y += c.gaze;
+    this.camera.up.set(0, 1, 0);
+    this.camera.lookAt(this.lookAt);
+
+    // Bank into turns like something flying: roll follows how fast the heading is changing.
+    const turn =
+      Math.atan2(this.headingAhead.x, -this.headingAhead.z) - Math.atan2(this.heading.x, -this.heading.z);
+    const bank = THREE.MathUtils.clamp(-turn * 1.6, -0.3, 0.3) * moving;
+    this.camera.rotateZ(bank + Math.sin(time * 0.31) * 0.012 * c.wind);
+
+    // Water and sky travel with the view so their edges are never reached.
+    this.water.position.set(this.eye.x, 0, this.eye.z);
+    this.sky.position.copy(this.eye);
+
+    // Fog for the land matches the horizon colour, and thickens into the veil at the end.
+    this.fogDisplay.setRGB(0.8 * light, 0.87 * light, 0.95 * light);
+    this.fog.color.setRGB(this.fogDisplay.r, this.fogDisplay.g, this.fogDisplay.b, THREE.SRGBColorSpace);
+    this.fog.density = 0.0011 + c.haze * 0.01 + c.veil * c.veil * 0.03;
+
+    this.landscape?.update({
+      time,
+      land: c.land,
+      green: c.green,
+      flight: c.flight,
+      light,
+      wind: c.wind,
+      fogColor: this.fogDisplay,
+      fogDensity: this.fog.density,
+    });
   }
 
   pause() {
@@ -518,7 +540,9 @@ export class OpeningScene {
 
   dispose() {
     this.pause();
+    this.disposed = true;
     for (const d of this.disposables) d.dispose();
+    this.landscape?.dispose();
     this.renderer.dispose();
   }
 }
