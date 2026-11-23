@@ -6,8 +6,11 @@
 //   - a dot at each feature in src/data/features.ts that has coordinates
 // If the rings and dots sit where they should and stay put while the globe spins, the test passes.
 //
-// Assumption being tested: on globe, Mapbox hands custom layers a matrix that expects
-// earth-centred coordinates on a sphere of radius EXTENT / (2 * PI), with y pointing south.
+// How Mapbox draws custom layers on the globe (read from its source, src/render/draw_custom.ts):
+// the matrix always expects mercator coordinates, and a second matrix converts earth-centred
+// globe coordinates (sphere of radius EXTENT / (2 * PI), y pointing south) into mercator.
+// So the camera is: matrix x globeToMercator. This holds below zoom 5; between zoom 5 and 6
+// Mapbox blends the globe into flat mercator, which this test does not handle yet.
 
 import * as THREE from "three";
 import type mapboxgl from "mapbox-gl";
@@ -51,6 +54,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
 
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
+  const globeToMercatorMatrix = new THREE.Matrix4();
   const materials: THREE.Material[] = [];
   let renderer: THREE.WebGLRenderer | null = null;
   let map: mapboxgl.Map | null = null;
@@ -99,7 +103,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
 
     // Mapbox passes extra arguments on globe: projection, projection-to-mercator matrix,
     // transition (0 = full globe, 1 = full mercator), centre, pixels per metre.
-    render(_gl: WebGL2RenderingContext, matrix: number[], projection?: { name?: string }, _toMercator?: number[], transition?: number) {
+    render(_gl: WebGL2RenderingContext, matrix: number[], projection?: { name?: string }, globeToMercator?: number[], transition?: number) {
       debug.renderCalls += 1;
       debug.argCount = arguments.length;
       debug.projection = projection?.name ?? "not passed";
@@ -107,6 +111,9 @@ export function createGlobeTestLayer(): GlobeTestLayer {
       if (!renderer || !map) return;
       try {
         camera.projectionMatrix.fromArray(matrix);
+        if (projection?.name === "globe" && globeToMercator) {
+          camera.projectionMatrix.multiply(globeToMercatorMatrix.fromArray(globeToMercator));
+        }
         renderer.resetState();
         renderer.render(scene, camera);
       } catch (e) {
