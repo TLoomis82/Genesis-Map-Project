@@ -21,7 +21,7 @@ export default function App() {
 
   const [view, setView] = useState<View>("globe");
   const [lit, setLit] = useState(false);
-  const [depth, setDepth] = useState(true);
+  const [depth, setDepth] = useState(false);
   const [fps, setFps] = useState(0);
   const [readout, setReadout] = useState("waiting for the map");
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export default function App() {
               ? `layer error: ${d.error}`
               : `layer draws: ${d.renderCalls} | args: ${d.argCount} | projection: ${d.projection} | transition: ${
                   d.transition === null ? "n/a" : d.transition.toFixed(2)
-                } | dots: ${d.markers}`,
+                } | horizon plane: ${d.horizonPlane ? "yes" : "no"} | dots: ${d.markers}`,
           );
         }
       }

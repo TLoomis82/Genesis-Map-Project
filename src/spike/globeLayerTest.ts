@@ -11,6 +11,10 @@
 // globe coordinates (sphere of radius EXTENT / (2 * PI), y pointing south) into mercator.
 // So the camera is: matrix x globeToMercator. This holds below zoom 5; between zoom 5 and 6
 // Mapbox blends the globe into flat mercator, which this test does not handle yet.
+//
+// Hiding the far side: Mapbox also passes a horizon plane (renderParameters.globeClippingPlane).
+// A point faces the camera when n . p + d >= 0. The layer clips against that plane instead of
+// relying on the depth buffer, which hid the rings on the near side too in the first run.
 
 import * as THREE from "three";
 import type mapboxgl from "mapbox-gl";
@@ -31,7 +35,7 @@ function lngLatToGlobe(lng: number, lat: number, radius = GLOBE_RADIUS): THREE.V
 
 function ring(points: THREE.Vector3[], color: number): THREE.LineLoop {
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  return new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color }));
+  return new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color, depthTest: false }));
 }
 
 export interface LayerDebug {
@@ -39,6 +43,7 @@ export interface LayerDebug {
   argCount: number;
   projection: string;
   transition: number | null;
+  horizonPlane: boolean;
   markers: number;
   error: string | null;
 }
@@ -50,11 +55,13 @@ export interface GlobeTestLayer {
 }
 
 export function createGlobeTestLayer(): GlobeTestLayer {
-  const debug: LayerDebug = { renderCalls: 0, argCount: 0, projection: "unknown", transition: null, markers: 0, error: null };
+  const debug: LayerDebug = { renderCalls: 0, argCount: 0, projection: "unknown", transition: null, horizonPlane: false, markers: 0, error: null };
 
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
   const globeToMercatorMatrix = new THREE.Matrix4();
+  // Horizon plane, updated every frame. Starts as "everything visible".
+  const horizon = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e9);
   const materials: THREE.Material[] = [];
   let renderer: THREE.WebGLRenderer | null = null;
   let map: mapboxgl.Map | null = null;
@@ -77,7 +84,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
   const dotGeometry = new THREE.SphereGeometry(GLOBE_RADIUS * 0.012, 16, 12);
   for (const f of features) {
     if (!f.approxCenter) continue;
-    const material = new THREE.MeshBasicMaterial({ color: f.tier === "text" ? 0xffffff : 0xffc94d });
+    const material = new THREE.MeshBasicMaterial({ color: f.tier === "text" ? 0xffffff : 0xffc94d, depthTest: false });
     const dot = new THREE.Mesh(dotGeometry, material);
     dot.position.copy(lngLatToGlobe(f.approxCenter[0], f.approxCenter[1], lift));
     dot.name = f.id;
@@ -85,6 +92,8 @@ export function createGlobeTestLayer(): GlobeTestLayer {
     materials.push(material);
     debug.markers += 1;
   }
+
+  for (const mat of materials) mat.clippingPlanes = [horizon];
 
   const layer = {
     id: "m0-globe-test",
@@ -96,6 +105,7 @@ export function createGlobeTestLayer(): GlobeTestLayer {
       try {
         renderer = new THREE.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true });
         renderer.autoClear = false;
+        renderer.localClippingEnabled = true;
       } catch (e) {
         debug.error = e instanceof Error ? e.message : String(e);
       }
@@ -109,6 +119,17 @@ export function createGlobeTestLayer(): GlobeTestLayer {
       debug.projection = projection?.name ?? "not passed";
       debug.transition = typeof transition === "number" ? transition : null;
       if (!renderer || !map) return;
+      // Eighth argument: per-frame render parameters, including the globe horizon plane.
+      const params = arguments[7] as { globeClippingPlane?: readonly number[] | null } | undefined;
+      const plane = params?.globeClippingPlane;
+      debug.horizonPlane = Array.isArray(plane);
+      if (plane && plane.length === 4) {
+        horizon.normal.set(plane[0], plane[1], plane[2]);
+        horizon.constant = plane[3];
+      } else {
+        horizon.normal.set(0, 0, 1);
+        horizon.constant = 1e9;
+      }
       try {
         camera.projectionMatrix.fromArray(matrix);
         if (projection?.name === "globe" && globeToMercator) {
