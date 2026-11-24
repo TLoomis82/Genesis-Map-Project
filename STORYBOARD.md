@@ -144,8 +144,8 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 ### Eden 1: the man from the dust (Gen 2:7)
 - **Status: built, first cut, hand-drawn** (`src/illustrated/EdenMan.tsx`). Four moments (dust lifts, it gathers, breath
   enters, he sits up) shown as a strip of small drawings that is also the control: tap a moment to go to it, or
-  drag across the picture to move through the forming by hand. The figure is still very simple and needs more
-  human shape. This strip of moments is the pattern for every scene.
+  drag across the picture to move through the forming by hand. The figure now has legs, a chest that rises with the
+  first breath, a neck, an arm that props him as he sits up, and a face turned upward; the scenery draws itself in. This strip of moments is the pattern for every scene.
 - **Watch:** close on bare ground. Dust lifts and draws together into a human shape lying on the earth. Light enters
   at the face. The chest rises. The figure sits up.
 - **Touch:** none during the forming. Afterward, turn the view around him.

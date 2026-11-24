@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
+import { Drawn } from "./kit.tsx";
 
 // Eden 1: the man formed from the dust (Genesis 2:7), as a live hand-drawn scene.
 //
@@ -53,7 +54,9 @@ export default function EdenMan({ onHome }: Props) {
       flicks,
       bands: [band(300, 2), band(470, 3), band(560, 4)],
       hills: `${handLine(rolling(-200, 1800, 612, 26, 7), 7, 4)} L 1800 780 L -200 780 Z`,
+      hillLine: handLine(rolling(-200, 1800, 612, 26, 7), 7, 4),
       ground: `${handLine(rolling(-200, 1800, 722, 8, 9, 80), 9, 3)} L 1800 2600 L -200 2600 Z`,
+      groundLine: handLine(rolling(-200, 1800, 722, 8, 9, 80), 9, 3),
     };
   }, []);
 
@@ -179,8 +182,9 @@ export default function EdenMan({ onHome }: Props) {
         )}
 
         {/* Bare hills: no plant of the field was yet in the earth (2:5). */}
-        <path d={scenery.hills} fill="#6b4762" stroke={INK} strokeWidth="4" strokeLinejoin="round" />
-        <path d={scenery.hills} fill="url(#hatch-b)" />
+        <path d={scenery.hills} fill="#6b4762" opacity={ease(t, 0.1, 0.45)} />
+        <path d={scenery.hills} fill="url(#hatch-b)" opacity={ease(t, 0.25, 0.6)} />
+        <Drawn d={scenery.hillLine} progress={ease(t, 0, 0.35)} stroke={INK} strokeWidth={4} />
         {/* The mist that went up from the earth (2:6), drifting. */}
         {[170, 430, 1260, 1470].map((x, i) => (
           <g key={x} opacity="0.7" transform={`translate(${Math.sin(t * 0.6 + i) * 14} 0)`}>
@@ -190,8 +194,9 @@ export default function EdenMan({ onHome }: Props) {
         ))}
 
         {/* The ground. */}
-        <path d={scenery.ground} fill="#9a6240" stroke={INK} strokeWidth="5" strokeLinejoin="round" />
-        <rect x="-200" y="790" width="2000" height="1900" fill="url(#hatch-a)" />
+        <path d={scenery.ground} fill="#9a6240" opacity={ease(t, 0.05, 0.4)} />
+        <rect x="-200" y="790" width="2000" height="1900" fill="url(#hatch-a)" opacity={ease(t, 0.3, 0.7)} />
+        <Drawn d={scenery.groundLine} progress={ease(t, 0.05, 0.45)} stroke={INK} strokeWidth={5} />
         {scenery.flicks.map((f, i) => (
           <path key={i} d={`M ${f.x} ${f.y} l ${f.l} ${f.k}`} stroke={INK} strokeWidth="2" opacity="0.38" strokeLinecap="round" />
         ))}
@@ -205,9 +210,9 @@ export default function EdenMan({ onHome }: Props) {
 
         {/* The shape before it is solid: a dotted line where the body will be. */}
         <g opacity={outline} fill="none" stroke={CREAM} strokeWidth="7" strokeLinecap="round" strokeDasharray="4 16">
-          <path d="M 585 706 C 660 690 730 680 800 676 C 880 660 940 640 990 628" />
-          <path d="M 585 726 C 670 734 740 732 800 728 C 870 716 930 700 990 676" />
-          <circle cx={HEAD[0]} cy={HEAD[1]} r="42" />
+          <path d="M 590 700 L 700 690 L 708 632 L 800 684 C 880 660 940 640 990 628" />
+          <path d="M 590 730 C 670 734 740 732 800 730 C 870 716 930 700 990 676" />
+          <circle cx={HEAD[0]} cy={HEAD[1]} r="40" />
         </g>
 
         {/* The dust: lying, lifting, and drawing into the body. */}
@@ -222,17 +227,22 @@ export default function EdenMan({ onHome }: Props) {
           })}
         </g>
 
-        {/* The figure of light. The legs stay on the ground; the body and head rise when he sits up. */}
-        <g opacity={solid} strokeLinecap="round" strokeLinejoin="round" transform={`translate(${jitter(0) * 0.6} ${jitter(1) * 0.6})`}>
-          <path d={`M 590 716 L ${HIP[0]} ${HIP[1] + 6}`} stroke={INK} strokeWidth="50" />
-          <path d={`M 590 716 L ${HIP[0]} ${HIP[1] + 6}`} stroke={CREAM} strokeWidth="40" />
+        {/* The figure of light, in profile, head to the right. The legs stay on the ground; the body and
+            head rise when he sits up, and the arm stays down to prop him. */}
+        <g opacity={solid} strokeLinecap="round" strokeLinejoin="round" fill="none" transform={`translate(${jitter(0) * 0.6} ${jitter(1) * 0.6})`}>
+          {/* far leg, straight */}
+          <path d="M 800 708 L 600 716 l -12 -20" stroke={INK} strokeWidth="40" />
+          <path d="M 800 708 L 600 716 l -12 -20" stroke={CREAM} strokeWidth="31" />
+          {/* near leg, knee raised */}
+          <path d="M 800 708 L 708 650 L 652 716 l -22 2" stroke={INK} strokeWidth="42" />
+          <path d="M 800 708 L 708 650 L 652 716 l -22 2" stroke={CREAM} strokeWidth="33" />
           <g transform={`rotate(${-74 * rise} ${HIP[0]} ${HIP[1]})`}>
             {/* Rays around the head once he lives: drawn, and never quite still. */}
             <g opacity={alive} transform={`rotate(${jitter(2) * 3} ${HEAD[0]} ${HEAD[1]})`}>
               {Array.from({ length: 20 }, (_, k) => {
                 const a = (k / 20) * Math.PI * 2;
-                const r0 = 62 + (k % 2) * 8;
-                const r1 = 100 + ((k + boil) % 3) * 20;
+                const r0 = 60 + (k % 2) * 8;
+                const r1 = 98 + ((k + boil) % 3) * 20;
                 return (
                   <path
                     key={k}
@@ -243,10 +253,20 @@ export default function EdenMan({ onHome }: Props) {
                 );
               })}
             </g>
-            <path d={`M ${HIP[0]} ${HIP[1]} L ${SHOULDER[0]} ${SHOULDER[1]}`} stroke={INK} strokeWidth="62" />
-            <path d={`M ${HIP[0]} ${HIP[1]} L ${SHOULDER[0]} ${SHOULDER[1]}`} stroke={CREAM} strokeWidth="52" />
-            {/* The chest rises with the first breath. */}
-            <circle cx={HEAD[0]} cy={HEAD[1]} r={42 + Math.sin(clamp01(alive) * Math.PI) * 3} fill={CREAM} stroke={INK} strokeWidth="5" />
+            {/* body: waist to shoulders, wider at the chest, which rises with the first breath */}
+            <path d={`M ${HIP[0]} ${HIP[1]} L ${SHOULDER[0] - 14} ${SHOULDER[1] + 6}`} stroke={INK} strokeWidth="56" />
+            <ellipse cx="938" cy="662" rx={50 + Math.sin(clamp01(alive) * Math.PI) * 4} ry={36 + Math.sin(clamp01(alive) * Math.PI) * 5} transform="rotate(-17 938 662)" fill={CREAM} stroke={INK} strokeWidth="5" />
+            <path d={`M ${HIP[0]} ${HIP[1]} L ${SHOULDER[0] - 14} ${SHOULDER[1] + 6}`} stroke={CREAM} strokeWidth="46" />
+            {/* neck and head, with the line of a face turned upward */}
+            <path d={`M ${SHOULDER[0]} ${SHOULDER[1]} L ${HEAD[0] - 20} ${HEAD[1] + 6}`} stroke={INK} strokeWidth="30" />
+            <path d={`M ${SHOULDER[0]} ${SHOULDER[1]} L ${HEAD[0] - 20} ${HEAD[1] + 6}`} stroke={CREAM} strokeWidth="21" />
+            <path d={`M ${HEAD[0] + 2} ${HEAD[1] - 36} q 16 -16 22 4`} fill={CREAM} stroke={INK} strokeWidth="5" />
+            <circle cx={HEAD[0]} cy={HEAD[1]} r="38" fill={CREAM} stroke={INK} strokeWidth="5" />
+            {/* arm: it swings against the body's turn, so the hand stays on the ground */}
+            <g transform={`rotate(${66 * rise} 960 672)`}>
+              <path d="M 960 672 L 892 716 L 836 722" stroke={INK} strokeWidth="27" />
+              <path d="M 960 672 L 892 716 L 836 722" stroke={CREAM} strokeWidth="19" />
+            </g>
           </g>
         </g>
       </svg>

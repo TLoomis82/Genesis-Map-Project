@@ -269,3 +269,21 @@ Still to do in M3:
   playable story where a scene exists. `?view=story` or `?debug` opens the story directly.
 - Direction update (late 2026-11-23): the detailed globe is the hub and stays realistic; every event scene, and the
   creation days before the globe exists, are hand-drawn "on the fly" and interactive. See the top of `STORYBOARD.md`.
+
+## Overnight work, 2026-11-23 to 24 (Tyler away; feedback due in the morning)
+
+Done and pushed:
+- `src/illustrated/kit.tsx`: shared parts for hand-drawn scenes (moment clock, view framing, lines that draw themselves
+  in, verse plate, moment strip).
+- `src/illustrated/Waters.tsx`: the beginning, day 1 and day 2, hand-drawn on the fly and live (swipe the water; drag the
+  sky to turn light and dark on day 1, or to lift the vault on day 2). Open directly with `?view=scene&scene=day-2`.
+- `src/illustrated/EdenMan.tsx`: figure given a human shape; scenery draws itself in.
+- The storyboard cards for these four scenes open the hand-drawn versions.
+
+Not done, in order:
+1. The front door. It is still the illustrated picture of the cosmos; per the latest direction it should be the
+   detailed globe with tap targets. Needs Mapbox, so it needs Tyler's eyes.
+2. The handoff from the sketched creation days to the detailed globe.
+3. Days 3 and 4 hand-drawn (they exist only in the earlier realistic style, under `?view=story`).
+4. Eden 2 to 6, east of Eden, the generations: storyboard only.
+5. Seen only as stills in a test browser: motion, the boil, sloshing under a real finger, and phone speed are unchecked.
