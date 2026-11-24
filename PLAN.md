@@ -244,3 +244,11 @@ Still to do in M3:
 - Tested on a stand-in globe only. Not yet seen on Mapbox. The story is now 41 beats.
 - Still to do: the close views (ark afloat, ark at rest, peaks around it), a soft change from the model of today's
   land to the real map at 8:14, and showing the breakup itself for those who want to see the model.
+
+## Durupinar (2026-11-23)
+
+- On the day of this note a team announced radiocarbon dates of 2400 to 2200 BC for charred wood from the
+  Durupinar formation. Added as a third candidate resting place (`ararat-durupinar`, card only, no pin) with reasons
+  for and against. It is a press announcement, not a published result: revisit when a paper or independent review
+  appears. The ending still shows the region the text names, not a single site.
+- To do: a checked position for the formation before it can have a pin; read Collins and Fasold (1996) first-hand.

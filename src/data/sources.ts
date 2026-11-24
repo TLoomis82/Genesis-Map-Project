@@ -21,6 +21,11 @@ export const sources: Source[] = [
   { id: 'ligonier-eden', author: 'Ligonier Ministries', title: 'Where Was the Garden of Eden?', year: 2026, url: 'https://learn.ligonier.org/articles/where-was-the-garden-of-eden', status: 'opened' },
   { id: 'zarins-gulf', author: 'Juris Zarins', title: 'Persian Gulf proposal for Eden (primary publication to be located)', status: 'to-read' },
 
+  // Durupinar. Both news reports read first-hand on 2026-11-23, the day of the dating announcement.
+  { id: 'durupinar-dating-2026', author: 'Daily Sabah with Anadolu Agency', title: "Carbon dating aligns with holy scriptures' timeline of Noah's Flood", year: 2026, url: 'https://dailysabah.com/life/history/carbon-dating-aligns-with-holy-scriptures-timeline-of-noahs-flood', status: 'opened' },
+  { id: 'durupinar-1996-review', author: 'Newsweek', title: "What 1996 study said about Noah's Ark site", year: 2026, url: 'https://www.newsweek.com/what-1996-study-said-about-noahs-ark-site-12507519', status: 'opened' },
+  { id: 'collins-fasold-1996', author: 'Lorence G. Collins and David F. Fasold', title: "Bogus Noah's Ark from Turkey Exposed as a Common Geologic Structure (Journal of Geoscience Education)", year: 1996, status: 'to-read' },
+
   // --- Tier 3: flood-geology models ---
   { id: 'cpt-1994', author: 'Austin, Baumgardner, Humphreys, Snelling, Vardiman, Wise', title: 'Catastrophic Plate Tectonics: A Global Flood Model of Earth History', year: 1994, url: 'https://digitalcommons.cedarville.edu/icc_proceedings/vol3/iss1/56', status: 'opened' },
   { id: 'clarey-werner-2018', author: 'Timothy Clarey and Davis Werner', title: 'Use of Sedimentary Megasequences to Re-create Pre-Flood Geography', year: 2018, url: 'https://digitalcommons.cedarville.edu/icc_proceedings/vol8/iss1/27', status: 'permission-needed' },

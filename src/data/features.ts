@@ -153,7 +153,7 @@ export const features: MapFeature[] = [
     verses: ['Gen 8:4'],
     sources: ['wenham-genesis'],
     note: 'The peak most often named in later tradition. The text itself names only the region.',
-    alternatives: ['ararat-cudi'],
+    alternatives: ['ararat-cudi', 'ararat-durupinar'],
     approxCenter: [44.3, 39.7],
   },
   {
@@ -164,7 +164,7 @@ export const features: MapFeature[] = [
     verses: ['Gen 8:4'],
     sources: ['wenham-genesis'],
     note: 'An older traditional landing site, at the southern edge of the same highlands.',
-    alternatives: ['ararat-agri'],
+    alternatives: ['ararat-agri', 'ararat-durupinar'],
     approxCenter: [42.4, 37.4],
   },
   {
@@ -175,7 +175,27 @@ export const features: MapFeature[] = [
     verses: ['Gen 8:4', 'Gen 8:14'],
     sources: [],
     note: 'The ark is placed within the mountains of Ararat for illustration. The exact spot is not known.',
+    alternatives: ['ararat-agri', 'ararat-cudi', 'ararat-durupinar'],
+  },
+  {
+    id: 'ararat-durupinar',
+    name: 'Durupinar formation (claimed site)',
+    tier: 'scholarly',
+    confidence: 'proposed',
+    verses: ['Gen 8:4'],
+    sources: ['durupinar-dating-2026', 'durupinar-1996-review', 'collins-fasold-1996'],
+    note: 'A boat-shaped formation near Dogubayazit that a research team says may hold the ark. In November 2026 the team reported charred wood from its cores dated to 2400-2200 BC. The claim is disputed and unpublished.',
+    reasonsFor: [
+      'The excavation leader reports that a United States laboratory dated charred wood from the site to between 2400 and 2200 BC (announced 23 November 2026).',
+      'The team reports that its radar data do not show a simple solid-rock signature and that its drill holes met no bedrock.',
+    ],
+    reasonsAgainst: [
+      'A 1996 study by a geologist and a former supporter of the site concluded it is a natural rock formation shaped by erosion and folding, with no fossil wood.',
+      'The dating was announced by the team itself. No paper has been published, the laboratory is not named in the report read, and results from two other laboratories were still awaited.',
+      'Wood of that age at the site would not by itself show that it came from a vessel.',
+    ],
     alternatives: ['ararat-agri', 'ararat-cudi'],
+    noPin: true,
   },
 
   // ---------------------------------------------------------------- Tier 3: model
