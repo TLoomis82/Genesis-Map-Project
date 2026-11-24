@@ -39,7 +39,7 @@ const WAITING_CAMERA = firstGlobe.camera ? { ...firstGlobe.camera, seconds: 0, d
 const NO_DRILLS: { scene: string; label: string }[] = [];
 /** What the hand can do on the waters at each verse of the opening, and the label that says so. */
 const HAND: Record<string, { mode: "swipe" | "light" | "vault"; hint: string }> = {
-  swipe: { mode: "swipe", hint: "Swipe the waters" },
+  swipe: { mode: "swipe", hint: "Swipe the waters, or press and hold for a wind" },
   light: { mode: "light", hint: "Drag sideways to carry the light round" },
   vault: { mode: "vault", hint: "Drag up to lift the sky off the waters" },
 };

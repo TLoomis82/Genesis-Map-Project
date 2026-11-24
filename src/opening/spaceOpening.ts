@@ -33,7 +33,7 @@ const RIPPLES = 8;
 const fragment = /* glsl */ `
   precision highp float;
   uniform vec2 uCenter;
-  uniform float uRadius, uTime, uWater, uLight, uDivide, uVault, uTurn, uFace;
+  uniform float uRadius, uTime, uWater, uLight, uDivide, uVault, uTurn, uFace, uWind;
   uniform vec4 uRip[${RIPPLES}];
 
   float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
@@ -49,6 +49,13 @@ const fragment = /* glsl */ `
   float height(vec3 s) {
     float h = (fbm(s * 4.0 + vec3(uTime * 0.06, 0.0, uTime * 0.045)) - 0.5) * 1.1;
     h += (noise(s * 15.0 - vec3(0.0, uTime * 0.2, uTime * 0.12)) - 0.5) * 0.32;
+    // A wind over the face of the waters: long streaks of ruffled water running one way.
+    if (uWind > 0.01) {
+      float across = dot(s, normalize(vec3(0.35, 0.9, 0.2)));
+      float along = dot(s, normalize(vec3(0.9, -0.35, 0.1)));
+      float gust = noise(vec3(across * 7.0, along * 1.6 - uTime * 1.5, 3.0));
+      h += uWind * (sin(along * 46.0 - uTime * 9.0 + gust * 6.0) * 0.55 * smoothstep(0.35, 0.75, gust) + (gust - 0.5) * 0.9);
+    }
     for (int i = 0; i < ${RIPPLES}; i++) {
       float age = uTime - uRip[i].w;
       if (age < 0.0 || age > 7.0) continue;
@@ -97,6 +104,8 @@ const fragment = /* glsl */ `
       lit += vec3(1.0, 0.96, 0.86) * pow(max(dot(reflect(-sun, ns), view), 0.0), 70.0) * uLight * wrap * 0.5;
       lit += vec3(0.50, 0.62, 0.80) * pow(max(dot(nn, normalize(vec3(0.25, 0.45, 1.0))), 0.0), 26.0) * 0.13 * (1.0 - uLight);
       lit += vec3(0.16, 0.24, 0.36) * pow(1.0 - z, 2.5) * (0.10 + 0.5 * uLight * wrap);
+      // The wind shows even in the dark, as a pale ruffling where it passes.
+      lit += vec3(0.45, 0.56, 0.72) * uWind * smoothstep(0.1, 0.9, abs(h0)) * 0.16 * (1.0 - 0.6 * uLight);
 
       // Mist over the face of the deep, until the firmament lifts it clear as the waters above.
       float fog = smoothstep(0.38, 0.78, fbm(s * 3.2 + vec3(uTime * 0.016, uTime * 0.008, 0.0)));
@@ -127,6 +136,7 @@ export class SpaceOpening {
     uVault: { value: 0 },
     uTurn: { value: 0 },
     uFace: { value: 0 },
+    uWind: { value: 0 },
     uRip: { value: Array.from({ length: RIPPLES }, () => new THREE.Vector4(0, 0, 1, -100)) },
   };
   private now: SpaceTargets = { water: 0, light: 0, divide: 0, vault: 0, turn: 0, face: 0 };
@@ -140,6 +150,9 @@ export class SpaceOpening {
   private nextRipple = 0;
   private lastRipple = 0;
   private down = false;
+  /** Seconds the hand has been down, and how far it has strayed: a still, held press raises a wind. */
+  private heldFor = 0;
+  private strayed = 0;
   private lastX = 0;
   private lastY = 0;
   /**
@@ -151,6 +164,8 @@ export class SpaceOpening {
   mode: "swipe" | "light" | "vault" = "swipe";
   /** Called when the viewer does what the current mode offers. */
   onTouch: (() => void) | null = null;
+  /** Called when a held press raises the wind. */
+  onWind: (() => void) | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
@@ -195,6 +210,8 @@ export class SpaceOpening {
 
   private onDown = (e: PointerEvent) => {
     this.down = true;
+    this.heldFor = 0;
+    this.strayed = 0;
     this.lastX = e.clientX;
     this.lastY = e.clientY;
     this.canvas.setPointerCapture?.(e.pointerId);
@@ -207,6 +224,7 @@ export class SpaceOpening {
     if (!this.down) return;
     const dx = e.clientX - this.lastX;
     const dy = e.clientY - this.lastY;
+    this.strayed += Math.abs(dx) + Math.abs(dy);
     this.lastX = e.clientX;
     this.lastY = e.clientY;
     const across = (this.uniforms.uRadius.value / this.renderer.getPixelRatio()) * 2; // the width of the waters on screen
@@ -260,6 +278,10 @@ export class SpaceOpening {
     u.uDivide.value = this.now.divide;
     u.uVault.value = this.now.vault;
     u.uTurn.value = this.now.turn;
+    if (this.down) this.heldFor += dt;
+    const blowing = this.down && this.heldFor > 0.3 && this.strayed < 14 && this.now.water > 0.4;
+    if (blowing && u.uWind.value < 0.05) this.onWind?.();
+    u.uWind.value += ((blowing ? 1 : 0) - u.uWind.value) * (1 - Math.exp(-dt * (blowing ? 2.2 : 0.7)));
     this.now.face += (this.want.face - this.now.face) * (1 - Math.exp(-dt * 0.5));
     u.uFace.value = this.now.face;
     if (this.disc) {
