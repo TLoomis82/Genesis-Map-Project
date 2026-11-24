@@ -39,11 +39,30 @@ export interface Beat {
   camera?: GlobeCamera;
   /** The land model draped over the globe for this beat. Left out: today's map. */
   land?: LandId;
+  /** The flood for this beat: water level in metres above the old sea level, and how stormy the sky is (0..1). */
+  flood?: { level: number; storm: number };
+  /** How many times taller than life the land stands. Left out: the usual amount. */
+  relief?: number;
 }
 
 const notBuiltOnModel: Depiction = {
   badge: "Placeholder",
   note: "This scene is not built yet. The verse and the camera position are in place. The land is a model, not from the text: tap \"The land drawn here\".",
+};
+
+const floodRising: Depiction = {
+  badge: "Model",
+  note: "The dates and the covering of the high hills are from the text. How high the water stands at each verse, and the shape and height of the land it covers, are illustrative.",
+};
+
+const floodOverAll: Depiction = {
+  badge: "Model",
+  note: "Under the water the land is redrawn in today's arrangement. That follows catastrophic plate tectonics, a model: the text says nothing about continents moving. Tap \"Continents move apart during the flood\".",
+};
+
+const floodFalling: Depiction = {
+  badge: "Model",
+  note: "The dates are from the text. The land that appears is drawn at today's heights and positions, and the water levels are illustrative.",
 };
 
 const notBuilt: Depiction = {
@@ -71,7 +90,25 @@ const ararat = centerOf("ararat-region");
 // today's world.
 const PRE_FLOOD: LandId = "200";
 
-const globePlan: { sceneId: string; verse: string; camera: GlobeCamera; hold?: number; land?: LandId }[] = [
+// Water levels in metres above the old sea level. The pre-flood model's highest land is about 3,300 m and
+// today's is far higher, so COVERED stands above both. These numbers only drive the picture.
+const COVERED = 7000;
+const TODAY: LandId = "000";
+const AFLOAT: LngLat = [-5, 5];
+const araratWide: GlobeCamera = { center: ararat, zoom: 2.6, seconds: 12 };
+
+interface PlanBeat {
+  sceneId: string;
+  verse: string;
+  camera: GlobeCamera;
+  hold?: number;
+  land?: LandId;
+  flood?: { level: number; storm: number };
+  relief?: number;
+  depiction?: Depiction;
+}
+
+const globePlan: PlanBeat[] = [
   { sceneId: "day-5", verse: "1:20", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 4 }, land: PRE_FLOOD },
   { sceneId: "day-6", verse: "1:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.4, pitch: 35, seconds: 8 }, land: PRE_FLOOD },
   { sceneId: "day-7", verse: "2:2", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30, land: PRE_FLOOD },
@@ -81,11 +118,19 @@ const globePlan: { sceneId: string; verse: string; camera: GlobeCamera; hold?: n
   { sceneId: "seth-to-noah", verse: "5:1", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 9 } },
   { sceneId: "nephilim", verse: "6:4", camera: { center: WHOLE_GLOBE, zoom: 1.8, bearing: 6, seconds: 6 } },
   { sceneId: "ark", verse: "6:15", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 6 } },
-  { sceneId: "flood", verse: "7:11", camera: { center: PRE_FLOOD_VIEW, zoom: 1.3, seconds: 8, driftDegrees: 60 }, hold: 22, land: PRE_FLOOD },
-  { sceneId: "end-grounding", verse: "8:4", camera: { center: ararat, zoom: 6.2, pitch: 55, seconds: 12 }, hold: 18 },
-  { sceneId: "end-receding", verse: "8:5", camera: { center: ararat, zoom: 7.4, pitch: 62, bearing: 20, seconds: 10 }, hold: 16 },
-  { sceneId: "end-pullback", verse: "8:13", camera: { center: ararat, zoom: 1.5, seconds: 12 }, hold: 18 },
-  { sceneId: "end-return", verse: "8:14", camera: { center: ararat, zoom: 9, pitch: 66, bearing: -15, seconds: 14 }, hold: 20 },
+  // The flood, seen from space. The land stands lower than usual here so nothing pokes through the water.
+  { sceneId: "flood", verse: "7:11", camera: { center: AFLOAT, zoom: 1.4, seconds: 8 }, hold: 16, land: PRE_FLOOD, flood: { level: 250, storm: 0.7 }, relief: 8, depiction: floodRising },
+  { sceneId: "flood", verse: "7:17", camera: { center: [AFLOAT[0] + 14, AFLOAT[1]], zoom: 1.4, seconds: 12 }, hold: 14, land: PRE_FLOOD, flood: { level: 1100, storm: 0.7 }, relief: 8, depiction: floodRising },
+  { sceneId: "flood", verse: "7:19", camera: { center: [AFLOAT[0] + 28, AFLOAT[1]], zoom: 1.4, seconds: 12 }, hold: 14, land: PRE_FLOOD, flood: { level: 2700, storm: 0.6 }, relief: 8, depiction: floodRising },
+  { sceneId: "flood", verse: "7:20", camera: { center: [AFLOAT[0] + 42, AFLOAT[1]], zoom: 1.4, seconds: 12 }, hold: 14, land: PRE_FLOOD, flood: { level: COVERED, storm: 0.5 }, relief: 0, depiction: floodRising },
+  { sceneId: "flood", verse: "7:24", camera: { center: [ararat[0] - 40, 20], zoom: 1.4, seconds: 14, driftDegrees: 30 }, hold: 22, land: TODAY, flood: { level: COVERED, storm: 0.35 }, relief: 0, depiction: floodOverAll },
+  // The ark rests while the water still covers everything; then the mountains show; then the earth dries.
+  { sceneId: "end-grounding", verse: "8:1", camera: { center: [ararat[0] - 20, 28], zoom: 1.6, seconds: 12 }, hold: 14, land: TODAY, flood: { level: COVERED, storm: 0.15 }, relief: 0, depiction: floodRising },
+  { sceneId: "end-grounding", verse: "8:4", camera: araratWide, hold: 16, land: TODAY, flood: { level: 5600, storm: 0.1 }, relief: 0, depiction: floodFalling },
+  { sceneId: "end-receding", verse: "8:5", camera: { ...araratWide, zoom: 2.2, bearing: 8 }, hold: 18, land: TODAY, flood: { level: 3200, storm: 0.05 }, relief: 8, depiction: floodFalling },
+  { sceneId: "end-pullback", verse: "8:13", camera: { center: ararat, zoom: 1.5, seconds: 12 }, hold: 18, land: TODAY, flood: { level: 0, storm: 0 }, depiction: floodFalling },
+  { sceneId: "end-pullback", verse: "8:14", camera: { center: ararat, zoom: 1.5, seconds: 6, driftDegrees: 25 }, hold: 16 },
+  { sceneId: "end-return", verse: "8:4", camera: { center: ararat, zoom: 9, pitch: 66, bearing: -15, seconds: 14 }, hold: 20 },
 ];
 
 const openingBeats: Beat[] = openingSteps.map((s, i) => ({
@@ -102,9 +147,11 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   reference: `Genesis ${g.verse}`,
   text: kjv(g.verse),
   hold: g.hold ?? 14,
-  depiction: g.land ? notBuiltOnModel : notBuilt,
+  depiction: g.depiction ?? (g.land ? notBuiltOnModel : notBuilt),
   camera: g.camera,
   land: g.land,
+  flood: g.flood,
+  relief: g.relief,
 }));
 
 export const beats: Beat[] = [...openingBeats, ...globeBeats];

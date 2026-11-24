@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { MapFeature } from "../data/types.ts";
 import type { GlobeCamera } from "./beats.ts";
-import { cloudStatus, createCloudLayer } from "./cloudLayer.ts";
+import { cloudStatus, createCloudLayer, type FloodState, type SkyLayer } from "./cloudLayer.ts";
 
 // The one Mapbox globe used by the whole story. It is created a little before the opening
 // fades away, sits underneath the opening canvas, and from day 5 on it is the stage: each beat
@@ -51,6 +51,8 @@ const WORLD = {
   geometry: { type: "Polygon" as const, coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]] },
 };
 
+/** Lands that have a picture of their heights for the flood (public/land/height/scotese-<age>ma.jpg). */
+const HEIGHT_PICTURES = ["000", "200"];
 /** Lands that have a double-size picture (public/land/scotese-<age>ma-8k.jpg). */
 const SHARP_LANDS = ["200"];
 /**
@@ -117,6 +119,9 @@ function landNote(land: string): string {
   if (LAND_OVERRIDE !== null) {
     return `Land test: ${Number(land)} million years ago on the conventional scale.${heights} Scotese and Wright (2018), CC BY 4.0.`;
   }
+  if (land === "000") {
+    return `Today's land, drawn from a model of its heights and sea depths.${heights} Scotese and Wright (2018), CC BY 4.0.`;
+  }
   return `The land is a model, not from the text: a Pangaea-like land standing in for the pre-flood world.${heights} Scotese and Wright (2018), CC BY 4.0.`;
 }
 
@@ -139,6 +144,7 @@ function GlobeReadout({ map }: { map: mapboxgl.Map | null }) {
         `zoom ${map ? map.getZoom().toFixed(2) : "-"}  pitch ${map ? map.getPitch().toFixed(0) : "-"}  projection ${map?.getProjection()?.name ?? "-"}`,
         `land: ${globeStatus.land}`,
         `relief: ${terrain ? `on, ${terrain.exaggeration} times` : "off"}`,
+        `flood: level ${cloudStatus.level.toFixed(0)} m; storm ${cloudStatus.storm.toFixed(2)}`,
         `clouds: ${globeStatus.clouds}; frames ${cloudStatus.frames}; strength ${cloudStatus.opacity.toFixed(2)}; seen as "${cloudStatus.projection}"`,
         cloudStatus.error ? `cloud error: ${cloudStatus.error}` : "",
         ...globeStatus.errors.map((e) => `map error: ${e}`),
@@ -156,6 +162,10 @@ interface Props {
   hold: number;
   /** The land model for the current beat, or null for today's map. */
   land: string | null;
+  /** The flood for the current beat, or null for none. */
+  flood: FloodState | null;
+  /** How many times taller than life the land stands for this beat, or null for the usual amount. */
+  relief: number | null;
   /** Where the globe faces before the first beat arrives. */
   startCenter: [number, number];
   /** Features to pin for the current scene (already filtered by the "text only" switch). */
@@ -164,7 +174,8 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-export default function GlobeStage({ camera, hold, land, startCenter, pins, selectedId, onSelect }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect }: Props) {
+  const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -199,7 +210,10 @@ export default function GlobeStage({ camera, hold, land, startCenter, pins, sele
       // for the ?debug readout.
       // Slow clouds around the globe, seen from far out. Add ?clouds=0 to the address to switch them off.
       try {
-        if (CLOUDS_ON) m.addLayer(createCloudLayer());
+        if (CLOUDS_ON) {
+          sky.current = createCloudLayer();
+          m.addLayer(sky.current.layer);
+        }
         globeStatus.clouds = CLOUDS_ON ? "added" : "switched off";
       } catch (e) {
         globeStatus.clouds = `failed: ${e instanceof Error ? e.message : String(e)}`;
@@ -256,10 +270,27 @@ export default function GlobeStage({ camera, hold, land, startCenter, pins, sele
     try {
       showLand(m, shownLand);
       globeStatus.land = shownLand ? `model ${shownLand}` : "today's map";
+      // The flood is measured against this land's heights, where a height picture exists for it.
+      sky.current?.setHeights(shownLand && HEIGHT_PICTURES.includes(shownLand) ? `${import.meta.env.BASE_URL}land/height/scotese-${shownLand}ma.jpg` : null);
     } catch (e) {
       globeStatus.land = `failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   }, [shownLand, ready]);
+
+  // The flood and the weather for the current beat glide to their new values inside the sky layer.
+  useEffect(() => {
+    if (!ready) return;
+    sky.current?.setFlood(flood ?? { level: 0, storm: 0 });
+  }, [flood, ready]);
+
+  // How tall the land stands. Lower during the flood, so that no mountain pokes through the water.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !m.getSource("model-dem")) return;
+    const times = relief ?? RELIEF;
+    if (times > 0) m.setTerrain({ source: "model-dem", exaggeration: times });
+    else if (m.getTerrain()) m.setTerrain(null);
+  }, [relief, shownLand, ready]);
 
   // Pins for the current scene. The tier decides the outline: solid for the text, dashed for a
   // scholar's reading, dotted for a model. A position with no research behind it is hollow.

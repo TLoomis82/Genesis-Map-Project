@@ -3,6 +3,7 @@
   python3 scripts/land-texture.py dem  <PaleoDEM.csv|.nc> <out.jpg> Scotese and Wright PaleoDEM (CC BY 4.0)
   python3 scripts/land-texture.py zones <figure.png>  <out.jpg>     a four-colour zone map (deep, shallow, lowland, upland)
   python3 scripts/land-texture.py tiles <PaleoDEM.csv> <out-folder> height tiles for 3D relief (Mapbox Terrain-RGB)
+  python3 scripts/land-texture.py height <PaleoDEM.nc> <out.jpg>      land heights as a grey picture, for the flood
 
 Add a picture size as a last argument to "dem" or "zones" (default 4096; 8192 for the sharp desktop copy).
 
@@ -11,6 +12,8 @@ projection, covering longitude -180..180 and latitude -85.05..85.05, which is wh
 image source expects.
 
 "dem" uses the real heights and sea depths in the file for colour and shading.
+"height" writes a plain latitude-longitude picture, 4096 x 2048, north at the top: black is sea level
+or below, white is 6375 m or more (25 m per step). The flood layer reads it to know where the water has reached.
 "tiles" writes <out-folder>/{z}/{x}/{y}.png for zoom 0 to 3, with the sea floor set level at 0.
 "zones" has no heights to use: the texture inside the uplands is made up so the land reads as
 land. Wherever a "zones" picture is shown, the on-screen note must say so.
@@ -132,6 +135,12 @@ def from_dem(path):
     return np.clip(sea * (1 - a) + land * a, 0, 255).astype(np.uint8)
 
 
+def write_height(path, out):
+    big = np.clip(load_dem(path), 0, 6375) / 25
+    Image.fromarray(big.astype(np.uint8)).resize((4096, 2048), Image.BILINEAR).save(out, quality=93)
+    print("wrote", out)
+
+
 def write_tiles(path, folder, max_zoom=3):
     import os
 
@@ -191,8 +200,11 @@ def from_zones(path):
 
 if __name__ == "__main__":
     size = int(sys.argv.pop()) if len(sys.argv) == 5 else SIZE  # optional last argument: picture size
-    if len(sys.argv) != 4 or sys.argv[1] not in ("dem", "zones", "tiles"):
+    if len(sys.argv) != 4 or sys.argv[1] not in ("dem", "zones", "tiles", "height"):
         sys.exit(__doc__)
+    if sys.argv[1] == "height":
+        write_height(sys.argv[2], sys.argv[3])
+        sys.exit(0)
     if sys.argv[1] == "tiles":
         write_tiles(sys.argv[2], sys.argv[3])
         sys.exit(0)

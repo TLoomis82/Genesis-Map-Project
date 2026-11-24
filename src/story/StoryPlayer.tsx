@@ -200,6 +200,8 @@ export default function StoryPlayer() {
           camera={beat.camera ?? null}
           hold={beat.hold}
           land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
+          flood={beat.flood ?? null}
+          relief={beat.relief ?? null}
           startCenter={firstGlobe.camera?.center ?? [0, 0]}
           pins={onGlobe ? sceneFeatures : noPins}
           selectedId={selectedId}

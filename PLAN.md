@@ -230,3 +230,17 @@ Still to do in M3:
 - Close views of a land model were blurry (the data stops at about 11 km). Now: a double-size picture of the 200 Ma
   land for larger screens, a little made-up surface roughness on land (said so on the card), and the camera cannot
   come closer than zoom 4.4 while a model is shown. Truly close views are for our own 3D landscape.
+
+## The flood from space (2026-11-23)
+
+- The sky layer (`src/story/cloudLayer.ts`) now also draws the flood: water over every part of the land below the
+  current level, read from a height picture of the land model (`public/land/height/`, made by
+  `land-texture.py height`). Level and storm glide to the values each beat sets.
+- Beats: 7:11, 7:17, 7:19, 7:20 (water rises over the pre-flood model until all is covered), 7:24 (all covered; the
+  land underneath is swapped to today's arrangement, labelled as the plate-tectonics model), 8:1, 8:4 (still covered,
+  camera moves toward the Ararat region), 8:5 (peaks show), 8:13 (water gone), 8:14 (today's real map).
+- The text supplies the dates and "all the high hills were covered". The water levels (250 to 7,000 m), the land's
+  heights and the breakup are illustrative or model, and each beat says so.
+- Tested on a stand-in globe only. Not yet seen on Mapbox. The story is now 41 beats.
+- Still to do: the close views (ark afloat, ark at rest, peaks around it), a soft change from the model of today's
+  land to the real map at 8:14, and showing the breakup itself for those who want to see the model.
