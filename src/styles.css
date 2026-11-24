@@ -1245,8 +1245,9 @@ body,
 .board-stage.is-globe .globe {
   position: absolute;
 }
+/* No position is set here: on the globe Mapbox places each marker itself (absolutely, from the top left),
+   and a position of our own would put the dots in a row and push each one off its true place. */
 .door {
-  position: relative;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -1553,7 +1554,12 @@ body,
 .drill .door-pulse {
   border-color: #eeb04a;
 }
+.opening-dots .door {
+  position: relative;
+}
 .drill .door-label {
+  pointer-events: auto; /* the name is part of the button: tapping it opens the scene too */
+  cursor: pointer;
   margin: 0 4px;
   padding: 3px 9px;
   border-radius: 999px;

@@ -392,5 +392,11 @@ Not done, in order:
   than one verse at once) puts the water, the land's cover, the light, the creatures and the lights where the new
   verse wants them at once (`snap` on the sky layer and the life layer), so nothing from the part just left
   drains, fades or drifts across the new one.
+- Drill-in dots on the globe, bugs (Tyler: "clicking on the man dust dot goes to the fall"). All 17 scene ids were
+  checked and each opens the scene it names, so the fault was in where the dots sat, not where they led. Two causes
+  fixed: our own `position: relative` on the dot overrode Mapbox's marker positioning, which lays the dots in a row
+  and pushes each one off its place by a different amount; and the ring was laid out once, while the camera was
+  still on its way from the last verse, so it came out the wrong size. Also: the name is now part of the button,
+  and the ring sits lower, clear of the chips at the top. NOT seen on Mapbox.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

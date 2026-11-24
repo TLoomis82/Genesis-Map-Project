@@ -527,7 +527,7 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
     const many = drills.length > 1;
     const spots = drills.map((_, i) => {
       const angle = many ? -Math.PI / 3 + (i / drills.length) * Math.PI * 2 : Math.PI * 0.2;
-      return { x: Math.cos(angle) * (many ? 130 : 96), y: Math.sin(angle) * (many ? 120 : 96), left: Math.cos(angle) < -0.1 };
+      return { x: Math.cos(angle) * (many ? 124 : 96), y: Math.sin(angle) * (many ? 112 : 96) + (many ? 26 : 0), left: Math.cos(angle) < -0.1 };
     });
     const markers = drills.map((drill, i) => {
       const el = document.createElement("button");
@@ -545,8 +545,10 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       const middle = m.project([drillLng, drillLat]);
       markers.forEach((marker, i) => marker.setLngLat(m.unproject([middle.x + spots[i].x, middle.y + spots[i].y])));
     };
+    // Placed now, and again every time the camera comes to rest: the first placing happens while the
+    // camera is still on its way from the last verse, and would leave the ring the wrong size.
     place();
-    m.once("moveend", place);
+    m.on("moveend", place);
     return () => {
       m.off("moveend", place);
       markers.forEach((marker) => marker.remove());
