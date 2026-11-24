@@ -22,6 +22,9 @@ export interface GlobeCamera {
   driftDegrees?: number;
 }
 
+/** A land model that can be draped over the globe: a file pair made by scripts/land-texture.py. */
+export type LandId = "000" | "085" | "200" | "250" | "540";
+
 export interface Beat {
   sceneId: string;
   /** e.g. "Genesis 1:14" */
@@ -34,7 +37,14 @@ export interface Beat {
   openingStep?: number;
   /** Camera on the globe, for beats shown on the globe. */
   camera?: GlobeCamera;
+  /** The land model draped over the globe for this beat. Left out: today's map. */
+  land?: LandId;
 }
+
+const notBuiltOnModel: Depiction = {
+  badge: "Placeholder",
+  note: "This scene is not built yet. The verse and the camera position are in place. The land is a model, not from the text: tap \"The land drawn here\".",
+};
 
 const notBuilt: Depiction = {
   badge: "Placeholder",
@@ -50,22 +60,28 @@ function centerOf(id: string): LngLat {
 const midpoint = (a: LngLat, b: LngLat): LngLat => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 
 // Framing only. These are views of the globe, not claims about where anything happened.
-const WHOLE_GLOBE: LngLat = [43.5, 28.0]; // the view the opening hands over to
+const WHOLE_GLOBE: LngLat = [43.5, 28.0]; // the view of today's globe
+const PRE_FLOOD_VIEW: LngLat = [-5, 5]; // faces the middle of the model land (a framing choice only)
 const edenFrame = midpoint(centerOf("eden-north"), centerOf("eden-south")); // both proposed sites in view
 const ararat = centerOf("ararat-region");
 
 /** One beat per globe scene for now: its first verse and a resting camera. */
-const globePlan: { sceneId: string; verse: string; camera: GlobeCamera; hold?: number }[] = [
-  { sceneId: "day-5", verse: "1:20", camera: { center: WHOLE_GLOBE, zoom: 1.4, seconds: 4 } },
-  { sceneId: "day-6", verse: "1:24", camera: { center: WHOLE_GLOBE, zoom: 2.4, pitch: 20, seconds: 8 } },
-  { sceneId: "day-7", verse: "2:2", camera: { center: WHOLE_GLOBE, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30 },
+// Creation week and the flood are shown on the model of a single pre-flood land. Eden to the ark, and
+// the ending, are shown on today's map: their pins are present-day positions, and the story ends in
+// today's world.
+const PRE_FLOOD: LandId = "200";
+
+const globePlan: { sceneId: string; verse: string; camera: GlobeCamera; hold?: number; land?: LandId }[] = [
+  { sceneId: "day-5", verse: "1:20", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 4 }, land: PRE_FLOOD },
+  { sceneId: "day-6", verse: "1:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.4, pitch: 35, seconds: 8 }, land: PRE_FLOOD },
+  { sceneId: "day-7", verse: "2:2", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30, land: PRE_FLOOD },
   { sceneId: "eden", verse: "2:10", camera: { center: edenFrame, zoom: 4.3, seconds: 9 }, hold: 20 },
   { sceneId: "exile", verse: "3:24", camera: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 } },
   { sceneId: "cain", verse: "4:16", camera: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 9 } },
   { sceneId: "seth-to-noah", verse: "5:1", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 9 } },
   { sceneId: "nephilim", verse: "6:4", camera: { center: WHOLE_GLOBE, zoom: 1.8, bearing: 6, seconds: 6 } },
   { sceneId: "ark", verse: "6:15", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 6 } },
-  { sceneId: "flood", verse: "7:11", camera: { center: WHOLE_GLOBE, zoom: 1.3, seconds: 8, driftDegrees: 60 }, hold: 22 },
+  { sceneId: "flood", verse: "7:11", camera: { center: PRE_FLOOD_VIEW, zoom: 1.3, seconds: 8, driftDegrees: 60 }, hold: 22, land: PRE_FLOOD },
   { sceneId: "end-grounding", verse: "8:4", camera: { center: ararat, zoom: 6.2, pitch: 55, seconds: 12 }, hold: 18 },
   { sceneId: "end-receding", verse: "8:5", camera: { center: ararat, zoom: 7.4, pitch: 62, bearing: 20, seconds: 10 }, hold: 16 },
   { sceneId: "end-pullback", verse: "8:13", camera: { center: ararat, zoom: 1.5, seconds: 12 }, hold: 18 },
@@ -86,8 +102,9 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   reference: `Genesis ${g.verse}`,
   text: kjv(g.verse),
   hold: g.hold ?? 14,
-  depiction: notBuilt,
+  depiction: g.land ? notBuiltOnModel : notBuilt,
   camera: g.camera,
+  land: g.land,
 }));
 
 export const beats: Beat[] = [...openingBeats, ...globeBeats];

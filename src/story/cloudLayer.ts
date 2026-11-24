@@ -81,7 +81,7 @@ const fragmentShader = /* glsl */ `
     float density = fbm(p * 4.6 + warp * 1.9 + vec3(0.0, uTime * 0.003, 0.0));
     // Broad weather systems decide where cloud gathers; the finer field gives it its shape.
     float systems = fbm(p * 1.3 + 4.0);
-    float cover = smoothstep(0.47, 0.70, density + (systems - 0.5) * 0.35);
+    float cover = smoothstep(0.53, 0.74, density + (systems - 0.5) * 0.4);   // clear sky between systems, no milky haze
     return cover * (0.62 + 0.38 * fbm(p * 13.0 + warp * 3.0));   // break up the solid middles
   }
 
@@ -94,7 +94,7 @@ const fragmentShader = /* glsl */ `
     vec3 n = normalize(vPos);
     float day = smoothstep(-0.22, 0.38, dot(n, uSun));   // 1 in full sun, 0 well into the night side
 
-    float cloud = cloudAt(n) * rim * 0.9;
+    float cloud = cloudAt(n) * rim * 0.85;
     // A cloud's shadow falls a little way from it, on the side away from the sun.
     float shadow = uShadows > 0.5 ? cloudAt(normalize(n + uSun * 0.035)) * 0.34 * day : 0.0;
     float night = (1.0 - day) * 0.62;

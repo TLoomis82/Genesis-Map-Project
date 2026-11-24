@@ -28,6 +28,8 @@ const DEBUG = new URLSearchParams(window.location.search).has("debug");
 // While a land model is being tested (?land=...), the "today's continents" placeholder note would be wrong;
 // the globe shows its own note about the model instead.
 const LAND_TEST = new URLSearchParams(window.location.search).has("land");
+/** The beat the opening hands over to. The globe is prepared for it while the opening is still playing. */
+const firstGlobe = beats[FIRST_GLOBE_BEAT];
 
 export default function StoryPlayer() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -197,6 +199,8 @@ export default function StoryPlayer() {
         <GlobeStage
           camera={beat.camera ?? null}
           hold={beat.hold}
+          land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
+          startCenter={firstGlobe.camera?.center ?? [0, 0]}
           pins={onGlobe ? sceneFeatures : noPins}
           selectedId={selectedId}
           onSelect={setSelectedId}

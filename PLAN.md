@@ -216,3 +216,14 @@ Still to do in M3:
 - Tyler also supplied the PALEOMAP atlas index. It lists maps older than the height files reach: 560 to 600 Ma
   (the time of Pannotia) and 750 to 1000 Ma (the time of Rodinia). Those exist as atlas maps, not height files,
   so a Rodinia or Pannotia option would need the atlas package (`PALEOMAP_PaleoAtlases.zip` on EarthByte).
+
+## Land wired into the story (2026-11-23)
+
+- Each globe beat names its land (`land` in `src/story/beats.ts`). Creation week from day 5 and the flood use the
+  Pangaea-like model (Scotese and Wright, 200 Ma file); Eden to the ark and the ending use today's map, because
+  their pins are present-day positions and the story ends in today's world.
+- The opening now hands over to the model land (the globe is prepared before the fade).
+- New feature `land-drawn-pangaea` ("The land drawn here", confidence `illustration`) says plainly that the drawn
+  land is a stand-in and whose model it is. An on-screen "Model" note repeats it.
+- `?land=` is now only an override for checks (`none` for today's map everywhere).
+- Still to do: a soft change between lands (it switches at once now), and the breakup from 200 Ma to today in the flood.

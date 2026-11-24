@@ -192,6 +192,21 @@ export const features: MapFeature[] = [
     alternatives: ['land-rodinia', 'land-pannotia', 'land-unknown'],
   },
   {
+    id: 'land-drawn-pangaea',
+    name: 'The land drawn here',
+    tier: 'model',
+    confidence: 'illustration',
+    verses: ['Gen 1:9-10'],
+    sources: ['paleomap-dem'],
+    note: 'The globe shows a Pangaea-like land from the Scotese and Wright elevation model, standing in for the single pre-flood land that Clarey and Werner propose. It is not their map, and the text gives the land no shape.',
+    reasonsFor: ['It is a published, openly licensed model with real heights, in the Pangaea-like arrangement that Clarey and Werner favour.'],
+    reasonsAgainst: [
+      'Its authors made it to show the earth about 200 million years ago on the conventional timescale, not a pre-flood world.',
+      'Mountain heights are drawn many times taller than life so they can be seen from space.',
+    ],
+    alternatives: ['land-clarey-werner', 'land-rodinia', 'land-pannotia', 'land-unknown'],
+  },
+  {
     id: 'land-rodinia',
     name: 'Pre-flood land: Rodinia',
     tier: 'model',

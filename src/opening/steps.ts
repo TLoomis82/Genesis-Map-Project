@@ -58,8 +58,8 @@ const calendar: Depiction = {
 };
 
 const globeView: Depiction = {
-  badge: "Placeholder",
-  note: "The globe is a modern view of the same land and seas. The continents shown are today's, standing in until the pre-flood land model is added.",
+  badge: "Model",
+  note: "The globe is a modern view of the same land and seas. The land shown is a model of a single pre-flood land, not from the text.",
 };
 
 // Day 2 ends with the vault open and the view tilted up. Day 3 brings the view back down.

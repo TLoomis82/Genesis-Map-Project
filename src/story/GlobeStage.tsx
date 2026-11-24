@@ -22,29 +22,27 @@ const WHOLE_GLOBE_ZOOM = 1.4;
 
 const easeInOut = (t: number) => t * t * (3 - 2 * t);
 
-// M2 test: add ?land=200 to the address to cover today's map with a land model.
+// The land on the globe.
 //
-//   ?land=000 | 085 | 200 | 250 | 540   Scotese and Wright PaleoDEMs (CC BY 4.0), by age in millions of
-//                                       years on the conventional scale. 200 and 250 are the Pangaea-like
-//                                       shapes the pre-flood land layer will start from.
-//   ?land=cw                            The Clarey and Werner (2023, Fig. 17) pre-flood map, traced from their
+// Each story beat says which land it is shown on (see beats.ts): a land model, or today's map.
+// A model is one picture draped over the globe plus height tiles for 3D relief, both made by
+// scripts/land-texture.py from the Scotese and Wright PaleoDEMs (CC BY 4.0).
+//
+// For checks, the address can override the story's choice:
+//   ?land=000 | 085 | 200 | 250 | 540   one of the models, by its age in millions of years on the
+//                                       conventional scale, on every globe beat
+//   ?land=none                          today's map on every globe beat
+//   ?land=cw                            the Clarey and Werner (2023, Fig. 17) pre-flood map, traced from their
 //                                       figure. Its picture is NOT in this repository: permission from the
 //                                       copyright holders is pending. It shows only if
 //                                       public/land/private/clarey-werner-2023.jpg exists on this machine,
 //                                       VITE_SHOW_PRIVATE=1 is set in .env.local, and the app runs with `npm run dev`.
-//
-//   &relief=30                          How many times taller than life the Scotese land stands (default 30,
-//                                       0 for flat). Real mountains are too low to see from space, so the
-//                                       height is exaggerated; the shape comes from the data.
-//
-// Each model is one picture draped over the globe, plus height tiles for 3D relief, both made by
-// scripts/land-texture.py. This proves the drawing method; no scene uses it yet.
-const TEST_LAND = new URLSearchParams(window.location.search).get("land");
+//   &relief=30                          how many times taller than life the land stands (default 30, 0 for
+//                                       flat). Real mountains are too low to see from space, so the height is
+//                                       exaggerated; the shape comes from the data.
+const LAND_OVERRIDE = new URLSearchParams(window.location.search).get("land");
 // Private material shows only on a developer's machine (`npm run dev`) with VITE_SHOW_PRIVATE=1 in .env.local.
 const SHOW_PRIVATE = import.meta.env.DEV && import.meta.env.VITE_SHOW_PRIVATE === "1";
-const PRIVATE_LAND = TEST_LAND === "cw" && SHOW_PRIVATE;
-/** True when a land model should be drawn: a known age, or the private map with private material switched on. */
-const LAND_ON = TEST_LAND !== null && (PRIVATE_LAND || /^\d{3}$/.test(TEST_LAND));
 const RELIEF = Number(new URLSearchParams(window.location.search).get("relief") ?? 30);
 const MERCATOR_EDGE = 85.0511; // the furthest north and south a Mapbox picture can reach
 const WORLD = {
@@ -53,11 +51,26 @@ const WORLD = {
   geometry: { type: "Polygon" as const, coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]] },
 };
 
-function addTestLand(m: mapboxgl.Map, age: string) {
-  const file = PRIVATE_LAND ? "private/clarey-werner-2023.jpg" : `scotese-${age}ma.jpg`;
+/** The land to draw: the address's override if it names one, otherwise the story's choice. */
+function chooseLand(fromStory: string | null): string | null {
+  if (LAND_OVERRIDE === null) return fromStory;
+  if (LAND_OVERRIDE === "cw") return SHOW_PRIVATE ? "cw" : fromStory;
+  return /^\d{3}$/.test(LAND_OVERRIDE) ? LAND_OVERRIDE : null; // "none" or anything unknown: today's map
+}
+
+/** Swap the land on the globe. null puts today's map back. */
+function showLand(m: mapboxgl.Map, land: string | null) {
+  if (m.getTerrain()) m.setTerrain(null);
+  for (const id of ["model-land", "model-sea"]) if (m.getLayer(id)) m.removeLayer(id);
+  for (const id of ["model-land", "model-sea", "model-dem"]) if (m.getSource(id)) m.removeSource(id);
+  if (!land) return;
+
+  const isPrivate = land === "cw";
+  const file = isPrivate ? "private/clarey-werner-2023.jpg" : `scotese-${land}ma.jpg`;
+  const under = m.getLayer("story-clouds") ? "story-clouds" : undefined; // keep the land beneath the clouds
   // Deep-sea colour underneath, so today's map does not show around the picture's edges.
   m.addSource("model-sea", { type: "geojson", data: WORLD });
-  m.addLayer({ id: "model-sea", type: "fill", source: "model-sea", paint: { "fill-color": "#0c2a4e", "fill-emissive-strength": 1 } });
+  m.addLayer({ id: "model-sea", type: "fill", source: "model-sea", paint: { "fill-color": "#0c2a4e", "fill-emissive-strength": 1 } }, under);
   m.addSource("model-land", {
     type: "image",
     url: `${import.meta.env.BASE_URL}land/${file}`,
@@ -68,23 +81,33 @@ function addTestLand(m: mapboxgl.Map, age: string) {
       [-180, -MERCATOR_EDGE],
     ],
   });
-  m.addLayer({
-    id: "model-land",
-    type: "raster",
-    source: "model-land",
-    paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1 },
-  });
-  // 3D relief from the model's own heights (Scotese only; the private map has no heights).
-  if (!PRIVATE_LAND && RELIEF > 0) {
+  m.addLayer(
+    { id: "model-land", type: "raster", source: "model-land", paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1 } },
+    under,
+  );
+  // 3D relief from the model's own heights (the private map has no heights).
+  if (!isPrivate && RELIEF > 0) {
     m.addSource("model-dem", {
       type: "raster-dem",
-      tiles: [`${window.location.origin}${import.meta.env.BASE_URL}land/dem/scotese-${age}ma/{z}/{x}/{y}.png`],
+      tiles: [`${window.location.origin}${import.meta.env.BASE_URL}land/dem/scotese-${land}ma/{z}/{x}/{y}.png`],
       tileSize: 256,
       encoding: "mapbox",
       maxzoom: 3,
     });
     m.setTerrain({ source: "model-dem", exaggeration: RELIEF });
   }
+}
+
+/** The on-screen note that goes with a land model. */
+function landNote(land: string): string {
+  const heights = RELIEF > 0 ? ` Heights drawn ${RELIEF} times taller than life.` : "";
+  if (land === "cw") {
+    return "Private test, not for publication: pre-flood land after Clarey and Werner (2023), Fig. 17. Permission pending. The zones are theirs; the surface texture and the position on the globe are ours.";
+  }
+  if (LAND_OVERRIDE !== null) {
+    return `Land test: ${Number(land)} million years ago on the conventional scale.${heights} Scotese and Wright (2018), CC BY 4.0.`;
+  }
+  return `The land is a model, not from the text: a Pangaea-like land standing in for the pre-flood world.${heights} Scotese and Wright (2018), CC BY 4.0.`;
 }
 
 const CLOUDS_ON = new URLSearchParams(window.location.search).get("clouds") !== "0";
@@ -121,13 +144,18 @@ interface Props {
   camera: GlobeCamera | null;
   /** Seconds the current beat holds, used to time a slow drift. */
   hold: number;
+  /** The land model for the current beat, or null for today's map. */
+  land: string | null;
+  /** Where the globe faces before the first beat arrives. */
+  startCenter: [number, number];
   /** Features to pin for the current scene (already filtered by the "text only" switch). */
   pins: MapFeature[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
 
-export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }: Props) {
+export default function GlobeStage({ camera, hold, land, startCenter, pins, selectedId, onSelect }: Props) {
+  const shownLand = chooseLand(land);
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [ready, setReady] = useState(false);
@@ -139,7 +167,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
       container: container.current,
       style: "mapbox://styles/mapbox/standard",
       projection: "globe",
-      center: [43.5, 28.0],
+      center: startCenter,
       zoom: 1.4,
     });
     m.on("style.load", () => {
@@ -159,12 +187,6 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
       });
       // Each addition is tried on its own, so one failing does not stop the rest, and the reason is kept
       // for the ?debug readout.
-      try {
-        if (LAND_ON && TEST_LAND) addTestLand(m, TEST_LAND);
-        globeStatus.land = LAND_ON ? "added" : TEST_LAND ? `not shown ("${TEST_LAND}" is not a known land)` : "none asked for (add ?land=200)";
-      } catch (e) {
-        globeStatus.land = `failed: ${e instanceof Error ? e.message : String(e)}`;
-      }
       // Slow clouds around the globe, seen from far out. Add ?clouds=0 to the address to switch them off.
       try {
         if (CLOUDS_ON) m.addLayer(createCloudLayer());
@@ -192,8 +214,8 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
     // Whole-globe views are sized to the screen: the globe fills about four fifths of the space above
     // the verse, on a wide monitor and on a phone alike. Close views keep the zoom they were given.
     const box = m.getContainer();
-    const lift = box.clientHeight * 0.2; // room for the verse underneath
-    const fitted = Math.log2((0.8 * Math.min(box.clientWidth, box.clientHeight - lift) * Math.PI) / 512);
+    const lift = box.clientHeight * 0.26; // room for the verse underneath
+    const fitted = Math.log2((0.86 * Math.min(box.clientWidth, box.clientHeight - lift) * Math.PI) / 512);
     const wide = 1 - Math.min(Math.max((camera.zoom - 2.5) / 1.5, 0), 1); // 1 for whole-globe views, 0 from zoom 4
     m.easeTo({
       center: camera.center,
@@ -215,6 +237,18 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
     }, camera.seconds * 1000);
     return () => window.clearTimeout(timer);
   }, [camera, hold, ready]);
+
+  // The land for the current beat. Clouds are added first (above), so the land always sits beneath them.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    try {
+      showLand(m, shownLand);
+      globeStatus.land = shownLand ? `model ${shownLand}` : "today's map";
+    } catch (e) {
+      globeStatus.land = `failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }, [shownLand, ready]);
 
   // Pins for the current scene. The tier decides the outline: solid for the text, dashed for a
   // scholar's reading, dotted for a model. A position with no research behind it is hollow.
@@ -247,12 +281,10 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
     <>
       <div ref={container} className="globe" />
       {DEBUG && camera && <GlobeReadout map={map.current} />}
-      {LAND_ON && camera && (
+      {shownLand && camera && (
         <p className="land-credit">
           <span className="tier-badge tier-model">Model</span>
-          {PRIVATE_LAND
-            ? "Private test, not for publication: pre-flood land after Clarey and Werner (2023), Fig. 17. Permission pending. The zones are theirs; the surface texture and the position on the globe are ours."
-            : `Land test: ${Number(TEST_LAND)} million years ago on the conventional scale. Heights drawn ${RELIEF > 0 ? `${RELIEF} times taller than life` : "flat"}. A test of the drawing method only. Scotese and Wright (2018), CC BY 4.0.`}
+          {landNote(shownLand)}
         </p>
       )}
     </>
