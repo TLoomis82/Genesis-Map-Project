@@ -167,6 +167,8 @@ export interface SkyLayer {
   layer: CustomLayerInterface;
   /** Where the sun and moon are (the points on earth beneath them), or null for the usual light and no sun or moon drawn. */
   setSky(sky: { sun: [number, number]; moon: [number, number] } | null): void;
+  /** Called every frame with the globe's disc on the screen: centre and radius in CSS pixels. */
+  onDisc: ((disc: { x: number; y: number; r: number }) => void) | null;
   /** Called every frame with where the sun and moon fall on the screen, while a sky is set. */
   onLights: ((lights: Lights | null) => void) | null;
   /** Glide the water level and the weather toward new values, or jump straight to them. */
@@ -295,11 +297,26 @@ export function createCloudLayer(): SkyLayer {
       const glide = 1 - Math.exp(-dt * 0.55);
       uniforms.uSun.value.lerp(wantSun, glide).normalize();
       moonDir.lerp(wantMoon, glide).normalize();
-      if (skyOn && api.onLights && projection?.name === "globe" && globeToMercator) {
-        whole.fromArray(matrix).multiply(globeToMercatorMatrix.fromArray(globeToMercator));
+      const measuring = projection?.name === "globe" && globeToMercator && (api.onDisc || (skyOn && api.onLights));
+      if (measuring) {
+        whole.fromArray(matrix).multiply(globeToMercatorMatrix.fromArray(globeToMercator!));
         inverse.copy(whole).invert();
         eye4.set(0, 0, 1, 0).applyMatrix4(inverse); // the eye is the one point every line of sight passes through
         eye.set(eye4.x / eye4.w, eye4.y / eye4.w, eye4.z / eye4.w);
+      }
+      if (measuring && api.onDisc) {
+        // The globe's outline as the eye sees it: the circle where lines of sight just touch the sphere.
+        const box = map.getContainer();
+        const away = eye.length();
+        const s = Math.min(GLOBE_RADIUS / away, 0.999);
+        const c = Math.sqrt(1 - s * s);
+        a3.copy(eye).divideScalar(away);
+        b3.set(0.31, 0.74, 0.59).cross(a3).normalize();
+        const middle = onScreen(a3.clone().multiplyScalar(GLOBE_RADIUS * s), box.clientWidth, box.clientHeight);
+        const edge = onScreen(a3.clone().multiplyScalar(GLOBE_RADIUS * s).addScaledVector(b3, GLOBE_RADIUS * c), box.clientWidth, box.clientHeight);
+        api.onDisc({ x: middle.x, y: middle.y, r: Math.hypot(edge.x - middle.x, edge.y - middle.y) });
+      }
+      if (measuring && skyOn && api.onLights) {
         const box = map.getContainer();
         const width = box.clientWidth;
         const height = box.clientHeight;
@@ -344,6 +361,7 @@ export function createCloudLayer(): SkyLayer {
   const api: SkyLayer = {
     layer: layer as unknown as CustomLayerInterface,
     onLights: null,
+    onDisc: null,
     setSky(sky) {
       skyOn = sky !== null;
       wantSun.copy(sky ? sunDirection(sky.sun[0], sky.sun[1]) : usualSun);

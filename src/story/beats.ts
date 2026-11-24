@@ -52,6 +52,8 @@ export interface Beat {
   stars?: number;
   /** The sun and moon drawn in their true places for this beat. Left out: neither is drawn. */
   sky?: Sky;
+  /** True while the land has nothing growing on it yet: the dry land of 1:9-10, before the grass of 1:11. */
+  bare?: boolean;
   /** Hand-drawn scenes that can be opened from this beat: the dots that say there is more to see here. */
   drills: Drill[];
 }
@@ -158,6 +160,7 @@ interface PlanBeat {
   ark?: ArkPlace;
   stars?: number;
   sky?: Sky;
+  bare?: boolean;
 }
 
 // Day 4. One arrangement the sun and moon can really take (see src/data/astronomy.ts); the text gives no
@@ -189,8 +192,8 @@ const arkAt = (lng: number, lat: number, afloat = true): ArkPlace => ({ at: [lng
 
 const globePlan: PlanBeat[] = [
   // Day 3 and day 4. The globe is first seen under water, as the opening left it; then the land comes up.
-  { sceneId: "day-3", verse: "1:9", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 12, land: PRE_FLOOD, flood: { level: 1400, storm: 0 }, relief: 8, stars: 0, depiction: landAppears },
-  { sceneId: "day-3", verse: "1:10", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5, driftDegrees: 30 }, hold: 13, land: PRE_FLOOD, flood: { level: 0, storm: 0 }, stars: 0, depiction: landAppears },
+  { sceneId: "day-3", verse: "1:9", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 12, land: PRE_FLOOD, flood: { level: 1400, storm: 0 }, relief: 8, stars: 0, bare: true, depiction: landAppears },
+  { sceneId: "day-3", verse: "1:10", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5, driftDegrees: 30 }, hold: 13, land: PRE_FLOOD, flood: { level: 0, storm: 0 }, stars: 0, bare: true, depiction: landAppears },
   { sceneId: "day-3", verse: "1:11", camera: { center: PRE_FLOOD_VIEW, zoom: 2.5, pitch: 30, seconds: 8 }, hold: 13, land: PRE_FLOOD, stars: 0, depiction: landAppears },
   { sceneId: "day-4", verse: "1:14", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 185) },
   { sceneId: "day-4", verse: "1:16", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 6 }, hold: 15, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 3) },
@@ -242,6 +245,7 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   ark: g.ark,
   stars: g.stars,
   sky: g.sky,
+  bare: g.bare,
   drills: DRILLS[g.sceneId] ?? [],
 }));
 

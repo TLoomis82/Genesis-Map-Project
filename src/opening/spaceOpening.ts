@@ -24,6 +24,8 @@ export interface SpaceTargets {
   vault: number;
   /** How far round the light has gone, in turns. Raising it by one is one evening and morning. */
   turn: number;
+  /** 0 = the light where the turning has left it, 1 = the light full on the near side, as the globe will first be seen. */
+  face: number;
 }
 
 const RIPPLES = 8;
@@ -31,7 +33,7 @@ const RIPPLES = 8;
 const fragment = /* glsl */ `
   precision highp float;
   uniform vec2 uCenter;
-  uniform float uRadius, uTime, uWater, uLight, uDivide, uVault, uTurn;
+  uniform float uRadius, uTime, uWater, uLight, uDivide, uVault, uTurn, uFace;
   uniform vec4 uRip[${RIPPLES}];
 
   float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
@@ -62,12 +64,12 @@ const fragment = /* glsl */ `
     vec2 p = (gl_FragCoord.xy - uCenter) / uRadius;
     float r = length(p);
     float a = uTurn * 6.2831853;
-    vec3 sun = normalize(vec3(-0.86 * cos(a) + 0.40 * sin(a), 0.30, 0.86 * sin(a) + 0.40 * cos(a)));
+    vec3 sun = normalize(mix(vec3(-0.86 * cos(a) + 0.40 * sin(a), 0.30, 0.86 * sin(a) + 0.40 * cos(a)), vec3(-0.12, 0.19, 0.97), uFace));
     vec3 col = vec3(0.0);
 
     // The sky that the firmament makes: a thin glow outside the edge, on the lit side.
     float edgeDay = mix(1.0, smoothstep(-0.35, 0.5, dot(normalize(vec3(p, 0.15)), sun)), uDivide);
-    col += vec3(0.30, 0.56, 1.0) * uVault * uLight * edgeDay * exp(-max(r - 1.0, 0.0) * 24.0) * step(1.0, r) * 0.85;
+    col += vec3(0.30, 0.56, 1.0) * uVault * uLight * edgeDay * exp(-max(r - 1.0, 0.0) * 15.0) * step(1.0, r) * 0.8;
 
     // Without a firmament the waters have no clean edge: they trail off into mist.
     float soft = 1.0 - uVault;
@@ -87,9 +89,10 @@ const fragment = /* glsl */ `
       float lam = dot(nn, sun);
       float wrap = mix(0.55 + 0.45 * lam, smoothstep(-0.14, 0.32, lam), uDivide);
       vec3 view = vec3(0.0, 0.0, 1.0);
-      vec3 deep = mix(vec3(0.022, 0.075, 0.130), vec3(0.020, 0.200, 0.360), uVault * 0.85);
+      // With the firmament in place the water takes the colour of the sea on the globe, so the handover is a match.
+      vec3 deep = mix(vec3(0.022, 0.075, 0.130), vec3(0.030, 0.090, 0.175), uVault);
       vec3 water = deep * (0.9 + h0 * 0.35);
-      vec3 lit = water * (0.10 + 2.3 * wrap * uLight);
+      vec3 lit = water * (0.10 + mix(2.3, 1.75, uVault) * wrap * uLight);
       // Glints: from the light when there is light; before it, only a faint sheen so the deep can be seen moving.
       lit += vec3(1.0, 0.96, 0.86) * pow(max(dot(reflect(-sun, ns), view), 0.0), 70.0) * uLight * wrap * 0.5;
       lit += vec3(0.50, 0.62, 0.80) * pow(max(dot(nn, normalize(vec3(0.25, 0.45, 1.0))), 0.0), 26.0) * 0.13 * (1.0 - uLight);
@@ -123,9 +126,12 @@ export class SpaceOpening {
     uDivide: { value: 0 },
     uVault: { value: 0 },
     uTurn: { value: 0 },
+    uFace: { value: 0 },
     uRip: { value: Array.from({ length: RIPPLES }, () => new THREE.Vector4(0, 0, 1, -100)) },
   };
-  private now: SpaceTargets = { water: 0, light: 0, divide: 0, vault: 0, turn: 0 };
+  private now: SpaceTargets = { water: 0, light: 0, divide: 0, vault: 0, turn: 0, face: 0 };
+  /** The disc of the real globe on the screen, once it is known (centre and radius, CSS pixels). */
+  private disc: { x: number; y: number; r: number } | null = null;
   private want: SpaceTargets = { ...this.now };
   /** True while the hand has moved the light or the sky: the picture then follows the hand more closely. */
   private byHand = false;
@@ -171,6 +177,11 @@ export class SpaceOpening {
     this.uniforms.uRadius.value = (diameter / 2) * ratio;
     this.uniforms.uCenter.value.set((w / 2) * ratio, (h - (h - lift) / 2) * ratio);
   };
+
+  /** Tell the opening where the disc of the real globe is. Sizes that make no sense are ignored. */
+  setDisc(disc: { x: number; y: number; r: number }) {
+    if (Number.isFinite(disc.r) && disc.r > 20 && disc.r < 4000) this.disc = disc;
+  }
 
   setTargets(t: SpaceTargets) {
     this.want = { ...t };
@@ -249,6 +260,17 @@ export class SpaceOpening {
     u.uDivide.value = this.now.divide;
     u.uVault.value = this.now.vault;
     u.uTurn.value = this.now.turn;
+    this.now.face += (this.want.face - this.now.face) * (1 - Math.exp(-dt * 0.5));
+    u.uFace.value = this.now.face;
+    if (this.disc) {
+      // Ease onto the measured disc of the globe, so the waters lie exactly where the globe is.
+      const ratio = this.renderer.getPixelRatio();
+      const h = this.canvas.clientHeight || window.innerHeight;
+      const ease = 1 - Math.exp(-dt * 2.5);
+      u.uRadius.value += (this.disc.r * ratio - u.uRadius.value) * ease;
+      u.uCenter.value.x += (this.disc.x * ratio - u.uCenter.value.x) * ease;
+      u.uCenter.value.y += ((h - this.disc.y) * ratio - u.uCenter.value.y) * ease;
+    }
     this.renderer.render(this.scene, this.camera);
   }
 

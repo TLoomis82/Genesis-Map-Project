@@ -29,14 +29,14 @@ const firmament: Depiction = {
 const step = (sceneId: SpaceStep["sceneId"], verse: string, hold: number, depiction: Depiction, targets: SpaceTargets): SpaceStep => ({ sceneId, verse, hold, depiction, targets });
 
 export const spaceSteps: SpaceStep[] = [
-  step("before", "1:1", 6, farOff, { water: 0, light: 0, divide: 0, vault: 0, turn: 0 }),
-  step("before", "1:2", 12, farOff, { water: 1, light: 0, divide: 0, vault: 0, turn: 0 }),
-  step("day-1", "1:3", 10, farOff, { water: 1, light: 1, divide: 0, vault: 0, turn: 0 }),
-  step("day-1", "1:4", 10, divided, { water: 1, light: 1, divide: 1, vault: 0, turn: 0 }),
-  step("day-1", "1:5", 13, divided, { water: 1, light: 1, divide: 1, vault: 0, turn: 1 }),
-  step("day-2", "1:6", 10, firmament, { water: 1, light: 1, divide: 1, vault: 0.4, turn: 1 }),
-  step("day-2", "1:7", 11, firmament, { water: 1, light: 1, divide: 1, vault: 1, turn: 1 }),
-  step("day-2", "1:8", 12, firmament, { water: 1, light: 1, divide: 1, vault: 1, turn: 2 }),
+  step("before", "1:1", 6, farOff, { water: 0, light: 0, divide: 0, vault: 0, turn: 0, face: 0 }),
+  step("before", "1:2", 12, farOff, { water: 1, light: 0, divide: 0, vault: 0, turn: 0, face: 0 }),
+  step("day-1", "1:3", 10, farOff, { water: 1, light: 1, divide: 0, vault: 0, turn: 0, face: 0 }),
+  step("day-1", "1:4", 10, divided, { water: 1, light: 1, divide: 1, vault: 0, turn: 0, face: 0 }),
+  step("day-1", "1:5", 13, divided, { water: 1, light: 1, divide: 1, vault: 0, turn: 1, face: 0 }),
+  step("day-2", "1:6", 10, firmament, { water: 1, light: 1, divide: 1, vault: 0.4, turn: 1, face: 0 }),
+  step("day-2", "1:7", 11, firmament, { water: 1, light: 1, divide: 1, vault: 1, turn: 1, face: 0 }),
+  step("day-2", "1:8", 12, firmament, { water: 1, light: 1, divide: 1, vault: 1, turn: 2, face: 1 }),
 ];
 
 export const stepText = (s: SpaceStep) => kjv(s.verse);

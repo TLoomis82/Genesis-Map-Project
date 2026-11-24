@@ -34,6 +34,8 @@ const LAND_TEST = new URLSearchParams(window.location.search).has("land");
 const firstGlobe = beats[FIRST_GLOBE_BEAT];
 /** While the opening plays, the globe waits underneath it with all its land under water. */
 const WAITING = { level: UNDER_WATER, storm: 0 };
+// The waiting globe already stands where the first globe verse will show it, so nothing moves at the handover.
+const WAITING_CAMERA = firstGlobe.camera ? { ...firstGlobe.camera, seconds: 0, driftDegrees: undefined } : null;
 const NO_DRILLS: { scene: string; label: string }[] = [];
 /** What the hand can do on the waters at each verse of the opening, and the label that says so. */
 const HAND: Record<string, { mode: "swipe" | "light" | "vault"; hint: string }> = {
@@ -113,6 +115,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const floodShown = floodNow ? floodNow.flood : drawn !== null ? { level: UNDER_WATER * (1 - drawn) ** 2, storm: 0 } : (beat.flood ?? null);
 
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, beats.length - 1))), []);
+  const setDisc = useCallback((disc: { x: number; y: number; r: number }) => scene.current?.setDisc(disc), []);
   const drillFromHere = useCallback((sceneId: string) => onDrill?.(sceneId, index), [onDrill, index]);
 
   // Create the opening once.
@@ -218,7 +221,10 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
     <>
       {globeNeeded && (
         <GlobeStage
-          camera={beat.camera ?? null}
+          camera={beat.camera ?? WAITING_CAMERA}
+          quiet={!onGlobe}
+          bare={onGlobe ? beat.bare : true}
+          onDisc={setDisc}
           hold={beat.hold}
           land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
           flood={onGlobe ? floodShown : WAITING}

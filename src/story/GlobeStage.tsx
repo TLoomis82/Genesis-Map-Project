@@ -53,6 +53,8 @@ const WORLD = {
 
 /** Lands that have a picture of their heights for the flood (public/land/height/scotese-<age>ma.jpg). */
 const HEIGHT_PICTURES = ["000", "200"];
+/** Lands that have a bare picture, with nothing growing yet (public/land/scotese-<age>ma-bare.jpg). */
+const BARE_LANDS = ["200"];
 /** Lands that have a double-size picture (public/land/scotese-<age>ma-8k.jpg). */
 const SHARP_LANDS = ["200"];
 /**
@@ -71,8 +73,8 @@ function chooseLand(fromStory: string | null): string | null {
 /** Swap the land on the globe. null puts today's map back. */
 function showLand(m: mapboxgl.Map, land: string | null) {
   if (m.getTerrain()) m.setTerrain(null);
-  for (const id of ["model-land", "model-sea"]) if (m.getLayer(id)) m.removeLayer(id);
-  for (const id of ["model-land", "model-sea", "model-dem"]) if (m.getSource(id)) m.removeSource(id);
+  for (const id of ["model-bare", "model-land", "model-sea"]) if (m.getLayer(id)) m.removeLayer(id);
+  for (const id of ["model-bare", "model-land", "model-sea", "model-dem"]) if (m.getSource(id)) m.removeSource(id);
   if (!land) return;
 
   const isPrivate = land === "cw";
@@ -97,6 +99,24 @@ function showLand(m: mapboxgl.Map, land: string | null) {
     { id: "model-land", type: "raster", source: "model-land", paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1 } },
     under,
   );
+  // The same land with nothing growing on it yet: laid over the green one and faded away when the
+  // story reaches the grass and the trees (Genesis 1:11). Same relief, same seas.
+  if (BARE_LANDS.includes(land)) {
+    m.addSource("model-bare", {
+      type: "image",
+      url: `${import.meta.env.BASE_URL}land/scotese-${land}ma-bare.jpg`,
+      coordinates: [
+        [-180, MERCATOR_EDGE],
+        [180, MERCATOR_EDGE],
+        [180, -MERCATOR_EDGE],
+        [-180, -MERCATOR_EDGE],
+      ],
+    });
+    m.addLayer(
+      { id: "model-bare", type: "raster", source: "model-bare", paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1, "raster-opacity": 0, "raster-opacity-transition": { duration: 6000, delay: 0 } } },
+      under,
+    );
+  }
   // 3D relief from the model's own heights (the private map has no heights).
   if (!isPrivate && RELIEF > 0) {
     m.addSource("model-dem", {
@@ -174,6 +194,12 @@ interface Props {
   onSelect: (id: string) => void;
   /** Where the ark is for the current beat, or null when it is not shown. */
   ark?: { at: [number, number]; afloat: boolean } | null;
+  /** True while the land has nothing growing on it yet (before Genesis 1:11). */
+  bare?: boolean;
+  /** True while the globe waits out of sight under the opening: no notes or credits are shown. */
+  quiet?: boolean;
+  /** Told, every frame, where the globe's disc is on the screen: its centre and radius in CSS pixels. */
+  onDisc?: (disc: { x: number; y: number; r: number }) => void;
   /** True while the ark is being moved by hand: it then follows closely instead of taking the whole beat. */
   arkQuick?: boolean;
   /** Rings to tap, for the front door: each opens a part of the story. */
@@ -201,7 +227,7 @@ export interface Door {
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, bare = false, quiet = false, onDisc, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -298,6 +324,23 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       globeStatus.land = `failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   }, [shownLand, ready]);
+
+  // Nothing growing yet, or green: one slow fade between the two pictures of the same land.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !m.getLayer("model-bare")) return;
+    m.setPaintProperty("model-bare", "raster-opacity", bare ? 1 : 0);
+  }, [bare, shownLand, ready]);
+
+  // Where the globe's disc is on the screen, for the opening to sit its waters exactly on it.
+  useEffect(() => {
+    const layer = sky.current;
+    if (!layer || !ready) return;
+    layer.onDisc = onDisc ?? null;
+    return () => {
+      layer.onDisc = null;
+    };
+  }, [onDisc, ready]);
 
   // The flood and the weather for the current beat glide to their new values inside the sky layer.
   useEffect(() => {
@@ -482,13 +525,13 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
   }, [arkLng, arkLat, arkAfloat, arkSeconds, ready]);
 
   if (!TOKEN) {
-    return camera ? <div className="notice globe-notice">The globe needs a Mapbox token in VITE_MAPBOX_TOKEN (.env.local).</div> : null;
+    return camera && !quiet ? <div className="notice globe-notice">The globe needs a Mapbox token in VITE_MAPBOX_TOKEN (.env.local).</div> : null;
   }
   return (
     <>
       <div ref={container} className="globe" />
-      {DEBUG && camera && <GlobeReadout map={map.current} />}
-      {shownLand && camera && (
+      {DEBUG && camera && !quiet && <GlobeReadout map={map.current} />}
+      {shownLand && camera && !quiet && (
         <p className="land-credit">
           <span className="tier-badge tier-model">Model</span>
           {landNote(shownLand)}

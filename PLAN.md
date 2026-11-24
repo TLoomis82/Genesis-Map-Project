@@ -349,5 +349,13 @@ Not done, in order:
     illustration, the rest are the text's). The sliders are seen here; their effect on the globe is NOT.
   - Still to do from the list: tap for life on days 5 and 6; drag the water down at Ararat (the flood slider
     already covers it); hold for wind on the deep.
+- Day 3 land is bare until the grass: `public/land/scotese-200ma-bare.jpg` (the green picture recoloured to bare
+  earth, same relief and seas) lies over the green one for 1:9-10 and fades away over six seconds at 1:11.
+- Handover from the firmament to the globe, reworked after Tyler said it looked off. Three causes found by reading
+  the code: the waiting globe was not yet at the size and place of its first verse, so it moved during the fade
+  (now it waits already there); the waters were sized by a formula that came out smaller than the real globe (now
+  the sky layer measures the globe's outline on screen and the waters ease onto it); and the waters ended bright
+  blue and half lit where the globe is navy and fully lit (now the last verse of day 2 turns the light to the near
+  side and the water takes the globe's sea colour). NOT seen on Mapbox.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.
