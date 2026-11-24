@@ -5,6 +5,19 @@ Status: second draft, 2026-11-23. **The storyboard is now interactive:** it is t
 Second draft with Tyler's four decisions applied (see "Decisions"). Nothing here is built unless its page says so. Tyler approves or changes each page
 before it is built.
 
+## Direction update (Tyler, 2026-11-23, late): two looks, on purpose
+
+- **The earth stays detailed.** The globe as built (land with relief, sea depths, clouds, day and night) is the world
+  you see and tap. It is not redrawn as illustration.
+- **Every event you drill into is hand-drawn, and drawn on the fly:** lines draw themselves in as you watch, as if a
+  hand were sketching the scene in front of you.
+- **The days before there is a globe (the beginning, days 1 and 2, and on until the earth is finished) are hand-drawn
+  on the fly too.** Creation is sketched into being; the finished earth is then shown in full detail.
+- **Hand-drawn scenes stay interactive.** When the viewer moves the water or the vault, the drawing itself moves:
+  the inked water sloshes, the lines keep boiling.
+- This replaces the earlier idea of an illustrated picture of the cosmos as the hub. That picture
+  (`docs/style/hub-style-frame-1.png`) is kept as a reference for the hand-drawn creation days.
+
 ## The idea in one paragraph
 
 You see the world as Genesis pictures it. You turn it, tap a part of it, and the view moves in to the event that

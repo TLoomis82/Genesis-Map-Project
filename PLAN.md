@@ -267,3 +267,5 @@ Still to do in M3:
 - The storyboard is interactive and is the app's front door (`src/board/`): the hub picture with twelve rings, a
   move-in on tap, a card per scene (verse from the KJV file, narration, watch, touch, labels) and a button into the
   playable story where a scene exists. `?view=story` or `?debug` opens the story directly.
+- Direction update (late 2026-11-23): the detailed globe is the hub and stays realistic; every event scene, and the
+  creation days before the globe exists, are hand-drawn "on the fly" and interactive. See the top of `STORYBOARD.md`.
