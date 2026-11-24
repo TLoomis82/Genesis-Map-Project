@@ -83,6 +83,9 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
+/** For the ?debug readout: is the layer being drawn, and did anything go wrong? */
+export const cloudStatus = { frames: 0, opacity: 0, projection: "not drawn yet", error: null as string | null };
+
 export function createCloudLayer(): CustomLayerInterface {
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
@@ -117,8 +120,12 @@ export function createCloudLayer(): CustomLayerInterface {
 
     onAdd(m: MapboxMap, gl: WebGL2RenderingContext) {
       map = m;
-      renderer = new THREE.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true });
-      renderer.autoClear = false;
+      try {
+        renderer = new THREE.WebGLRenderer({ canvas: m.getCanvas(), context: gl, antialias: true });
+        renderer.autoClear = false;
+      } catch (e) {
+        cloudStatus.error = e instanceof Error ? e.message : String(e);
+      }
     },
 
     render(_gl: WebGL2RenderingContext, matrix: number[], projection?: { name?: string }, globeToMercator?: number[]) {
@@ -127,6 +134,9 @@ export function createCloudLayer(): CustomLayerInterface {
       const zoom = map.getZoom();
       const shown = projection?.name === "globe" && globeToMercator ? 1 - THREE.MathUtils.smoothstep(zoom, FADE_FROM, FADE_TO) : 0;
       uniforms.uOpacity.value = shown;
+      cloudStatus.frames += 1;
+      cloudStatus.opacity = shown;
+      cloudStatus.projection = projection?.name ?? "not passed";
       if (shown <= 0) return;
 
       const params = arguments[7] as { globeClippingPlane?: readonly number[] | null } | undefined;
@@ -136,8 +146,12 @@ export function createCloudLayer(): CustomLayerInterface {
 
       uniforms.uTime.value = (performance.now() - started) / 1000;
       camera.projectionMatrix.fromArray(matrix).multiply(globeToMercatorMatrix.fromArray(globeToMercator!));
-      renderer.resetState();
-      renderer.render(scene, camera);
+      try {
+        renderer.resetState();
+        renderer.render(scene, camera);
+      } catch (e) {
+        cloudStatus.error = e instanceof Error ? e.message : String(e);
+      }
       map.triggerRepaint(); // keep the clouds moving
     },
 

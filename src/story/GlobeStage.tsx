@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { MapFeature } from "../data/types.ts";
 import type { GlobeCamera } from "./beats.ts";
-import { createCloudLayer } from "./cloudLayer.ts";
+import { cloudStatus, createCloudLayer } from "./cloudLayer.ts";
 
 // The one Mapbox globe used by the whole story. It is created a little before the opening
 // fades away, sits underneath the opening canvas, and from day 5 on it is the stage: each beat
@@ -84,6 +84,35 @@ function addTestLand(m: mapboxgl.Map, age: string) {
   }
 }
 
+const CLOUDS_ON = new URLSearchParams(window.location.search).get("clouds") !== "0";
+const DEBUG = new URLSearchParams(window.location.search).has("debug");
+/** What happened when the land and the clouds were added, for the ?debug readout. */
+const globeStatus = { land: "style not loaded yet", clouds: "style not loaded yet", errors: [] as string[] };
+
+/** With ?debug: a small readout of what the globe is doing, so a screenshot shows what went wrong. */
+function GlobeReadout({ map }: { map: mapboxgl.Map | null }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((n) => n + 1), 500);
+    return () => window.clearInterval(timer);
+  }, []);
+  const terrain = map?.getTerrain();
+  return (
+    <pre className="globe-readout">
+      {[
+        `zoom ${map ? map.getZoom().toFixed(2) : "-"}  pitch ${map ? map.getPitch().toFixed(0) : "-"}  projection ${map?.getProjection()?.name ?? "-"}`,
+        `land: ${globeStatus.land}`,
+        `relief: ${terrain ? `on, ${terrain.exaggeration} times` : "off"}`,
+        `clouds: ${globeStatus.clouds}; frames ${cloudStatus.frames}; strength ${cloudStatus.opacity.toFixed(2)}; seen as "${cloudStatus.projection}"`,
+        cloudStatus.error ? `cloud error: ${cloudStatus.error}` : "",
+        ...globeStatus.errors.map((e) => `map error: ${e}`),
+      ]
+        .filter(Boolean)
+        .join("\n")}
+    </pre>
+  );
+}
+
 interface Props {
   /** Camera for the current beat, or null while the opening is still on screen. */
   camera: GlobeCamera | null;
@@ -125,10 +154,25 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
         "space-color": "rgb(0, 0, 0)",
         "star-intensity": 0.6, // the globe is first shown at the end of day 4, when the stars are there
       });
-      if (LAND_ON && TEST_LAND) addTestLand(m, TEST_LAND);
+      // Each addition is tried on its own, so one failing does not stop the rest, and the reason is kept
+      // for the ?debug readout.
+      try {
+        if (LAND_ON && TEST_LAND) addTestLand(m, TEST_LAND);
+        globeStatus.land = LAND_ON ? "added" : TEST_LAND ? `not shown ("${TEST_LAND}" is not a known land)` : "none asked for (add ?land=200)";
+      } catch (e) {
+        globeStatus.land = `failed: ${e instanceof Error ? e.message : String(e)}`;
+      }
       // Slow clouds around the globe, seen from far out. Add ?clouds=0 to the address to switch them off.
-      if (new URLSearchParams(window.location.search).get("clouds") !== "0") m.addLayer(createCloudLayer());
+      try {
+        if (CLOUDS_ON) m.addLayer(createCloudLayer());
+        globeStatus.clouds = CLOUDS_ON ? "added" : "switched off";
+      } catch (e) {
+        globeStatus.clouds = `failed: ${e instanceof Error ? e.message : String(e)}`;
+      }
       setReady(true);
+    });
+    m.on("error", (e) => {
+      globeStatus.errors = [...globeStatus.errors, e.error?.message ?? "unknown map error"].slice(-3);
     });
     map.current = m;
     return () => {
@@ -192,6 +236,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
   return (
     <>
       <div ref={container} className="globe" />
+      {DEBUG && camera && <GlobeReadout map={map.current} />}
       {LAND_ON && camera && (
         <p className="land-credit">
           <span className="tier-badge tier-model">Model</span>
