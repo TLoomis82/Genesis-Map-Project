@@ -337,7 +337,7 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
   // Life on the globe: a canvas over the map, and each creature put on it by the map's own projection.
   const edge = useRef(0.2);
   const life = useRef<Life | null>(null);
-  const alive = lifeWant !== null && (lifeWant.flocks + lifeWant.shoals + lifeWant.whales + lifeWant.herds[0] + lifeWant.herds[1] + lifeWant.herds[2] > 0 || lifeWant.people);
+  const alive = lifeWant !== null && (lifeWant.flocks + lifeWant.shoals + lifeWant.whales + lifeWant.herds[0] + lifeWant.herds[1] + lifeWant.herds[2] > 0 || lifeWant.people || lifeWant.marks !== undefined);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || !alive) return;

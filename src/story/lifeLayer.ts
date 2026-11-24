@@ -24,7 +24,41 @@ export interface LifeWant {
   people: boolean;
   /** Day 7: everything slows. */
   calm: boolean;
+  /** From Eden to the ark: the garden, its river, and people as lights. Left out: none of these. */
+  marks?: Marks;
 }
+
+/**
+ * The story from Eden to the ark, as marks on the land before the flood. No place on that land can be
+ * known, so every position is a layout choice round the middle of the view, and the page says so.
+ * People are lights, as in the drawn scenes; God is never drawn.
+ */
+export interface Marks {
+  /** The point on the land the marks are laid out round. A layout choice. */
+  anchor: [number, number];
+  /** The garden's glow: 0 none, 1 full, less once the way to it is shut. */
+  garden: number;
+  /** The river going out of Eden and parting into four heads (2:10). */
+  rivers: boolean;
+  /** The flame at the east of the garden (3:24). */
+  flame: boolean;
+  /** How many of the first two are there yet: 0, 1 or 2. */
+  pair: number;
+  /** Where they are: in the garden, or east of it. */
+  pairEast: boolean;
+  /** How bright they are: 1 before the fall, less after. */
+  pairLight: number;
+  /** One who goes further east (4:16), and the city he builds (4:17). */
+  cain: boolean;
+  city: boolean;
+  /** How many more lights have spread over the land (6:1). */
+  peoples: number;
+  /** How far those lights have dulled (6:5, 6:11-12): 0 to 1. */
+  dulled: number;
+  /** One light that stays bright (6:8). */
+  noah: boolean;
+}
+export const NO_MARKS: Marks = { anchor: [0, 0], garden: 0, rivers: false, flame: false, pair: 0, pairEast: false, pairLight: 1, cain: false, city: false, peoples: 0, dulled: 0, noah: false };
 
 export const NO_LIFE: LifeWant = { flocks: 0, shoals: 0, whales: 0, herds: [0, 0, 0], people: false, calm: false };
 export const KINDS = ["Cattle", "Creeping things", "Beasts of the earth"];
@@ -66,6 +100,10 @@ export class Life {
   private made = 0;
   private people = 0;
   private pace = 1;
+  /** The marks as they are now on screen, each gliding toward what the verse asks for. */
+  private m = { garden: 0, rivers: 0, flame: 0, pair: 0, east: 0, light: 1, cain: 0, city: 0, peoples: 0, dulled: 0, noah: 0 };
+  private spread: [number, number][] = [];
+  private anchor: [number, number] = [0, 0];
   /** Around where new creatures appear: the middle of the view. */
   home: [number, number] = [0, 0];
 
@@ -163,6 +201,19 @@ export class Life {
     this.time += d;
     this.settle();
     this.people += ((this.want.people ? 1 : 0) - this.people) * (1 - Math.exp(-dt * 0.8));
+    const w = this.want.marks ?? NO_MARKS;
+    const to = (key: keyof Life["m"], target: number, rate = 0.9) => (this.m[key] += (target - this.m[key]) * (1 - Math.exp(-dt * rate)));
+    to("garden", w.garden);
+    to("rivers", w.rivers ? 1 : 0, 0.45);
+    to("flame", w.flame ? 1 : 0);
+    to("pair", w.pair);
+    to("east", w.pairEast ? 1 : 0, 0.5);
+    to("light", w.pairLight);
+    to("cain", w.cain ? 1 : 0, 0.5);
+    to("city", w.city ? 1 : 0, 0.6);
+    to("peoples", w.peoples, 0.35);
+    to("dulled", w.dulled, 0.4);
+    to("noah", w.noah ? 1 : 0);
     for (const g of this.groups) {
       g.shown += ((g.wanted ? 1 : 0) - g.shown) * (1 - Math.exp(-dt * 1.4));
       // Wander: the heading drifts, and turns away from the wrong realm and from the poles.
@@ -295,6 +346,7 @@ export class Life {
         }
       }
     }
+    this.drawMarks(t);
     // Humankind: two lights, side by side, in the middle of the view.
     if (this.people > 0.02) {
       const disc = this.projector.disc();
@@ -323,6 +375,155 @@ export class Life {
       ctx.shadowBlur = 5;
       ctx.fillText("Humankind (placed for layout, not a location)", disc.x, disc.y - disc.r * 0.08 + 46);
       ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  private light(x: number, y: number, size: number, alpha: number, warm = 1) {
+    const { ctx } = this;
+    if (alpha < 0.02) return;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 7);
+    // Bright and warm, or dulled toward an ashen red.
+    glow.addColorStop(0, warm > 0.5 ? "rgba(255, 246, 216, 0.95)" : "rgba(196, 170, 160, 0.8)");
+    glow.addColorStop(0.35, warm > 0.5 ? "rgba(238, 176, 74, 0.5)" : "rgba(150, 70, 60, 0.4)");
+    glow.addColorStop(1, "rgba(238, 176, 74, 0)");
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = warm > 0.5 ? "#fffbe8" : "#b9a39a";
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  private label(x: number, y: number, text: string, alpha: number) {
+    const { ctx } = this;
+    if (alpha < 0.05) return;
+    ctx.globalAlpha = alpha;
+    ctx.font = "italic 12px 'Iowan Old Style', Palatino, Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fbeecb";
+    ctx.shadowColor = "rgba(0,0,0,0.95)";
+    ctx.shadowBlur = 5;
+    ctx.fillText(text, x, y);
+    ctx.shadowBlur = 0;
+  }
+
+  /** The garden, its river, the flame, and people as lights. Positions are layout only. */
+  private drawMarks(t: number) {
+    const { ctx, m } = this;
+    if (m.garden + m.pair + m.cain + m.peoples + m.noah < 0.02) return;
+    const anchor = this.want.marks?.anchor ?? this.anchor;
+    this.anchor = anchor; // kept, so the marks fade out where they were
+    const garden: [number, number] = [anchor[0] - 12, anchor[1] + 8];
+    const east: [number, number] = [garden[0] + 11, garden[1] - 1];
+    const far: [number, number] = [garden[0] + 24, garden[1] - 3];
+    const g = this.projector.project(garden[0], garden[1]);
+    if (g.visible && m.garden > 0.02) {
+      const edge = this.projector.project(garden[0], garden[1] + 4.5);
+      const size = Math.max(14, Math.hypot(edge.x - g.x, edge.y - g.y));
+      // The river: out of the garden, then four heads.
+      if (m.rivers > 0.02) {
+        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = "#bfe6f7";
+        for (let k = 0; k < 4; k++) {
+          const bearing = -0.5 + k * 0.95;
+          ctx.globalAlpha = 0.85 * m.garden;
+          ctx.beginPath();
+          let begun = false;
+          for (let i = 0; i <= 20 * m.rivers; i++) {
+            const far2 = (i / 20) * 15;
+            const p = this.projector.project(garden[0] + Math.sin(bearing + Math.sin(i * 0.5 + k) * 0.18) * far2 * 1.2 + 1.5, garden[1] - Math.cos(bearing) * far2 * 0.9 - 2);
+            if (!p.visible) break;
+            if (begun) ctx.lineTo(p.x, p.y);
+            else ctx.moveTo(p.x, p.y);
+            begun = true;
+          }
+          ctx.stroke();
+        }
+      }
+      const glow = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, size);
+      glow.addColorStop(0, "rgba(214, 240, 150, 0.9)");
+      glow.addColorStop(0.55, "rgba(120, 190, 90, 0.5)");
+      glow.addColorStop(1, "rgba(120, 190, 90, 0)");
+      ctx.globalAlpha = m.garden;
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(g.x, g.y, size, 0, Math.PI * 2);
+      ctx.fill();
+      this.label(g.x, g.y - size - 6, "Eden (placed for layout, not a location)", m.garden);
+      if (m.flame > 0.02) {
+        const f = this.projector.project(garden[0] + 5, garden[1] - 0.5);
+        if (f.visible) {
+          const flick = Math.sin(t * 11) * 2;
+          ctx.globalAlpha = m.flame;
+          ctx.fillStyle = "#f2d24b";
+          ctx.strokeStyle = "#d2452f";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(f.x - 4, f.y + 6);
+          ctx.quadraticCurveTo(f.x - 7, f.y - 3, f.x + flick * 0.5, f.y - 13 - flick);
+          ctx.quadraticCurveTo(f.x + 7, f.y - 3, f.x + 4, f.y + 6);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    }
+    // The first two: in the garden, then east of it.
+    for (let k = 0; k < 2; k++) {
+      const there = Math.max(0, Math.min(1, m.pair - k));
+      if (there < 0.02) continue;
+      const lng = garden[0] + (east[0] - garden[0]) * m.east + (k ? 1.3 : -1.3);
+      const lat = garden[1] + (east[1] - garden[1]) * m.east;
+      const p = this.projector.project(lng, lat);
+      if (p.visible) this.light(p.x, p.y, 2.6, there * (0.45 + 0.55 * m.light), m.light);
+    }
+    if (m.cain > 0.02) {
+      const lng = east[0] + (far[0] - east[0]) * m.cain;
+      const p = this.projector.project(lng, east[1] + (far[1] - east[1]) * m.cain);
+      if (p.visible) this.light(p.x, p.y, 2.4, 0.7 * m.cain, 0.3);
+    }
+    if (m.city > 0.02) {
+      const p = this.projector.project(far[0] + 2.6, far[1] + 0.4);
+      if (p.visible) {
+        ctx.globalAlpha = m.city;
+        ctx.fillStyle = "#d9c08a";
+        ctx.strokeStyle = "#1d1a33";
+        ctx.lineWidth = 1.2;
+        [[-7, 8], [-1, 12], [5, 7]].forEach(([dx, h]) => {
+          ctx.fillRect(p.x + dx, p.y - h, 5, h);
+          ctx.strokeRect(p.x + dx, p.y - h, 5, h);
+        });
+        this.label(p.x, p.y + 15, "a city", m.city);
+      }
+    }
+    // More lights, spreading over the land from the east; then dulling.
+    if (m.peoples > 0.2) {
+      if (this.spread.length === 0 && this.land) {
+        const found: [number, number][] = [];
+        for (let i = 0; i < 900 && found.length < 90; i++) {
+          const lng = east[0] + (rand(i * 2.1 + 5) - 0.5) * 130;
+          const lat = Math.max(-58, Math.min(58, east[1] + (rand(i * 3.7 + 1) - 0.5) * 90));
+          if (this.isLand(lng, lat)) found.push([lng, lat]);
+        }
+        this.spread = found.sort((a, b) => Math.hypot(a[0] - east[0], a[1] - east[1]) - Math.hypot(b[0] - east[0], b[1] - east[1]));
+      }
+      for (let i = 0; i < Math.min(this.spread.length, m.peoples); i++) {
+        const p = this.projector.project(this.spread[i][0], this.spread[i][1]);
+        if (!p.visible) continue;
+        const twinkle = 0.75 + 0.25 * Math.sin(t * 1.3 + i * 2.1);
+        this.light(p.x, p.y, 1.7, Math.min(1, m.peoples - i) * twinkle * (0.8 - 0.35 * m.dulled), 1 - m.dulled);
+      }
+    }
+    if (m.noah > 0.02) {
+      const p = this.projector.project(anchor[0] + 6, anchor[1] - 9);
+      if (p.visible) {
+        this.light(p.x, p.y, 3, m.noah, 1);
+        this.label(p.x, p.y + 30, "Noah", m.noah);
+      }
     }
     ctx.globalAlpha = 1;
   }

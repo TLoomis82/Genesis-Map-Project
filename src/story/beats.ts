@@ -1,6 +1,6 @@
 import { spaceSteps } from "../opening/spaceSteps.ts";
 import { arrange, type Sky } from "../data/astronomy.ts";
-import type { LifeWant } from "./lifeLayer.ts";
+import { NO_LIFE, NO_MARKS, type LifeWant, type Marks } from "./lifeLayer.ts";
 import { floodDay, floodEvents } from "../data/chronology.ts";
 import type { Depiction } from "../opening/steps.ts";
 import { kjv } from "../data/kjv.ts";
@@ -175,6 +175,8 @@ interface PlanBeat {
 
 // Life on the globe, by verse. The numbers only set how full the picture is.
 const lifeOf = (flocks: number, shoals: number, whales: number, herd = 0, people = false, calm = false): LifeWant => ({ flocks, shoals, whales, herds: [herd, herd, herd], people, calm });
+/** Eden to the ark: the garden, its river and people as lights, on the land before the flood. */
+const marked = (marks: Partial<Marks>): LifeWant => ({ ...NO_LIFE, marks: { ...NO_MARKS, anchor: [-5, 5], ...marks } }); // the anchor is the middle of the pre-flood view
 const greening: Depiction = {
   badge: "Illustration",
   note: "The green spreading over the land, where it starts and how fast, are illustration. The text says the earth brought forth grass, herb and fruit tree on the third day.",
@@ -190,13 +192,13 @@ const atRest: Depiction = {
 
 // From Eden to the ark the story is still before the flood, so it stays on the land before the flood. No
 // place on that land can be pinned: the pins are present-day positions and are shown only on today's map.
-const beforeFlood: Depiction = {
-  badge: "Model",
-  note: "Shown on a model of the land before the flood, where no place can be pinned. \"Where is this today?\" switches to today's map and the places people have proposed.",
-};
 const stillBeforeFlood: Depiction = {
-  badge: "Model",
-  note: "Still before the flood, so still on the model of that land. The land is a model, not from the text.",
+  badge: "Illustration",
+  note: "People are shown as lights, and every position is layout only: no place on the land before the flood can be known. The land is a model, not from the text.",
+};
+const garden: Depiction = {
+  badge: "Illustration",
+  note: "The garden's place, the river's course and the lights for people are layout only, on a model of the land before the flood. \"Where is this today?\" shows the places people have proposed.",
 };
 
 // Day 4. One arrangement the sun and moon can really take (see src/data/astronomy.ts); the text gives no
@@ -242,13 +244,23 @@ const globePlan: PlanBeat[] = [
   { sceneId: "day-6", verse: "1:27", camera: { center: PRE_FLOOD_VIEW, zoom: 1.9, seconds: 6 }, hold: 15, land: PRE_FLOOD, depiction: living, life: lifeOf(14, 18, 4, 8, true) },
   { sceneId: "day-7", verse: "2:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8 }, hold: 12, land: PRE_FLOOD, depiction: atRest, life: lifeOf(14, 18, 4, 8, true, true) },
   { sceneId: "day-7", verse: "2:2", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30, land: PRE_FLOOD, depiction: atRest, life: lifeOf(14, 18, 4, 8, true, true) },
-  { sceneId: "eden", verse: "2:10", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 9 }, hold: 20, land: PRE_FLOOD, depiction: beforeFlood, today: { center: edenFrame, zoom: 4.3, seconds: 6 } },
-  { sceneId: "exile", verse: "3:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, bearing: -8, seconds: 6 }, land: PRE_FLOOD, depiction: beforeFlood, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 } },
-  { sceneId: "cain", verse: "4:16", camera: { center: [PRE_FLOOD_VIEW[0] + 14, PRE_FLOOD_VIEW[1]], zoom: 2.4, seconds: 9 }, land: PRE_FLOOD, depiction: beforeFlood, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 } },
-  { sceneId: "seth-to-noah", verse: "5:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 9, driftDegrees: 40 }, land: PRE_FLOOD, depiction: stillBeforeFlood },
-  { sceneId: "nephilim", verse: "6:4", camera: { center: PRE_FLOOD_VIEW, zoom: 1.8, bearing: 6, seconds: 6 }, land: PRE_FLOOD, depiction: stillBeforeFlood },
-  { sceneId: "ark", verse: "6:15", camera: { center: PRE_FLOOD_VIEW, zoom: 1.8, seconds: 6 }, land: PRE_FLOOD, depiction: stillBeforeFlood },
-  // The flood, seen from space. The land stands lower than usual here so nothing pokes through the water.
+  // Eden to the ark, on the land before the flood. The view stays on one stretch of land so the marks
+  // can be followed from verse to verse.
+  { sceneId: "eden", verse: "2:8", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 9 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, seconds: 6 }, life: marked({ garden: 1, pair: 1 }) },
+  { sceneId: "eden", verse: "2:10", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 5 }, hold: 16, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, seconds: 6 }, life: marked({ garden: 1, pair: 1, rivers: true }) },
+  { sceneId: "eden", verse: "2:22", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, seconds: 6 }, life: marked({ garden: 1, pair: 2, rivers: true }) },
+  { sceneId: "exile", verse: "3:6", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 }, life: marked({ garden: 1, pair: 2, rivers: true, pairLight: 0.25 }) },
+  { sceneId: "exile", verse: "3:23", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 }, life: marked({ garden: 0.7, pair: 2, rivers: true, pairLight: 0.25, pairEast: true }) },
+  { sceneId: "exile", verse: "3:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 }, life: marked({ garden: 0.7, pair: 2, rivers: true, pairLight: 0.25, pairEast: true, flame: true }) },
+  { sceneId: "cain", verse: "4:16", camera: { center: [PRE_FLOOD_VIEW[0] + 8, PRE_FLOOD_VIEW[1]], zoom: 2.5, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 }, life: marked({ garden: 0.6, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true }) },
+  { sceneId: "cain", verse: "4:17", camera: { center: [PRE_FLOOD_VIEW[0] + 8, PRE_FLOOD_VIEW[1]], zoom: 2.5, seconds: 5 }, hold: 13, land: PRE_FLOOD, depiction: garden, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 }, life: marked({ garden: 0.6, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true, city: true }) },
+  { sceneId: "seth-to-noah", verse: "5:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.9, seconds: 9 }, hold: 14, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.5, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true, city: true, peoples: 14 }) },
+  { sceneId: "seth-to-noah", verse: "6:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.5, seconds: 9, driftDegrees: 30 }, hold: 15, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80 }) },
+  { sceneId: "nephilim", verse: "6:4", camera: { center: PRE_FLOOD_VIEW, zoom: 1.8, bearing: 6, seconds: 6 }, hold: 13, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80, dulled: 0.3 }) },
+  { sceneId: "nephilim", verse: "6:5", camera: { center: PRE_FLOOD_VIEW, zoom: 1.6, seconds: 6 }, hold: 14, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80, dulled: 1 }) },
+  { sceneId: "nephilim", verse: "6:8", camera: { center: PRE_FLOOD_VIEW, zoom: 1.9, seconds: 6 }, hold: 13, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80, dulled: 1, noah: true }) },
+  { sceneId: "ark", verse: "6:14", camera: { center: PRE_FLOOD_VIEW, zoom: 2.2, seconds: 6 }, hold: 13, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ peoples: 80, dulled: 1, noah: true }), ark: arkAt(AFLOAT[0], AFLOAT[1], false) },
+  { sceneId: "ark", verse: "6:15", camera: { center: PRE_FLOOD_VIEW, zoom: 2.2, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ peoples: 80, dulled: 1, noah: true }), ark: arkAt(AFLOAT[0], AFLOAT[1], false) },
   { sceneId: "flood", verse: "7:11", camera: { center: AFLOAT, zoom: 1.4, seconds: 5 }, hold: 10, land: PRE_FLOOD, flood: { level: 250, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0], AFLOAT[1], false) },
   { sceneId: "flood", verse: "7:17", camera: { center: [AFLOAT[0] + 14, AFLOAT[1]], zoom: 1.4, seconds: 7 }, hold: 8, land: PRE_FLOOD, flood: { level: 1100, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 10, AFLOAT[1] + 2) },
   { sceneId: "flood", verse: "7:19", camera: { center: [AFLOAT[0] + 28, AFLOAT[1]], zoom: 1.4, seconds: 7 }, hold: 8, land: PRE_FLOOD, flood: { level: 2700, storm: 0.6 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 24, AFLOAT[1] + 6) },

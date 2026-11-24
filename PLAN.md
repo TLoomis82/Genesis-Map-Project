@@ -379,5 +379,11 @@ Not done, in order:
     Turn it if you like."
   - The life layer can be seen without Mapbox at `?view=life&life=5` (or 6, 7): checked there. On the globe itself,
     and the spreading green, NOT seen.
+- Eden to the ark on the globe (`Marks` in `src/story/lifeLayer.ts`, verses in `beats.ts`): the garden as a glow
+  with its river parting into four; the first man, then two, as lights; the lights dim at 3:6, move east at 3:23,
+  the flame at 3:24; one goes further east (4:16) and a city (4:17); more lights spread over the land (5:1, 6:1),
+  dull at 6:5, and one stays bright at 6:8 (Noah); the ark stands on the land from 6:14. Every position is layout
+  only and labelled so; the verse note says so too. Fifteen verses where there were six. Checked on the plain test
+  globe (`?view=life&life=eden`, `east`, `noah`); NOT seen on Mapbox.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.
