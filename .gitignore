@@ -5,3 +5,6 @@ dist
 .env.*.local
 .DS_Store
 *.log
+
+# Material we may not publish (for example a map still waiting on permission). Never commit.
+private/

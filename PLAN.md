@@ -110,7 +110,10 @@ Working method from here: the workspace can now install packages, type check, bu
 
 ## Open items
 
-- Written permission from Christopher Scotese (PALEOMAP) and from ICR (Clarey and Werner map) before M2.
+- Licences, checked 2026-11-23:
+  - **Scotese and Wright PaleoDEMs: CC BY 4.0** (Zenodo record 5460860). Free to use with credit; no permission needed. The record covers the last 540 million years: check that the Rodinia and Pannotia shapes we want are in it.
+  - **This repo is public on GitHub.** Anything waiting on permission lives only in `private/` (ignored by git) and loads only on a local machine.
+  - **Clarey and Werner map: no licence found.** ICR's use policy says graphics need permission (permissions@icr.org). Ask before the map is shown outside private testing.
 - Read and cite by page every source marked `to-read` in `src/data/sources.ts`.
 - Check approximate coordinates in `src/data/features.ts` against a gazetteer.
 - KJV or World English Bible for on-screen verses. (KJV for now, read from `src/data/kjv.ts`; spot-check against a printed KJV.)
@@ -153,3 +156,16 @@ Still to do in M3:
   any spot on today's globe is an `illustration` placement until the pre-flood land (M2) exists.
 - Scrolling as a way to move through the story (now: buttons, keys, chapter list).
 - More than one beat per globe scene.
+
+## M2 status (2026-11-23)
+
+- `scripts/paleodem-to-geojson.ts` turns one Scotese and Wright PaleoDEM text file into land strips in three height
+  bands (tested on a made-up grid only; the real files have not been seen yet).
+- Tyler supplied the 0 to 85 million year files. The converter works on them. `?land=085` or `?land=000` draws one over the globe as a test of the method (no scene uses it). These later slices can serve the breakup in the ending.
+- Files for 0 to 285 million years are now in hand (kept outside the repo; only converted land goes in `public/land/`). `?land=200` and `?land=250` show the Pangaea-like shapes.
+- Some source files use old-Mac line endings; the converter handles all three kinds.
+- Blocked on data: the build machine cannot download from Zenodo. Needed from Tyler: the PaleoDEM csv zip
+  (Zenodo record 5460860) and, for private use only, the Clarey and Werner 2018 paper PDF.
+- Other pre-flood maps, checked 2026-11-23: flood geologists hold three views, a Pangaea-like land (Clarey and
+  Werner; Baumgardner 2018), a Rodinia-like land (Snelling 2014), or Rodinia changing to Pangaea mid-flood.
+  None comes from the text itself, so all stay tier `model`. The plan's default plus toggle already covers them.

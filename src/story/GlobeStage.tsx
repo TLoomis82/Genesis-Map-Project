@@ -18,6 +18,34 @@ const HIDDEN = ["showPlaceLabels", "showRoadLabels", "showPointOfInterestLabels"
 
 const easeInOut = (t: number) => t * t * (3 - 2 * t);
 
+// M2 test: add ?land=085 (or 000) to the address to cover today's map with a land model made from
+// a Scotese and Wright PaleoDEM (CC BY 4.0), converted by scripts/paleodem-to-geojson.ts.
+// Ages available: 000, 085, 200, 250, 540 (millions of years on the conventional scale).
+// This only proves the drawing method: no scene uses these yet. 200 and 250 are the Pangaea-like
+// shapes the pre-flood land layer will start from.
+const TEST_LAND = new URLSearchParams(window.location.search).get("land");
+const WORLD = {
+  type: "Feature" as const,
+  properties: {},
+  geometry: { type: "Polygon" as const, coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]] },
+};
+
+function addTestLand(m: mapboxgl.Map, age: string) {
+  m.addSource("model-sea", { type: "geojson", data: WORLD });
+  m.addSource("model-land", { type: "geojson", data: `${import.meta.env.BASE_URL}land/scotese-${age}ma.geojson` });
+  m.addLayer({ id: "model-sea", type: "fill", source: "model-sea", paint: { "fill-color": "#12365a", "fill-emissive-strength": 1 } });
+  m.addLayer({
+    id: "model-land",
+    type: "fill",
+    source: "model-land",
+    paint: {
+      "fill-color": ["match", ["get", "band"], "mountain", "#c9bfa9", "upland", "#96966a", "#5f8c54"],
+      "fill-emissive-strength": 1,
+      "fill-antialias": false,
+    },
+  });
+}
+
 interface Props {
   /** Camera for the current beat, or null while the opening is still on screen. */
   camera: GlobeCamera | null;
@@ -59,6 +87,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
         "space-color": "rgb(0, 0, 0)",
         "star-intensity": 0.6, // the globe is first shown at the end of day 4, when the stars are there
       });
+      if (TEST_LAND && /^\d{3}$/.test(TEST_LAND)) addTestLand(m, TEST_LAND);
       setReady(true);
     });
     map.current = m;
@@ -120,5 +149,15 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
   if (!TOKEN) {
     return camera ? <div className="notice globe-notice">The globe needs a Mapbox token in VITE_MAPBOX_TOKEN (.env.local).</div> : null;
   }
-  return <div ref={container} className="globe" />;
+  return (
+    <>
+      <div ref={container} className="globe" />
+      {TEST_LAND && camera && (
+        <p className="land-credit">
+          <span className="tier-badge tier-model">Model</span>
+          Land test: {Number(TEST_LAND)} million years ago on the conventional scale. A test of the drawing method only. Scotese and Wright (2018), CC BY 4.0.
+        </p>
+      )}
+    </>
+  );
 }

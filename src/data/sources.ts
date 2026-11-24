@@ -29,7 +29,7 @@ export const sources: Source[] = [
   { id: 'cosner-carter-2016', author: 'Lita Cosner and Robert Carter', title: 'Pre-flood geography is largely unknown (primary publication to be located)', year: 2016, status: 'to-read' },
 
   // --- Data ---
-  { id: 'paleomap-dem', author: 'Christopher Scotese and Nicky Wright', title: 'PALEOMAP Paleodigital Elevation Models (PaleoDEMs) for the Phanerozoic', year: 2018, url: 'https://www.earthbyte.org/paleodem-resource-scotese-and-wright-2018/', status: 'permission-needed' },
+  { id: 'paleomap-dem', author: 'Christopher Scotese and Nicky Wright', title: 'PALEOMAP Paleodigital Elevation Models (PaleoDEMs) for the Phanerozoic', year: 2018, url: 'https://zenodo.org/records/5460860', status: 'opened' }, // Licence read on Zenodo 2026-11-23: CC BY 4.0. Credit required; no permission needed.,
 ];
 
 export const sourceById = new Map(sources.map((s) => [s.id, s]));
