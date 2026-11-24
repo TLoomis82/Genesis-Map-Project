@@ -2,6 +2,7 @@ import { useState } from "react";
 import StoryBoard from "./board/StoryBoard.tsx";
 import StoryPlayer from "./story/StoryPlayer.tsx";
 import EdenMan from "./illustrated/EdenMan.tsx";
+import Waters, { type WatersChapter } from "./illustrated/Waters.tsx";
 import GlobeTest from "./spike/GlobeTest.tsx";
 import { beats } from "./story/beats.ts";
 
@@ -21,20 +22,28 @@ const showSwitch = initial === "globe" || params.has("debug");
 export default function App() {
   const [view, setView] = useState<View>(initial);
   const [startBeat, setStartBeat] = useState(0);
+  // Which hand-drawn scene is open: ?scene=day-1 opens one directly.
+  const [scene, setScene] = useState(params.get("scene") ?? "eden-man");
 
   if (view === "board") {
     return (
       <StoryBoard
         onPlay={(sceneId) => {
           // Scenes drawn in the new hand-drawn style open on their own; the rest open in the story.
-          if (sceneId.startsWith("illustrated:")) return setView("scene");
+          if (sceneId.startsWith("illustrated:")) {
+            setScene(sceneId.slice("illustrated:".length));
+            return setView("scene");
+          }
           setStartBeat(Math.max(0, beats.findIndex((b) => b.sceneId === sceneId)));
           setView("story");
         }}
       />
     );
   }
-  if (view === "scene") return <EdenMan onHome={() => setView("board")} />;
+  if (view === "scene") {
+    const home = () => setView("board");
+    return scene === "eden-man" ? <EdenMan onHome={home} /> : <Waters key={scene} chapter={scene as WatersChapter} onHome={home} />;
+  }
   return (
     <>
       {view === "story" ? <StoryPlayer key={startBeat} startBeat={startBeat} onHome={() => setView("board")} /> : <GlobeTest />}

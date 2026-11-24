@@ -91,16 +91,22 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 ## The pages
 
 ### In the beginning (Gen 1:1-2)
+- **Status: built, hand-drawn and live** (`src/illustrated/Waters.tsx`). Darkness is scribbled in, the deep is drawn line by
+  line, wind strokes drift over it. The water is a real wave: swipe it and the ink sloshes.
 - **Watch:** black, then dark restless water to every horizon; wind over it. *Built.*
 - **Touch:** swipe the water and it moves.
 - **Labels:** all Text.
 
 ### Day 1: light (Gen 1:3-5)
+- **Status: built, hand-drawn and live** (same file). Rays are drawn out from where light breaks; the dark half of the
+  sky turns about the horizon; drag the sky to turn light and dark yourself.
 - **Watch:** light breaks without a sun; it is divided from the dark; evening and morning. *Built.*
 - **Touch:** drag to turn light and dark.
 - **Labels:** Text. Showing them as two halves of the sky is Illustration.
 
 ### Day 2: the vault (Gen 1:6-8)
+- **Status: built, hand-drawn and live** (same file). The vault is drawn as one stroke and lifts, carrying the waters
+  above on its back; drag the sky to raise or lower it, and both waters slosh.
 - **Watch:** the haze lifts into a vault with water above. *Built.*
 - **Touch:** tilt to look under the water and above the vault.
 - **Labels:** Text for the dividing; Scholarly reading for the vault's form.
