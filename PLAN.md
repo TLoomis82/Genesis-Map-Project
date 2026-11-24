@@ -318,5 +318,11 @@ Not done, in order:
   where the text gives them (Eden: "Length not given"; Adam to the flood from the Genesis 5 data, Hebrew or Greek).
   With the flood open, a second track true to scale by day; tapping a day opens the globe story at that verse.
   On a phone the scene list is hidden and the timeline takes its place.
+- The way on from each hand-drawn scene (`NextScene` context and `NextButton` in `src/illustrated/kit.tsx`, set in
+  `src/App.tsx`): when a scene has played through, a button leads to the next scene in story order, so the story
+  can be walked from "In the beginning" to the ark without going back to the hub.
+- Creation to globe: day 7's button is "See the finished world". The drawing swells and fades to its paper, and the
+  front door fades in from that paper, with the detailed globe when a Mapbox token is set. Seen working here only
+  with the flat hub; the fade onto the live globe is NOT seen.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

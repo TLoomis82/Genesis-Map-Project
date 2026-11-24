@@ -1192,7 +1192,8 @@ body,
 .scene-next {
   position: absolute;
   left: 50%;
-  bottom: calc(170px + env(safe-area-inset-bottom));
+  bottom: calc(212px + env(safe-area-inset-bottom));
+  z-index: 3;
   transform: translateX(-50%);
   padding: 12px 20px;
   border: 3px solid #1d1a33;
@@ -1517,4 +1518,29 @@ body,
   .timeline-years {
     margin-left: 0;
   }
+}
+
+/* The handoff from the sketched creation to the detailed world. The drawing swells toward the viewer
+   and fades to its paper; the front door then fades in from that same paper. */
+.scene-wrap {
+  position: fixed;
+  inset: 0;
+  background: #f4ead2;
+}
+.scene-wrap.is-leaving > * {
+  animation: scene-leave 0.9s cubic-bezier(0.5, 0, 0.8, 0.4) forwards;
+}
+@keyframes scene-leave {
+  to { transform: scale(2.4); opacity: 0; }
+}
+.board-arrive {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #f4ead2;
+  pointer-events: none;
+  animation: board-arrive 1.8s ease forwards;
+}
+@keyframes board-arrive {
+  to { opacity: 0; visibility: hidden; }
 }

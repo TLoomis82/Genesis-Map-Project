@@ -1,5 +1,7 @@
 import { useState } from "react";
 import StoryBoard from "./board/StoryBoard.tsx";
+import { storyOrder } from "./board/board.ts";
+import { NextScene } from "./illustrated/kit.tsx";
 import StoryPlayer from "./story/StoryPlayer.tsx";
 import EdenMan from "./illustrated/EdenMan.tsx";
 import Waters, { type WatersChapter } from "./illustrated/Waters.tsx";
@@ -27,13 +29,18 @@ const showSwitch = initial === "globe" || params.has("debug");
 export default function App() {
   const [view, setView] = useState<View>(initial);
   const [startBeat, setStartBeat] = useState(0);
+  // The handoff from the sketched creation to the detailed globe: the drawing swells and fades, the world fades in.
+  const [leaving, setLeaving] = useState(false);
+  const [arrived, setArrived] = useState(false);
   // Which hand-drawn scene is open: ?scene=day-1 opens one directly.
   const [scene, setScene] = useState(params.get("scene") ?? "eden-man");
 
   if (view === "board") {
     return (
       <StoryBoard
+        arrived={arrived}
         onPlay={(sceneId) => {
+          setArrived(false);
           // Scenes drawn in the new hand-drawn style open on their own; the rest open in the story.
           if (sceneId.startsWith("illustrated:")) {
             setScene(sceneId.slice("illustrated:".length));
@@ -49,20 +56,44 @@ export default function App() {
   }
   if (view === "scene") {
     const home = () => setView("board");
-    if (scene === "eden-man") return <EdenMan onHome={home} />;
-    if (scene === "ark") {
+    // Where this scene leads once it has played: the next hand-drawn scene in story order. Day 7 ends
+    // the sketched creation, so it leads out to the finished world: the detailed globe of the front door.
+    const drawn = storyOrder.map((s) => s.scene).filter((s) => s.sceneId?.startsWith("illustrated:"));
+    const here = drawn.findIndex((s) => s.sceneId === `illustrated:${scene}`);
+    const after = here >= 0 ? drawn[here + 1] : undefined;
+    const toWorld = () => {
+      setLeaving(true);
+      window.setTimeout(() => {
+        setLeaving(false);
+        setArrived(true);
+        setView("board");
+      }, 900);
+    };
+    const next =
+      scene === "day-7"
+        ? { label: "See the finished world", go: toWorld }
+        : scene !== "ark" && after
+          ? { label: `Next: ${after.title}`, go: () => setScene(after.sceneId!.slice("illustrated:".length)) }
+          : null;
+    let drawing;
+    if (scene === "eden-man") drawing = <EdenMan onHome={home} />;
+    else if (scene === "ark") {
       // The ark scene ends by handing over to the globe at the first verse of the flood.
       const toFlood = () => {
         setStartBeat(Math.max(0, beats.findIndex((b) => b.sceneId === "flood")));
         setView("story");
       };
-      return <Ark key={scene} onHome={home} onNext={toFlood} />;
-    }
-    if (scene === "generations") return <Generations key={scene} onHome={home} />;
-    if (["day-7", "eden-garden", "eden-river", "eden-naming", "eden-woman", "eden-fall", "exile"].includes(scene)) return <Eden key={scene} chapter={scene as EdenChapter} onHome={home} />;
-    if (scene === "day-5" || scene === "day-6") return <Creatures key={scene} chapter={scene as CreatureChapter} onHome={home} />;
-    if (scene === "day-3" || scene === "day-4") return <Land key={scene} chapter={scene as LandChapter} onHome={home} />;
-    return <Waters key={scene} chapter={scene as WatersChapter} onHome={home} />;
+      drawing = <Ark key={scene} onHome={home} onNext={toFlood} />;
+    } else if (scene === "generations") drawing = <Generations key={scene} onHome={home} />;
+    else if (["day-7", "eden-garden", "eden-river", "eden-naming", "eden-woman", "eden-fall", "exile"].includes(scene)) drawing = <Eden key={scene} chapter={scene as EdenChapter} onHome={home} />;
+    else if (scene === "day-5" || scene === "day-6") drawing = <Creatures key={scene} chapter={scene as CreatureChapter} onHome={home} />;
+    else if (scene === "day-3" || scene === "day-4") drawing = <Land key={scene} chapter={scene as LandChapter} onHome={home} />;
+    else drawing = <Waters key={scene} chapter={scene as WatersChapter} onHome={home} />;
+    return (
+      <NextScene.Provider value={next}>
+        <div className={`scene-wrap ${leaving ? "is-leaving" : ""}`}>{drawing}</div>
+      </NextScene.Provider>
+    );
   }
   return (
     <>

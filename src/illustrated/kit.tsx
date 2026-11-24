@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { clamp01 } from "./hand.ts";
 
 // Shared parts of every hand-drawn scene:
@@ -268,11 +268,27 @@ export function SceneWords({ title, verse, reference, note, onHome, onTips }: { 
   );
 }
 
+/** Where a scene leads when it has played through: the next scene, or back out to the world. The app sets it. */
+export const NextScene = createContext<{ label: string; go: () => void } | null>(null);
+
+/** The way on, shown once a scene has played through. */
+export function NextButton({ show }: { show: boolean }) {
+  const next = useContext(NextScene);
+  if (!next || !show) return null;
+  return (
+    <button className="scene-next" onClick={next.go}>
+      {next.label}
+    </button>
+  );
+}
+
 export function MomentStrip({ names, drawings, clock }: { names: string[]; drawings: ReactNode[]; clock: Moments }) {
   const { t, playing } = clock;
   const done = t > names.length - 0.05;
   const current = Math.min(names.length - 1, Math.max(0, Math.ceil(t - 0.02) - 1));
   return (
+    <>
+    <NextButton show={t > names.length - 0.3} />
     <div className="moments" role="group" aria-label="Moments in this scene">
       <span className="moments-tip">Tap a moment to jump to it</span>
       <button className="moments-play" onClick={() => (done ? clock.replay() : clock.setPlaying(!playing))}>
@@ -290,5 +306,6 @@ export function MomentStrip({ names, drawings, clock }: { names: string[]; drawi
         </button>
       ))}
     </div>
+    </>
   );
 }

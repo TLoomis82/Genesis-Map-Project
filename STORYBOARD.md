@@ -161,6 +161,10 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
   seventh (`bibleproject-eden-priests`): offered as a Scholarly reading on the card.
 - **Status (2026-11-24): built, hand-drawn and live.** a small round world with the lights of day 4 on their round; it stills at "rest" and a gold light fills the page at "blessed". Label: "Drag to turn the heavens".
 
+- **Hand-off (2026-11-24):** when day 7 has played, "See the finished world" swells the drawn world toward the
+  viewer, fades it to paper, and fades in the detailed globe of the front door. Every other scene ends with
+  "Next: <the following scene>".
+
 ### Eden 1: the man from the dust (Gen 2:7)
 - **Status: built, first cut, hand-drawn** (`src/illustrated/EdenMan.tsx`). Four moments (dust lifts, it gathers, breath
   enters, he sits up) shown as a strip of small drawings that is also the control: tap a moment to go to it, or

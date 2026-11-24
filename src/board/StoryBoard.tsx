@@ -31,9 +31,11 @@ const ZOOM = 2.4;
 interface Props {
   /** Open a scene in the playable story. */
   onPlay: (sceneId: string) => void;
+  /** True when the viewer has just come out of the sketched creation: the world fades in from the paper. */
+  arrived?: boolean;
 }
 
-export default function StoryBoard({ onPlay }: Props) {
+export default function StoryBoard({ onPlay, arrived = false }: Props) {
   // Position in story order, or null for the whole hub.
   const [at, setAt] = useState<number | null>(null);
   const current = at === null ? null : storyOrder[at];
@@ -68,6 +70,7 @@ export default function StoryBoard({ onPlay }: Props) {
 
   return (
     <div className="board">
+      {arrived && <div className="board-arrive" aria-hidden="true" />}
       <header className="board-head">
         <h1>{ON_GLOBE ? "Genesis, from the beginning to the ark at rest" : "The world as Genesis pictures it"}</h1>
         <p>

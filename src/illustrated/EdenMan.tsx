@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { Drawn, Hints, Painted, Paper, Pencil, strokeTurn, useHints, type View } from "./kit.tsx";
+import { Drawn, Hints, NextButton, Painted, Paper, Pencil, strokeTurn, useHints, type View } from "./kit.tsx";
 
 // Eden 1: the man formed from the dust (Genesis 2:7), as a live hand-drawn scene.
 //
@@ -326,6 +326,7 @@ export default function EdenMan({ onHome }: Props) {
         </p>
       </div>
 
+      <NextButton show={t > 3.7} />
       <div className="moments" role="group" aria-label="Moments in this scene">
         <span className="moments-tip">Tap a moment to jump to it</span>
         <button className="moments-play" onClick={() => (t > 3.95 && !playing ? ((want.current = 0), (now.current = 0), (want.current = 1), setPlaying(true)) : setPlaying((p) => !p))}>
