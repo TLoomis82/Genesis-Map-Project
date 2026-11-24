@@ -1,21 +1,38 @@
 import { useState } from "react";
+import StoryBoard from "./board/StoryBoard.tsx";
 import StoryPlayer from "./story/StoryPlayer.tsx";
 import GlobeTest from "./spike/GlobeTest.tsx";
+import { beats } from "./story/beats.ts";
 
-// The story is the app. The M0 globe test is kept for checks: add ?view=globe to the address
-// to open it, or ?debug to get a button that switches between the two.
+// Three views:
+//   board  the interactive storyboard and front door: the world as Genesis pictures it (the default)
+//   story  the playable story, opened from the board or with ?view=story (and with ?debug, for checks)
+//   globe  the M0 globe test, with ?view=globe
 
-type View = "story" | "globe";
+type View = "board" | "story" | "globe";
 
 const params = new URLSearchParams(window.location.search);
-const initial: View = params.get("view") === "globe" ? "globe" : "story";
+const asked = params.get("view");
+const initial: View = asked === "globe" ? "globe" : asked === "story" || params.has("debug") ? "story" : "board";
 const showSwitch = initial === "globe" || params.has("debug");
 
 export default function App() {
   const [view, setView] = useState<View>(initial);
+  const [startBeat, setStartBeat] = useState(0);
+
+  if (view === "board") {
+    return (
+      <StoryBoard
+        onPlay={(sceneId) => {
+          setStartBeat(Math.max(0, beats.findIndex((b) => b.sceneId === sceneId)));
+          setView("story");
+        }}
+      />
+    );
+  }
   return (
     <>
-      {view === "story" ? <StoryPlayer /> : <GlobeTest />}
+      {view === "story" ? <StoryPlayer key={startBeat} startBeat={startBeat} onHome={() => setView("board")} /> : <GlobeTest />}
       {showSwitch && (
         <button className="view-switch" onClick={() => setView(view === "story" ? "globe" : "story")}>
           {view === "story" ? "Globe test" : "Story"}

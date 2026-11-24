@@ -31,11 +31,18 @@ const LAND_TEST = new URLSearchParams(window.location.search).has("land");
 /** The beat the opening hands over to. The globe is prepared for it while the opening is still playing. */
 const firstGlobe = beats[FIRST_GLOBE_BEAT];
 
-export default function StoryPlayer() {
+interface Props {
+  /** The beat to open on. */
+  startBeat?: number;
+  /** Go back to the storyboard. */
+  onHome?: () => void;
+}
+
+export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const scene = useRef<OpeningScene | null>(null);
   const previous = useRef(0);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(startBeat);
   const [playing, setPlaying] = useState(false);
   const [faded, setFaded] = useState(false);
   const [textOnly, setTextOnly] = useState(false);
@@ -211,6 +218,11 @@ export default function StoryPlayer() {
       <canvas ref={canvas} className={`opening-canvas ${faded ? "is-faded" : ""}`} />
 
       <div className="story-top">
+        {onHome && (
+          <button className="story-button" onClick={onHome}>
+            World
+          </button>
+        )}
         <button className="story-button" onClick={() => setChaptersOpen((o) => !o)} aria-expanded={chaptersOpen}>
           Chapters
         </button>

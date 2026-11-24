@@ -1,6 +1,8 @@
 # Genesis Map: storyboard
 
-Status: second draft, 2026-11-23, with Tyler's four decisions applied (see "Decisions"). Nothing here is built unless its page says so. Tyler approves or changes each page
+Status: second draft, 2026-11-23. **The storyboard is now interactive:** it is the app's front door (`src/board/`), and
+`src/board/board.ts` is the working copy of the scene pages below. Keep the two in step.
+Second draft with Tyler's four decisions applied (see "Decisions"). Nothing here is built unless its page says so. Tyler approves or changes each page
 before it is built.
 
 ## The idea in one paragraph
@@ -33,7 +35,9 @@ So the main stage is the Bible's own cosmos, and the realistic globe with its la
    figures' light dimming and then being covered, not by bodies.
 5. **Add nothing the text does not give**, unless it is labelled Illustration.
 6. **Phone first.** Every control works with one thumb.
-7. **Illustrated, not realistic.** Flat shapes, a small set of colours, paper grain, in the spirit of BibleProject's
+7. **One illustrated style everywhere, consistent with BibleProject's illustrations** (Tyler, 2026-11-23): the hub,
+   every scene, the cards and the "Where on earth?" layer should feel like one piece of work.
+   **Illustrated, not realistic.** Flat shapes, a small set of colours, paper grain, in the spirit of BibleProject's
    explainer art. All artwork is our own: nothing of theirs is copied or imitated closely. The first style frame is
    `docs/style/hub-style-frame-1.png`.
 8. **A short line of narration per scene**, on screen under the verse, saying what to notice. It restates the text

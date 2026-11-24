@@ -264,3 +264,6 @@ Still to do in M3:
   with a Pangaea-like land could put them off.
 - People are figures of light; God is never drawn as a figure.
 - Open decisions are listed at the end of the storyboard (the fall, narration, art direction).
+- The storyboard is interactive and is the app's front door (`src/board/`): the hub picture with twelve rings, a
+  move-in on tap, a card per scene (verse from the KJV file, narration, watch, touch, labels) and a button into the
+  playable story where a scene exists. `?view=story` or `?debug` opens the story directly.
