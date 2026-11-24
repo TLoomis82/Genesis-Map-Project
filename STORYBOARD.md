@@ -1,6 +1,6 @@
 # Genesis Map: storyboard
 
-Status: first draft, 2026-11-23. Nothing here is built unless its page says so. Tyler approves or changes each page
+Status: second draft, 2026-11-23, with Tyler's four decisions applied (see "Decisions"). Nothing here is built unless its page says so. Tyler approves or changes each page
 before it is built.
 
 ## The idea in one paragraph
@@ -29,8 +29,15 @@ So the main stage is the Bible's own cosmos, and the realistic globe with its la
    (ours, or an outside reconstruction). Every scene says which parts are which.
 3. **God is never drawn as a figure.** His acts are shown by their effect: light, breath, movement.
 4. **People are simple figures of light.** No faces, no skin colour, no nakedness to handle.
+   The one exception is the fall, where the text itself turns on their being naked and then clothed: shown by the
+   figures' light dimming and then being covered, not by bodies.
 5. **Add nothing the text does not give**, unless it is labelled Illustration.
 6. **Phone first.** Every control works with one thumb.
+7. **Illustrated, not realistic.** Flat shapes, a small set of colours, paper grain, in the spirit of BibleProject's
+   explainer art. All artwork is our own: nothing of theirs is copied or imitated closely. The first style frame is
+   `docs/style/hub-style-frame-1.png`.
+8. **A short line of narration per scene**, on screen under the verse, saying what to notice. It restates the text
+   or names a labelled reading; it never adds a claim.
 
 ## The hub: the world as Genesis pictures it
 
@@ -142,13 +149,24 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Labels:** Text: a deep sleep; one of his ribs taken; the flesh closed; a woman made and brought to the man.
   Illustration: how it looked. The scene adds nothing more.
 
+### Eden 6: the fall (Gen 3:1-21)
+- **Watch:** among the trees, a serpent at the tree in the middle. The woman takes the fruit and eats, and gives to
+  the man, and he eats. Their light dims. They cover themselves and hide among the trees as a sound moves through
+  the garden. They are found, and are clothed.
+- **Touch:** none. This one is only watched.
+- **Labels:** Text: the serpent, more subtle than any beast of the field; she took of the fruit and ate, and gave to
+  her husband, and he ate; their eyes were opened; fig leaves; they hid from the presence of the LORD God among the
+  trees; coats of skins. Illustration: the serpent's look, the fruit's look (the text names no kind of fruit), and
+  the dimming of the figures' light.
+- **Care:** God's voice is shown as moving light and sound through the trees, never a figure. The words spoken in
+  3:9-19 appear as verse text only.
+
 ### East of Eden (Gen 3:23-24; 4:16-17)
 - **Watch:** two figures walk out to the east. Behind them the way in is guarded, shown as a turning flame.
   Later, one figure goes further east and a small settlement appears.
 - **Touch:** look back toward the garden from outside.
-- **Labels:** Text: sent out; cherubim and a flaming sword to the east; Cain east of Eden in Nod; a city. Illustration:
-  the look of the guard and the city. The serpent and the fall itself (Gen 3:1-22) are outside this demo's scope
-  unless Tyler adds them.
+- **Labels:** Text: sent out; cherubim and a flaming sword that turned every way, to keep the way of the tree of life;
+  Cain east of Eden in Nod; a city. Illustration: the look of the guard and the city.
 
 ### The generations (Gen 5)
 - **Watch:** ten names, each a bar of light for a lifespan, overlapping.
@@ -179,17 +197,27 @@ Today's globe, opened from any scene that has a place question. Built already, t
 One strip along the bottom, in three sections, each at the scale the text gives: seven days; ten generations; the
 flood's 371 days. Dragging it moves through the story.
 
-## Decisions needed from Tyler
+## Decisions (Tyler, 2026-11-23)
 
-1. People as figures of light: agreed? (Assumed yes above.)
-2. Is the fall (Gen 3:1-22) in the demo? It is the turning point of Eden but was not in the original scope.
-3. Narration: verse text only, as now, or a short spoken or written line per scene in BibleProject's explainer manner?
-4. Art direction: keep the current realistic look for the scenes, or move toward illustration to sit closer to
-   BibleProject's own style? This is the largest open question.
+1. **Art direction:** illustration in the manner of BibleProject. The realistic scenes built so far (days 1 to 4,
+   the globe) will be restyled or kept for the "Where on earth?" layer.
+2. **The fall is in**, complete with the flaming sword guarding the way.
+3. **Narration:** yes, a short line per scene.
+4. **People as figures of light:** yes.
+
+## Narration: sample lines (draft, for Tyler to edit)
+
+- In the beginning: "Before anything else: darkness, deep water, and the Spirit of God moving over it."
+- Day 2: "The waters are divided. Between them, an expanse, and God calls it Heaven."
+- Day 6: "The land brings forth living creatures. Then humankind, male and female, in the image of God."
+- Eden 1: "Formed from the dust of the ground, and alive by the breath of God."
+- Eden 6: "They take what was forbidden. Their eyes are opened, and they hide."
+- East of Eden: "The way to the tree of life is guarded. They go out to the east."
 
 ## Build order
 
-1. The hub's outside view, rough, with tap targets that open the scenes already built.
+0. Agree the look from style frames (the hub first, then one of the man from the dust).
+1. The hub's outside view in the agreed style, with tap targets that open the scenes already built.
 2. Eden 1 and Eden 5 (the man, the woman), finished, as the test of the style.
 3. Day 5 and day 6, rough.
 4. Eden 2 to 4, the generations, the flood on the hub.
