@@ -1,6 +1,6 @@
 """Makes the picture of a land model that is draped over the globe.
 
-  python3 scripts/land-texture.py dem  <PaleoDEM.csv> <out.jpg>     Scotese and Wright PaleoDEM (CC BY 4.0)
+  python3 scripts/land-texture.py dem  <PaleoDEM.csv|.nc> <out.jpg> Scotese and Wright PaleoDEM (CC BY 4.0)
   python3 scripts/land-texture.py zones <figure.png>  <out.jpg>     a four-colour zone map (deep, shallow, lowland, upland)
   python3 scripts/land-texture.py tiles <PaleoDEM.csv> <out-folder> height tiles for 3D relief (Mapbox Terrain-RGB)
 
@@ -9,7 +9,7 @@ projection, covering longitude -180..180 and latitude -85.05..85.05, which is wh
 image source expects.
 
 "dem" uses the real heights and sea depths in the file for colour and shading.
-"tiles" writes <out-folder>/{z}/{x}/{y}.png for zoom 0 to 3, with the sea floor set level at 0.
+"tiles" writes <out-folder>/{z}/{x}/{y}.png for zoom 0 to 3 (0 to 4 from the finer .nc files), with the sea floor set level at 0.
 "zones" has no heights to use: the texture inside the uplands is made up so the land reads as
 land. Wherever a "zones" picture is shown, the on-screen note must say so.
 """
@@ -49,8 +49,33 @@ def to_mercator(picture):
     return picture[rows][:, cols]
 
 
+def read_fine(path):
+    """A PALEOMAP 6-minute netCDF file -> heights in metres, 1801 x 3601, north at the top.
+
+    These files store the grid as one plain block of little-endian 32-bit numbers, so it can be read
+    without a netCDF library: the file's header records the block's position just before its size.
+    """
+    import struct
+
+    data = open(path, "rb").read()
+    rows, cols = 1801, 3601
+    at = data.find(struct.pack("<Q", rows * cols * 4))
+    if at < 8:
+        raise SystemExit(f"{path}: could not find a {rows} x {cols} grid of 32-bit numbers")
+    start = struct.unpack("<Q", data[at - 8 : at])[0]
+    return np.frombuffer(data, "<f4", rows * cols, start).reshape(rows, cols).astype(float)
+
+
 def load_dem(path):
-    """PaleoDEM text file -> smooth height field in metres, whole globe, 2880 x 1448, north at the top."""
+    """PaleoDEM file -> smooth height field in metres, whole globe, north at the top.
+
+    Reads either the one-degree text files (.csv) or the 6-minute netCDF files (.nc), which are ten
+    times finer.
+    """
+    if path.endswith(".nc"):
+        fine = np.clip(read_fine(path)[:, :3600], -6000, 6000)  # drop the repeated last column
+        # A light enlargement, so coasts are smooth lines and not single-cell steps.
+        return np.asarray(Image.fromarray(fine.astype(np.float32)).resize((7200, 3602), Image.BICUBIC), float)
     grid = np.full((181, 360), -4000.0)
     for line in open(path, newline="").read().replace("\r\n", "\n").replace("\r", "\n").split("\n"):
         parts = line.replace(",", " ").split()
@@ -79,6 +104,8 @@ def from_dem(path):
     big = load_dem(path)
     # Light from the north-west, plus a softer second light so slopes facing away are not black.
     gy, gx = np.gradient(big)
+    k = big.shape[1] / 2880  # slopes are measured per pixel, so allow for how fine the grid is
+    gy, gx = gy * k, gx * k
     shade = np.clip(0.5 - (gx + gy) / 520, 0, 1) * 0.7 + np.clip(0.5 - (gx - gy) / 900, 0, 1) * 0.3
     land = ramp(big, LAND_RAMP) * (0.62 + 0.62 * shade)[..., None]
     sea = ramp(big, SEA_RAMP) * (0.9 + 0.2 * np.clip(0.5 - (gx + gy) / 900, 0, 1))[..., None]
@@ -87,11 +114,10 @@ def from_dem(path):
 
 
 def write_tiles(path, folder, max_zoom=3):
+    max_zoom = 4 if path.endswith(".nc") else max_zoom  # the finer data earns one more level
     import os
 
-    # Level sea, so only the land stands up. Heights are rounded to 20 m, which keeps the files small
-    # and is far finer than the one-degree source data.
-    big = np.round(np.clip(load_dem(path), 0, None) / 20) * 20
+    big = np.clip(load_dem(path), 0, None)  # level sea, so only the land stands up
     h, w = big.shape
     px = (np.arange(256) + 0.5) / 256
     for z in range(max_zoom + 1):
@@ -109,7 +135,8 @@ def write_tiles(path, folder, max_zoom=3):
                 wx = (fx - np.floor(fx))[None, :]
                 top = big[y0][:, x0] * (1 - wx) + big[y0][:, x1] * wx
                 bottom = big[y1][:, x0] * (1 - wx) + big[y1][:, x1] * wx
-                metres = top * (1 - wy) + bottom * wy
+                # Rounded to 20 m: far finer than the source data, and it keeps the files small.
+                metres = np.round((top * (1 - wy) + bottom * wy) / 20) * 20
                 code = np.round((metres + 10000) * 10).astype(np.int64)  # Mapbox Terrain-RGB
                 rgb = np.stack([code // 65536, (code // 256) % 256, code % 256], -1).astype(np.uint8)
                 os.makedirs(f"{folder}/{z}/{tx}", exist_ok=True)

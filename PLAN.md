@@ -208,3 +208,6 @@ Still to do in M3:
   both faces drawn, because Mapbox's globe coordinates mirror the sphere.
 - Sky layer now also draws cloud shadows (not on phones) and a day and night side. Whole-globe views are sized
   to the screen and lifted clear of the verse. Not yet seen on Mapbox.
+- Fine data (2026-11-23): Tyler supplied the PALEOMAP 6-minute netCDF files (ten times finer). `land-texture.py`
+  reads them directly (the grid is one plain block of 32-bit numbers; no netCDF library needed). Today and 85 Ma
+  are remade from them, with height tiles to zoom 4. 200 and 250 Ma follow when their files arrive.
