@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { CREAM, Drawn, GOLD, INK, MomentStrip, Painted, Paper, Pencil, SceneWords, strokeTurn, useMoments, useView } from "./kit.tsx";
+import { CREAM, Drawn, GOLD, Hints, INK, MomentStrip, Painted, Paper, Pencil, SceneWords, strokeTurn, useHints, useMoments, useView, type Hint } from "./kit.tsx";
 
 // The days before there is an earth to look at, hand-drawn on the fly and live under the hand:
 //
@@ -64,6 +64,13 @@ export default function Waters({ chapter, onHome }: Props) {
   const wave = useRef({ h: new Float32Array(COLUMNS), v: new Float32Array(COLUMNS) });
   const hand = useRef({ turn: 0, lift: 0 }); // what the viewer has changed by dragging the sky
   const pointer = useRef<{ x: number; y: number; inSky: boolean } | null>(null);
+  const tips = useHints();
+  // What can be touched in this scene, labelled on the drawing itself.
+  const hints: Hint[] = [
+    { id: "water", x: 560, y: 716, text: "Swipe the water" },
+    ...(chapter === "day-1" ? [{ id: "sky", x: 800, y: 360, text: "Drag the sky to turn light and dark" }] : []),
+    ...(chapter === "day-2" ? [{ id: "sky", x: 800, y: 330, text: "Drag up or down to lift the vault" }] : []),
+  ];
 
   // Seconds the artist takes to draw the scene in before it begins to move.
   const introSeconds = chapter === "beginning" ? 2.4 : 7;
@@ -183,6 +190,7 @@ export default function Waters({ chapter, onHome }: Props) {
           from.y = e.clientY;
           const p = toDrawing(e.clientX, e.clientY);
           const centre = Math.round(((p.x - X0) / (X1 - X0)) * (COLUMNS - 1));
+          tips.mark(from.inSky && chapter !== "beginning" ? "sky" : "water");
           if (from.inSky && chapter === "day-1") hand.current.turn += dx * 0.22;
           if (from.inSky && chapter === "day-2") hand.current.lift -= dy;
           // The water answers every drag: hard under a swipe across it, gently when the sky is moved.
@@ -286,10 +294,11 @@ export default function Waters({ chapter, onHome }: Props) {
             opacity={k === 0 ? 1 : 0.8 - k * 0.09}
           />
         ))}
+        <Hints hints={hints} used={tips.used} show={chapter === "beginning" ? ease(t, 1.9, 2.2) : chapter === "day-1" ? ease(t, 1.2, 1.5) : ease(t, 1.9, 2.2)} time={time} />
       </svg>
       <div className="hand-paper" aria-hidden="true" />
 
-      <SceneWords title={info.title} verse={kjv(info.verses[moment])} reference={`Genesis ${info.verses[moment]}`} note={info.note} onHome={onHome} />
+      <SceneWords title={info.title} verse={kjv(info.verses[moment])} reference={`Genesis ${info.verses[moment]}`} note={info.note} onHome={onHome} onTips={tips.reset} />
       <MomentStrip names={info.moments} drawings={DRAWINGS[chapter]} clock={clock} />
     </div>
   );

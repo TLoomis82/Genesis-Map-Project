@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { Drawn, Painted, Paper, Pencil, strokeTurn, type View } from "./kit.tsx";
+import { Drawn, Hints, Painted, Paper, Pencil, strokeTurn, useHints, type View } from "./kit.tsx";
 
 // Eden 1: the man formed from the dust (Genesis 2:7), as a live hand-drawn scene.
 //
@@ -45,6 +45,7 @@ export default function EdenMan({ onHome }: Props) {
   const want = useRef(1);
   const now = useRef(0);
   const drag = useRef<{ x: number; t: number } | null>(null);
+  const tips = useHints();
   const small = Math.min(box.w, box.h) < 600;
 
   // The background is drawn once.
@@ -168,7 +169,10 @@ export default function EdenMan({ onHome }: Props) {
         onPointerMove={(e) => {
           if (!drag.current) return;
           const moved = ((e.clientX - drag.current.x) / box.w) * 4.4;
-          if (Math.abs(moved) > 0.03) setPlaying(false);
+          if (Math.abs(moved) > 0.03) {
+            setPlaying(false);
+            tips.mark("scrub");
+          }
           want.current = Math.max(0, Math.min(MOMENTS.length, drag.current.t + moved));
         }}
         onPointerUp={() => (drag.current = null)}
@@ -296,6 +300,7 @@ export default function EdenMan({ onHome }: Props) {
             </g>
           </g>
         </g>
+        <Hints hints={[{ id: "scrub", x: 800, y: 470, text: "Drag left or right to move through the forming" }]} used={tips.used} show={ease(t, 0.6, 0.9)} time={elapsed} />
       </svg>
       <div className="hand-paper" aria-hidden="true" />
 
@@ -304,6 +309,9 @@ export default function EdenMan({ onHome }: Props) {
           World
         </button>
         <span className="story-title">Eden 1: the man from the dust</span>
+        <button className="story-button" onClick={tips.reset}>
+          Show tips
+        </button>
       </div>
 
       <div className="hand-words">
@@ -319,6 +327,7 @@ export default function EdenMan({ onHome }: Props) {
       </div>
 
       <div className="moments" role="group" aria-label="Moments in this scene">
+        <span className="moments-tip">Tap a moment to jump to it</span>
         <button className="moments-play" onClick={() => (t > 3.95 && !playing ? ((want.current = 0), (now.current = 0), (want.current = 1), setPlaying(true)) : setPlaying((p) => !p))}>
           {playing && t < 3.95 ? "Pause" : t > 3.95 ? "Replay" : "Play"}
         </button>

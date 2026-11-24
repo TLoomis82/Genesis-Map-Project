@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { CREAM, Drawn, GOLD, INK, MomentStrip, Painted, Paper, Pencil, SceneWords, strokeTurn, useMoments, useView } from "./kit.tsx";
+import { CREAM, Drawn, GOLD, Hints, INK, MomentStrip, Painted, Paper, Pencil, SceneWords, strokeTurn, useHints, useMoments, useView, type Hint } from "./kit.tsx";
 
 // Day 3 and day 4, hand-drawn and live.
 //
@@ -73,6 +73,16 @@ export default function Land({ chapter, onHome }: Props) {
   const pointer = useRef<{ x: number; y: number; inSky: boolean } | null>(null);
   const hand = useRef({ hours: 0 });
   const [pickedSeason, setPickedSeason] = useState<number | null>(null);
+  const tips = useHints();
+  const hints: Hint[] = day4
+    ? [
+        { id: "sky", x: 800, y: 300, text: "Drag the sky to move the day" },
+        { id: "sea", x: 800, y: 770, text: "Swipe the sea" },
+      ]
+    : [
+        { id: "land", x: 800, y: 400, text: "Drag along the land to draw the plants in" },
+        { id: "sea", x: 800, y: 770, text: "Swipe the sea" },
+      ];
 
   // Every plant: where it stands, what it is, and how far it has grown (0..1), eased each frame.
   const plants = useMemo(() => {
@@ -189,11 +199,18 @@ export default function Land({ chapter, onHome }: Props) {
           from.x = e.clientX;
           from.y = e.clientY;
           const p = toDrawing(e.clientX, e.clientY);
-          if (from.inSky && day4) hand.current.hours += dx * 0.012;
+          if (from.inSky && day4) {
+            hand.current.hours += dx * 0.012;
+            tips.mark("sky");
+          }
           // Along the land: whatever is near the hand is drawn in.
-          if (!from.inSky && rise > 0.9 && p.y < SEA + 30) plants.forEach((plant, i) => Math.abs(plant.x - p.x) < 70 && (touched.current[i] = 1));
+          if (!from.inSky && rise > 0.9 && p.y < SEA + 30) {
+            plants.forEach((plant, i) => Math.abs(plant.x - p.x) < 70 && (touched.current[i] = 1));
+            tips.mark("land");
+          }
           // On the sea: it sloshes.
           if (p.y > SEA - 10 || p.x < 200 || p.x > 1400) {
+            tips.mark("sea");
             const centre = Math.round(((p.x - X0) / (X1 - X0)) * (COLUMNS - 1));
             for (let j = -4; j <= 4; j++) {
               const i = centre + j;
@@ -300,12 +317,14 @@ export default function Land({ chapter, onHome }: Props) {
         {[0, 1, 2, 3, 4, 5].map((k) => (
           <Drawn key={k} d={handLine(k === 0 ? seaTop : seaLine(k), 500 + k * 9 + boil, k === 0 ? 1.6 : 2.4)} progress={strokeTurn(inked, k, 6, 1.5)} stroke={k === 0 ? INK : paint < 0.6 ? "#4d7396" : "#bfe3ee"} strokeWidth={k === 0 ? 6 : 3.5} opacity={k === 0 ? 1 : 0.8 - k * 0.09} />
         ))}
+        <Hints hints={hints} used={tips.used} show={day4 ? ease(t, 0.9, 1.2) : ease(t, 1.9, 2.2)} time={time} />
       </svg>
       <div className="hand-paper" aria-hidden="true" />
 
-      <SceneWords title={info.title} verse={kjv(info.verses[moment])} reference={`Genesis ${info.verses[moment]}`} note={info.note} onHome={onHome} />
+      <SceneWords title={info.title} verse={kjv(info.verses[moment])} reference={`Genesis ${info.verses[moment]}`} note={info.note} onHome={onHome} onTips={tips.reset} />
       {day4 && (
         <div className="season-tabs" role="group" aria-label="Season">
+          <span className="season-label">Tap a season</span>
           {SEASONS.map((s, i) => (
             <button key={s.name} className={pickedSeason === i ? "is-on" : ""} onClick={() => setPickedSeason(pickedSeason === i ? null : i)}>
               {s.name}

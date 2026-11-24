@@ -9,6 +9,8 @@ import { clamp01 } from "./hand.ts";
 //   Drawn        a line that draws itself in as its progress goes from 0 to 1 (no pencil or brush is
 //                shown: it is understood that the scene is being drawn)
 //   Painted      colour that is brushed in, stroke by stroke, over whatever is inside it
+//   Hints        hand-lettered tags on the drawing that say what can be touched; each goes away once
+//                the viewer has done it, and "Show tips" brings them all back
 //   strokeTurn   gives each stroke in a set its own turn, so they are drawn one after another
 //
 // Every scene opens the way a drawing does: blank paper, a light pencil sketch, ink over the
@@ -185,7 +187,59 @@ export function Pencil({ d, d2, progress, fade }: { d: string; d2?: string; prog
   );
 }
 
-export function SceneWords({ title, verse, reference, note, onHome }: { title: string; verse: string; reference: string; note: string; onHome: () => void }) {
+export interface Hint {
+  id: string;
+  /** Where on the drawing the tag sits. */
+  x: number;
+  y: number;
+  text: string;
+}
+
+/** Which hints the viewer has already acted on. */
+export function useHints() {
+  const [used, setUsed] = useState<string[]>([]);
+  const seen = useRef<string[]>([]);
+  return {
+    used,
+    /** Call when the viewer does the thing a hint describes. Cheap to call on every drag event. */
+    mark(id: string) {
+      if (seen.current.includes(id)) return;
+      seen.current = [...seen.current, id];
+      setUsed(seen.current);
+    },
+    reset() {
+      seen.current = [];
+      setUsed([]);
+    },
+  };
+}
+
+/** Tags on the drawing that label what can be touched. They bob gently so the eye finds them. */
+export function Hints({ hints, used, show, time }: { hints: Hint[]; used: string[]; show: number; time: number }) {
+  if (show <= 0.01) return null;
+  return (
+    <g opacity={show} style={{ pointerEvents: "none" }}>
+      {hints
+        .filter((h) => !used.includes(h.id))
+        .map((h, i) => {
+          const w = h.text.length * 13.6 + 78;
+          return (
+            <g key={h.id} transform={`translate(${h.x - w / 2} ${h.y + Math.sin(time * 2.2 + i * 1.7) * 6})`}>
+              <path d={`M 14 2 H ${w - 12} Q ${w} 4 ${w - 2} 20 V 40 Q ${w - 3} 56 ${w - 16} 55 H 12 Q -1 54 2 38 V 18 Q 1 3 14 2 Z`} fill={CREAM} stroke={INK} strokeWidth="3.5" strokeLinejoin="round" />
+              {/* a small hand: a fingertip with rings spreading from it */}
+              <circle cx="30" cy="29" r="7" fill={INK} />
+              <circle cx="30" cy="29" r={12 + ((time * 9 + i * 5) % 9)} fill="none" stroke={INK} strokeWidth="2" opacity={1 - ((time * 9 + i * 5) % 9) / 9} />
+              <text x="54" y="37" fill={INK} fontSize="24" fontFamily="'Iowan Old Style', Palatino, Georgia, serif" fontStyle="italic">
+                {h.text}
+              </text>
+            </g>
+          );
+        })}
+    </g>
+  );
+}
+
+export function SceneWords({ title, verse, reference, note, onHome, onTips }: { title: string; verse: string; reference: string; note: string; onHome: () => void; onTips?: () => void }) {
   return (
     <>
       <div className="story-top">
@@ -193,6 +247,11 @@ export function SceneWords({ title, verse, reference, note, onHome }: { title: s
           World
         </button>
         <span className="story-title">{title}</span>
+        {onTips && (
+          <button className="story-button" onClick={onTips}>
+            Show tips
+          </button>
+        )}
       </div>
       <div className="hand-words" key={reference}>
         <p className="verse-text">{verse}</p>
@@ -215,6 +274,7 @@ export function MomentStrip({ names, drawings, clock }: { names: string[]; drawi
   const current = Math.min(names.length - 1, Math.max(0, Math.ceil(t - 0.02) - 1));
   return (
     <div className="moments" role="group" aria-label="Moments in this scene">
+      <span className="moments-tip">Tap a moment to jump to it</span>
       <button className="moments-play" onClick={() => (done ? clock.replay() : clock.setPlaying(!playing))}>
         {done ? "Replay" : playing ? "Pause" : "Play"}
       </button>
