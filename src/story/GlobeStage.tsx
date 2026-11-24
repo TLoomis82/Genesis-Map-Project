@@ -51,6 +51,14 @@ const WORLD = {
   geometry: { type: "Polygon" as const, coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]] },
 };
 
+/** Lands that have a double-size picture (public/land/scotese-<age>ma-8k.jpg). */
+const SHARP_LANDS = ["200"];
+/**
+ * How close the camera may come to a land model. The models hold one height every 11 km or so, so
+ * closer than this they are only blur. Close views of the land are the job of our own 3D landscape.
+ */
+const MODEL_MAX_ZOOM = 4.4;
+
 /** The land to draw: the address's override if it names one, otherwise the story's choice. */
 function chooseLand(fromStory: string | null): string | null {
   if (LAND_OVERRIDE === null) return fromStory;
@@ -66,7 +74,9 @@ function showLand(m: mapboxgl.Map, land: string | null) {
   if (!land) return;
 
   const isPrivate = land === "cw";
-  const file = isPrivate ? "private/clarey-werner-2023.jpg" : `scotese-${land}ma.jpg`;
+  // The story's main land has a double-size picture for larger screens; phones use the standard one.
+  const sharp = SHARP_LANDS.includes(land) && Math.min(window.innerWidth, window.innerHeight) >= 600;
+  const file = isPrivate ? "private/clarey-werner-2023.jpg" : `scotese-${land}ma${sharp ? "-8k" : ""}.jpg`;
   const under = m.getLayer("story-clouds") ? "story-clouds" : undefined; // keep the land beneath the clouds
   // Deep-sea colour underneath, so today's map does not show around the picture's edges.
   m.addSource("model-sea", { type: "geojson", data: WORLD });
@@ -213,6 +223,7 @@ export default function GlobeStage({ camera, hold, land, startCenter, pins, sele
     if (!m || !ready || !camera) return;
     // Whole-globe views are sized to the screen: the globe fills about four fifths of the space above
     // the verse, on a wide monitor and on a phone alike. Close views keep the zoom they were given.
+    m.setMaxZoom(shownLand ? MODEL_MAX_ZOOM : 22);
     const box = m.getContainer();
     const lift = box.clientHeight * 0.26; // room for the verse underneath
     const fitted = Math.log2((0.86 * Math.min(box.clientWidth, box.clientHeight - lift) * Math.PI) / 512);
@@ -236,7 +247,7 @@ export default function GlobeStage({ camera, hold, land, startCenter, pins, sele
       });
     }, camera.seconds * 1000);
     return () => window.clearTimeout(timer);
-  }, [camera, hold, ready]);
+  }, [camera, hold, ready, shownLand]);
 
   // The land for the current beat. Clouds are added first (above), so the land always sits beneath them.
   useEffect(() => {

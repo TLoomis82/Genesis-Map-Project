@@ -4,6 +4,8 @@
   python3 scripts/land-texture.py zones <figure.png>  <out.jpg>     a four-colour zone map (deep, shallow, lowland, upland)
   python3 scripts/land-texture.py tiles <PaleoDEM.csv> <out-folder> height tiles for 3D relief (Mapbox Terrain-RGB)
 
+Add a picture size as a last argument to "dem" or "zones" (default 4096; 8192 for the sharp desktop copy).
+
 Needs Python 3 with numpy and Pillow. The output is a square picture in the Web Mercator
 projection, covering longitude -180..180 and latitude -85.05..85.05, which is what a Mapbox
 image source expects.
@@ -39,13 +41,13 @@ def paint(shelf, land, up, height):
     return np.clip(sea * (1 - a) + ground * a, 0, 255).astype(np.uint8)
 
 
-def to_mercator(picture):
+def to_mercator(picture, size=SIZE):
     """Plain latitude-longitude picture (whole globe) -> square Web Mercator picture."""
     h, w, _ = picture.shape
-    v = (np.arange(SIZE) + 0.5) / SIZE
+    v = (np.arange(size) + 0.5) / size
     lat = np.degrees(np.arctan(np.sinh(np.pi * (1 - 2 * v))))
     rows = np.clip(((90 - lat) / 180 * h).astype(int), 0, h - 1)
-    cols = np.clip(((np.arange(SIZE) + 0.5) / SIZE * w).astype(int), 0, w - 1)
+    cols = np.clip(((np.arange(size) + 0.5) / size * w).astype(int), 0, w - 1)
     return picture[rows][:, cols]
 
 
@@ -100,8 +102,25 @@ SEA_RAMP = [(-6000, (6, 22, 48)), (-3500, (10, 36, 72)), (-1500, (18, 62, 110)),
 LAND_RAMP = [(0, (104, 138, 84)), (150, (84, 126, 70)), (500, (116, 138, 82)), (1000, (150, 148, 98)), (1800, (172, 156, 120)), (2800, (196, 186, 166)), (4500, (232, 230, 226))]
 
 
+def fine_grain(shape, seed=11):
+    """Made-up small-scale roughness, -1..1, so the land does not look smooth where the data runs out."""
+    h, w = shape
+    rng = np.random.default_rng(seed)
+    out = np.zeros(shape)
+    for cell, weight in ((24, 0.4), (10, 0.3), (4, 0.2), (2, 0.1)):
+        n = Image.fromarray((rng.random((h // cell + 2, w // cell + 2)) * 255).astype(np.uint8))
+        out += weight * (np.asarray(n.resize((w, h), Image.BICUBIC), float) / 127.5 - 1)
+    return out
+
+
 def from_dem(path):
     big = load_dem(path)
+    if path.endswith(".nc"):
+        # The data has one height every 11 km or so. Below that, a little made-up roughness is added on
+        # land (more in the hills, almost none on the plains) so close views are not a smooth blur.
+        # It changes the shading only slightly and never moves a coastline.
+        rough = fine_grain(big.shape) * smooth(0, 40, big) * (35 + np.clip(big, 0, 3000) * 0.11)
+        big = np.where(big > 0, np.maximum(big + rough, 1), big)
     # Light from the north-west, plus a softer second light so slopes facing away are not black.
     gy, gx = np.gradient(big)
     k = big.shape[1] / 2880  # slopes are measured per pixel, so allow for how fine the grid is
@@ -171,11 +190,12 @@ def from_zones(path):
 
 
 if __name__ == "__main__":
+    size = int(sys.argv.pop()) if len(sys.argv) == 5 else SIZE  # optional last argument: picture size
     if len(sys.argv) != 4 or sys.argv[1] not in ("dem", "zones", "tiles"):
         sys.exit(__doc__)
     if sys.argv[1] == "tiles":
         write_tiles(sys.argv[2], sys.argv[3])
         sys.exit(0)
     picture = from_dem(sys.argv[2]) if sys.argv[1] == "dem" else from_zones(sys.argv[2])
-    Image.fromarray(to_mercator(picture)).save(sys.argv[3], quality=88)
+    Image.fromarray(to_mercator(picture, size)).save(sys.argv[3], quality=86)
     print("wrote", sys.argv[3])

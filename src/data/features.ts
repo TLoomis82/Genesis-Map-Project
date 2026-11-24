@@ -203,6 +203,7 @@ export const features: MapFeature[] = [
     reasonsAgainst: [
       'Its authors made it to show the earth about 200 million years ago on the conventional timescale, not a pre-flood world.',
       'Mountain heights are drawn many times taller than life so they can be seen from space.',
+      'The model has one height about every 11 km. Finer surface texture is added so the land does not look smooth, and is not data.',
     ],
     alternatives: ['land-clarey-werner', 'land-rodinia', 'land-pannotia', 'land-unknown'],
   },

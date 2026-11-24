@@ -227,3 +227,6 @@ Still to do in M3:
   land is a stand-in and whose model it is. An on-screen "Model" note repeats it.
 - `?land=` is now only an override for checks (`none` for today's map everywhere).
 - Still to do: a soft change between lands (it switches at once now), and the breakup from 200 Ma to today in the flood.
+- Close views of a land model were blurry (the data stops at about 11 km). Now: a double-size picture of the 200 Ma
+  land for larger screens, a little made-up surface roughness on land (said so on the card), and the camera cannot
+  come closer than zoom 4.4 while a model is shown. Truly close views are for our own 3D landscape.
