@@ -29,14 +29,19 @@ const easeInOut = (t: number) => t * t * (3 - 2 * t);
 //                                       public/land/private/clarey-werner-2023.jpg exists on this machine,
 //                                       VITE_SHOW_PRIVATE=1 is set in .env.local, and the app runs with `npm run dev`.
 //
-// Each model is one picture draped over the globe, made by scripts/land-texture.py. This proves the
-// drawing method; no scene uses it yet.
+//   &relief=30                          How many times taller than life the Scotese land stands (default 30,
+//                                       0 for flat). Real mountains are too low to see from space, so the
+//                                       height is exaggerated; the shape comes from the data.
+//
+// Each model is one picture draped over the globe, plus height tiles for 3D relief, both made by
+// scripts/land-texture.py. This proves the drawing method; no scene uses it yet.
 const TEST_LAND = new URLSearchParams(window.location.search).get("land");
 // Private material shows only on a developer's machine (`npm run dev`) with VITE_SHOW_PRIVATE=1 in .env.local.
 const SHOW_PRIVATE = import.meta.env.DEV && import.meta.env.VITE_SHOW_PRIVATE === "1";
 const PRIVATE_LAND = TEST_LAND === "cw" && SHOW_PRIVATE;
 /** True when a land model should be drawn: a known age, or the private map with private material switched on. */
 const LAND_ON = TEST_LAND !== null && (PRIVATE_LAND || /^\d{3}$/.test(TEST_LAND));
+const RELIEF = Number(new URLSearchParams(window.location.search).get("relief") ?? 30);
 const MERCATOR_EDGE = 85.0511; // the furthest north and south a Mapbox picture can reach
 const WORLD = {
   type: "Feature" as const,
@@ -65,6 +70,17 @@ function addTestLand(m: mapboxgl.Map, age: string) {
     source: "model-land",
     paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1 },
   });
+  // 3D relief from the model's own heights (Scotese only; the private map has no heights).
+  if (!PRIVATE_LAND && RELIEF > 0) {
+    m.addSource("model-dem", {
+      type: "raster-dem",
+      tiles: [`${window.location.origin}${import.meta.env.BASE_URL}land/dem/scotese-${age}ma/{z}/{x}/{y}.png`],
+      tileSize: 256,
+      encoding: "mapbox",
+      maxzoom: 3,
+    });
+    m.setTerrain({ source: "model-dem", exaggeration: RELIEF });
+  }
 }
 
 interface Props {
@@ -178,7 +194,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
           <span className="tier-badge tier-model">Model</span>
           {PRIVATE_LAND
             ? "Private test, not for publication: pre-flood land after Clarey and Werner (2023), Fig. 17. Permission pending. The zones are theirs; the surface texture and the position on the globe are ours."
-            : `Land test: ${Number(TEST_LAND)} million years ago on the conventional scale. A test of the drawing method only. Scotese and Wright (2018), CC BY 4.0.`}
+            : `Land test: ${Number(TEST_LAND)} million years ago on the conventional scale. Heights drawn ${RELIEF > 0 ? `${RELIEF} times taller than life` : "flat"}. A test of the drawing method only. Scotese and Wright (2018), CC BY 4.0.`}
         </p>
       )}
     </>

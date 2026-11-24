@@ -198,3 +198,6 @@ Still to do in M3:
   trees where the camera comes down.
 - Private material has two guards: it shows only under `npm run dev` with `VITE_SHOW_PRIVATE=1` in `.env.local`,
   and every build deletes `land/private/` from its output (`vite.config.ts`).
+- 3D relief added for the Scotese models: Terrain-RGB height tiles (`public/land/dem/`, zoom 0 to 3) and
+  `setTerrain`, exaggerated 30 times by default (`&relief=` to change). Pictures now use real sea depths and a
+  richer height colour ramp at 4096 px. Untested on a real Mapbox globe.

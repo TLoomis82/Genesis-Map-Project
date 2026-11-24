@@ -2,12 +2,14 @@
 
   python3 scripts/land-texture.py dem  <PaleoDEM.csv> <out.jpg>     Scotese and Wright PaleoDEM (CC BY 4.0)
   python3 scripts/land-texture.py zones <figure.png>  <out.jpg>     a four-colour zone map (deep, shallow, lowland, upland)
+  python3 scripts/land-texture.py tiles <PaleoDEM.csv> <out-folder> height tiles for 3D relief (Mapbox Terrain-RGB)
 
 Needs Python 3 with numpy and Pillow. The output is a square picture in the Web Mercator
 projection, covering longitude -180..180 and latitude -85.05..85.05, which is what a Mapbox
 image source expects.
 
-"dem" uses the real heights in the file for colour and shading.
+"dem" uses the real heights and sea depths in the file for colour and shading.
+"tiles" writes <out-folder>/{z}/{x}/{y}.png for zoom 0 to 3, with the sea floor set level at 0.
 "zones" has no heights to use: the texture inside the uplands is made up so the land reads as
 land. Wherever a "zones" picture is shown, the on-screen note must say so.
 """
@@ -15,7 +17,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageFilter
 
-SIZE = 2048
+SIZE = 4096
 DEEP, SHALLOW = np.array([12, 42, 78.0]), np.array([52, 138, 190.0])
 LOW, UP, PEAK = np.array([78, 122, 72.0]), np.array([150, 160, 104.0]), np.array([205, 196, 172.0])
 
@@ -47,7 +49,8 @@ def to_mercator(picture):
     return picture[rows][:, cols]
 
 
-def from_dem(path):
+def load_dem(path):
+    """PaleoDEM text file -> smooth height field in metres, whole globe, 2880 x 1448, north at the top."""
     grid = np.full((181, 360), -4000.0)
     for line in open(path, newline="").read().replace("\r\n", "\n").replace("\r", "\n").split("\n"):
         parts = line.replace(",", " ").split()
@@ -59,12 +62,59 @@ def from_dem(path):
     grid = np.clip(grid, -6000, 6000)  # a few corner points in the files hold stray values
     # Enlarge in two steps so the one-degree grid becomes smooth slopes, not blocks.
     mid = Image.fromarray(grid.astype(np.float32)).resize((720, 362), Image.BICUBIC)
-    big = np.asarray(mid.resize((2880, 1448), Image.BICUBIC), float)
-    shelf = smooth(-1500, -150, big)
-    land = smooth(-60, 60, big)
-    up = smooth(300, 1100, big)
-    height = np.clip(big / 3200, 0, 1)
-    return paint(shelf, land, up, height)
+    return np.asarray(mid.resize((2880, 1448), Image.BICUBIC), float)
+
+
+def ramp(x, stops):
+    """Colour for each value of x from a list of (value, (r, g, b)) stops."""
+    xs = [v for v, _ in stops]
+    return np.stack([np.interp(x, xs, [c[k] for _, c in stops]) for k in range(3)], -1)
+
+
+SEA_RAMP = [(-6000, (6, 22, 48)), (-3500, (10, 36, 72)), (-1500, (18, 62, 110)), (-400, (34, 104, 156)), (-60, (58, 140, 184)), (0, (84, 160, 192))]
+LAND_RAMP = [(0, (104, 138, 84)), (150, (84, 126, 70)), (500, (116, 138, 82)), (1000, (150, 148, 98)), (1800, (172, 156, 120)), (2800, (196, 186, 166)), (4500, (232, 230, 226))]
+
+
+def from_dem(path):
+    big = load_dem(path)
+    # Light from the north-west, plus a softer second light so slopes facing away are not black.
+    gy, gx = np.gradient(big)
+    shade = np.clip(0.5 - (gx + gy) / 520, 0, 1) * 0.7 + np.clip(0.5 - (gx - gy) / 900, 0, 1) * 0.3
+    land = ramp(big, LAND_RAMP) * (0.62 + 0.62 * shade)[..., None]
+    sea = ramp(big, SEA_RAMP) * (0.9 + 0.2 * np.clip(0.5 - (gx + gy) / 900, 0, 1))[..., None]
+    a = smooth(-25, 25, big)[..., None]
+    return np.clip(sea * (1 - a) + land * a, 0, 255).astype(np.uint8)
+
+
+def write_tiles(path, folder, max_zoom=3):
+    import os
+
+    # Level sea, so only the land stands up. Heights are rounded to 20 m, which keeps the files small
+    # and is far finer than the one-degree source data.
+    big = np.round(np.clip(load_dem(path), 0, None) / 20) * 20
+    h, w = big.shape
+    px = (np.arange(256) + 0.5) / 256
+    for z in range(max_zoom + 1):
+        n = 2**z
+        for ty in range(n):
+            lat = np.degrees(np.arctan(np.sinh(np.pi * (1 - 2 * (ty + px) / n))))
+            fy = np.clip((90 - lat) / 180 * (h - 1), 0, h - 1)
+            y0 = np.floor(fy).astype(int)
+            y1 = np.minimum(y0 + 1, h - 1)
+            wy = (fy - y0)[:, None]
+            for tx in range(n):
+                fx = ((tx + px) / n * w - 0.5) % w
+                x0 = np.floor(fx).astype(int) % w
+                x1 = (x0 + 1) % w
+                wx = (fx - np.floor(fx))[None, :]
+                top = big[y0][:, x0] * (1 - wx) + big[y0][:, x1] * wx
+                bottom = big[y1][:, x0] * (1 - wx) + big[y1][:, x1] * wx
+                metres = top * (1 - wy) + bottom * wy
+                code = np.round((metres + 10000) * 10).astype(np.int64)  # Mapbox Terrain-RGB
+                rgb = np.stack([code // 65536, (code // 256) % 256, code % 256], -1).astype(np.uint8)
+                os.makedirs(f"{folder}/{z}/{tx}", exist_ok=True)
+                Image.fromarray(rgb).save(f"{folder}/{z}/{tx}/{ty}.png", optimize=True)
+    print("wrote tiles to", folder)
 
 
 def from_zones(path):
@@ -95,8 +145,11 @@ def from_zones(path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4 or sys.argv[1] not in ("dem", "zones"):
+    if len(sys.argv) != 4 or sys.argv[1] not in ("dem", "zones", "tiles"):
         sys.exit(__doc__)
+    if sys.argv[1] == "tiles":
+        write_tiles(sys.argv[2], sys.argv[3])
+        sys.exit(0)
     picture = from_dem(sys.argv[2]) if sys.argv[1] == "dem" else from_zones(sys.argv[2])
     Image.fromarray(to_mercator(picture)).save(sys.argv[3], quality=88)
     print("wrote", sys.argv[3])

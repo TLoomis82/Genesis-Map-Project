@@ -24,5 +24,6 @@ Read `PLAN.md` before any work.
 ## Working rules
 
 - Commit and push only when asked.
+  - Standing permission from Tyler (2026-11-23): on branch `m0-setup`, commit and push after each finished step without asking. Never push private material; never push to `main` unasked.
 - Show results with screenshots where possible.
 - Keep explanations short and plain; lead with the answer.
