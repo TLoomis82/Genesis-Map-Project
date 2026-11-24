@@ -5,6 +5,28 @@ Status: second draft, 2026-11-23. **The storyboard is now interactive:** it is t
 Second draft with Tyler's four decisions applied (see "Decisions"). Nothing here is built unless its page says so. Tyler approves or changes each page
 before it is built.
 
+## Direction update (2026-11-24, afternoon): the globe is the main line
+
+Tyler: "if you're playing from the beginning it should just be space that is shown, then the waters with no globe
+where we can slosh around but we are looking at it like we are looking at the globe in space ... bring light to the
+water, then the firmament really starts to shape the earth. Every scene will allow the user to click to view the
+illustration but the main story is the Mapbox earth ... we can't have pin dots for light and dark and land all
+around the globe ... for each scene is when dots that show there is more to drill into."
+
+What that means, and what is built:
+
+- **The story is the front door** (`src/story/StoryPlayer.tsx`), from Genesis 1:1.
+- **1:1 to 1:8 are seen from far off** (`src/opening/spaceOpening.ts`): empty space; the deep as a dark body of
+  water where the earth will be, which sloshes when swiped; light; light divided from darkness; the firmament,
+  where the mist lifts, the edge sharpens and a sky forms. It sits exactly where the Mapbox globe sits.
+- **From 1:9 it is the Mapbox globe**: first under water, then the land comes up (day 3), then the stars (day 4).
+- **Dots only where there is more to see.** Each part of the story shows gold dots for its own hand-drawn scenes
+  and nothing else. Tapping one opens the drawing; leaving it returns to the same verse.
+- **No rings for things that are not places.** On the storyboard's globe only the garden, the way east and Ararat
+  have rings.
+- The hand-drawn scenes are unchanged; they are now the "drill in" layer. The storyboard is at `?view=board` or
+  the "Storyboard" button.
+
 ## Direction update (Tyler, 2026-11-23, late): two looks, on purpose
 
 - **The earth stays detailed.** The globe as built (land with relief, sea depths, clouds, day and night) is the world

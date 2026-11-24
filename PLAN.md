@@ -324,5 +324,13 @@ Not done, in order:
 - Creation to globe: day 7's button is "See the finished world". The drawing swells and fades to its paper, and the
   front door fades in from that paper, with the detailed globe when a Mapbox token is set. Seen working here only
   with the flat hub; the fade onto the live globe is NOT seen.
+- Direction change (afternoon, 2026-11-24), see the top of STORYBOARD.md: the globe story is the main line and the
+  front door; the hand-drawn scenes are drill-ins from gold dots that show only on their own part of the story.
+  New: `src/opening/spaceOpening.ts` and `spaceSteps.ts` (1:1-8 from far off, swipeable water); day 3 and day 4
+  beats on the globe (`flood` level falls from over-all to 0 so the land comes up; `stars` 0 until day 4);
+  `drills` on every beat; `onDrill` returns to the same verse. The old ground-level opening
+  (`src/opening/openingScene.ts`, `landscape/`, the steps in `steps.ts`) is no longer used by the story; kept for
+  now, to delete once Tyler has seen the new one. Opening seen running here (software rendering, so no real frame
+  rate); the globe half (land coming up, stars, dots on the globe) NOT seen.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

@@ -1,24 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { OpeningScene } from "../opening/openingScene.ts";
-import { openingSteps } from "../opening/steps.ts";
+import { SpaceOpening } from "../opening/spaceOpening.ts";
+import { spaceSteps } from "../opening/spaceSteps.ts";
 import { features } from "../data/features.ts";
 import { scenes } from "../data/scenes.ts";
 import type { MapFeature } from "../data/types.ts";
 import { useFps } from "../useFps.ts";
-import { beats, chapters, FIRST_GLOBE_BEAT } from "./beats.ts";
+import { beats, chapters, FIRST_GLOBE_BEAT, UNDER_WATER } from "./beats.ts";
 import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
 
-// Plays the whole story, one verse (a "beat") at a time: the opening in three.js, then the globe.
-// Tap Next, use the arrow keys, press Play, or pick a chapter. At the end of day 4 the opening
-// rises and fades away to show the globe underneath, and the same controls carry on.
+// Plays the whole story, one verse (a "beat") at a time. This is the main line of the piece.
+// It opens on empty space; then the deep, seen from far off where the earth will be, which can be
+// swiped and sloshes; light; the firmament. At day 3 that picture fades and the Mapbox globe is
+// underneath it, under water, and the land comes up. From there the story is on the globe.
+// Each part of the story shows dots for the hand-drawn scenes that belong to it: tap one to go in
+// and see it drawn, and come back to the same verse.
 //
 // Every verse is tier "text". Where the picture goes beyond the words, a short note under the
 // verse says so. On the globe, each pin and card carries its own tier, and the "Text only"
 // switch hides everything that is not stated in Genesis.
 
-const FIRST_LAND_STEP = openingSteps.findIndex((s) => s.sceneId === "day-3");
 /** Load the globe this many beats before it is first shown, so it is ready for the fade. */
 const GLOBE_LEAD = 4;
 
@@ -30,17 +32,23 @@ const DEBUG = new URLSearchParams(window.location.search).has("debug");
 const LAND_TEST = new URLSearchParams(window.location.search).has("land");
 /** The beat the opening hands over to. The globe is prepared for it while the opening is still playing. */
 const firstGlobe = beats[FIRST_GLOBE_BEAT];
+/** While the opening plays, the globe waits underneath it with all its land under water. */
+const WAITING = { level: UNDER_WATER, storm: 0 };
+const NO_DRILLS: { scene: string; label: string }[] = [];
 
 interface Props {
   /** The beat to open on. */
   startBeat?: number;
   /** Go back to the storyboard. */
   onHome?: () => void;
+  /** Open a hand-drawn scene from the beat that is on screen. */
+  onDrill?: (scene: string, beat: number) => void;
 }
 
-export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
+export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const scene = useRef<OpeningScene | null>(null);
+  const scene = useRef<SpaceOpening | null>(null);
+  const [swiped, setSwiped] = useState(false);
   const previous = useRef(0);
   const [index, setIndex] = useState(startBeat);
   const [playing, setPlaying] = useState(false);
@@ -69,30 +77,24 @@ export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
   const Explore = exploreModes[beat.sceneId];
 
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, beats.length - 1))), []);
+  const drillFromHere = useCallback((sceneId: string) => onDrill?.(sceneId, index), [onDrill, index]);
 
-  // Create the opening scene once.
+  // Create the opening once.
   useEffect(() => {
     if (!canvas.current) return;
-    const s = new OpeningScene(canvas.current);
-    s.snapTo(openingSteps[0].targets);
+    const s = new SpaceOpening(canvas.current);
+    s.snapTo(spaceSteps[beats[startBeat].openingStep ?? spaceSteps.length - 1].targets);
+    s.onTouch = () => setSwiped(true);
     s.play();
     scene.current = s;
     if (DEBUG) {
       (window as unknown as { genesis: unknown }).genesis = {
-        async go(step: number, seconds: number) {
+        go(step: number, seconds: number) {
           setIndex(step);
-          const target = openingSteps[step];
-          if (!target) return;
-          if (step >= FIRST_LAND_STEP - 2) await s.ensureLandscape();
-          s.setTargets(target.targets, {
-            sweepSeconds: target.sweepSeconds,
-            duskSeconds: target.duskSeconds,
-            ascendAfter: target.ascendAfter,
-          });
+          if (spaceSteps[step]) s.setTargets(spaceSteps[step].targets);
           s.debugAdvance(seconds);
         },
         advance: (seconds: number) => s.debugAdvance(seconds),
-        info: () => s.debugInfo(),
       };
     }
     window.addEventListener("resize", s.resize);
@@ -101,49 +103,25 @@ export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
       s.dispose();
       scene.current = null;
     };
+    // The opening is made once, for the beat the player opened on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Each opening beat sets where the scene glides to. Stepping to the next or previous verse
-  // glides; jumping from further away (the chapter list, or back from the globe) cuts straight
-  // there, because gliding across several verses would mean a long wait.
+  // Each opening beat sets where the picture glides to. Stepping to the next or previous verse
+  // glides; jumping from further away cuts straight there.
   useEffect(() => {
     const from = previous.current;
     previous.current = index;
     const stepIndex = beats[index].openingStep;
     const s = scene.current;
     if (stepIndex === undefined || !s) return;
-    const step = openingSteps[stepIndex];
-    const events = { sweepSeconds: step.sweepSeconds, duskSeconds: step.duskSeconds, ascendAfter: step.ascendAfter };
-    const jumped = Math.abs(index - from) > 1;
-    const needsLand = stepIndex >= FIRST_LAND_STEP - 2;
-    if (!jumped) {
-      if (needsLand) void s.ensureLandscape();
-      s.setTargets(step.targets, events);
-      return;
-    }
-    let cancelled = false;
-    void (needsLand ? s.ensureLandscape() : Promise.resolve()).then(() => {
-      if (cancelled) return;
-      s.snapTo(step.targets);
-      s.setTargets(step.targets, events);
-    });
-    return () => {
-      cancelled = true;
-    };
+    if (Math.abs(index - from) > 1) s.snapTo(spaceSteps[stepIndex].targets);
+    else s.setTargets(spaceSteps[stepIndex].targets);
   }, [index]);
 
-  // The fade to the globe: partway through the last opening beat, and for good on globe beats.
+  // The fade to the globe: for good on globe beats.
   useEffect(() => {
-    const stepIndex = beats[index].openingStep;
-    if (stepIndex === undefined) {
-      setFaded(true);
-      return;
-    }
-    setFaded(false);
-    const after = openingSteps[stepIndex].fadeToGlobeAfter;
-    if (after === undefined) return;
-    const timer = window.setTimeout(() => setFaded(true), after * 1000);
-    return () => window.clearTimeout(timer);
+    setFaded(beats[index].openingStep === undefined);
   }, [index]);
 
   // The opening keeps drawing only while it can be seen (the fade itself takes 3.5 seconds).
@@ -207,7 +185,10 @@ export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
           camera={beat.camera ?? null}
           hold={beat.hold}
           land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
-          flood={beat.flood ?? null}
+          flood={onGlobe ? (beat.flood ?? null) : WAITING}
+          stars={onGlobe ? beat.stars : 0}
+          drills={onGlobe ? beat.drills : NO_DRILLS}
+          onDrill={drillFromHere}
           relief={beat.relief ?? null}
           startCenter={firstGlobe.camera?.center ?? [0, 0]}
           pins={onGlobe ? sceneFeatures : noPins}
@@ -217,11 +198,24 @@ export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
         />
       )}
       <canvas ref={canvas} className={`opening-canvas ${faded ? "is-faded" : ""}`} />
+      {/* Before the globe: the same dots, set beside the waters, and a label for what the hand can do. */}
+      {!onGlobe && (
+        <div className="opening-dots">
+          {beat.drills.map((drill) => (
+            <button key={drill.scene} className="door drill door-right" onClick={() => drillFromHere(drill.scene)} aria-label={drill.label}>
+              <span className="door-pulse" />
+              <span className="door-ring" />
+              <span className="door-label">{drill.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {!onGlobe && index > 0 && !swiped && <p className="opening-hint">Swipe the waters</p>}
 
       <div className="story-top">
         {onHome && (
           <button className="story-button" onClick={onHome}>
-            World
+            Storyboard
           </button>
         )}
         <button className="story-button" onClick={() => setChaptersOpen((o) => !o)} aria-expanded={chaptersOpen}>

@@ -19,7 +19,10 @@ import Timeline from "./Timeline.tsx";
 // story. Without one (or with ?hub=flat) it is the flat picture of the world as Genesis pictures it.
 const ON_GLOBE = Boolean(import.meta.env.VITE_MAPBOX_TOKEN) && new URLSearchParams(window.location.search).get("hub") !== "flat";
 const HOME: [number, number] = [42, 22];
-const DOORS: Door[] = targets.map((t) => ({ id: t.id, label: t.label, at: t.at, side: t.side }));
+// Only parts of the story that are places get a ring on the globe. The days of creation and the flood are
+// not places; they are reached from the timeline (and, in the story itself, from the dots on each scene).
+const PLACES = ["garden", "east", "ararat"];
+const DOORS: Door[] = targets.filter((t) => PLACES.includes(t.id)).map((t) => ({ id: t.id, label: t.label, at: t.at, side: t.side }));
 const NO_PINS: MapFeature[] = [];
 const nothing = () => {};
 
@@ -75,9 +78,12 @@ export default function StoryBoard({ onPlay, arrived = false }: Props) {
         <h1>{ON_GLOBE ? "Genesis, from the beginning to the ark at rest" : "The world as Genesis pictures it"}</h1>
         <p>
           {ON_GLOBE
-            ? "Tap a ring on the earth to move in to a scene; drag to turn the globe. The rings for the days of creation and the flood are placed for layout, not as locations."
+            ? "The storyboard: the plan for every scene. Use the timeline to move through them. Rings on the earth mark only the parts that are places."
             : "Tap a ring to move in to a scene. This is the storyboard: the plan for each scene, and a way into the ones already built."}
         </p>
+        <button className="board-play board-begin" onClick={() => onPlay("verse:1:1")}>
+          Play the story from the beginning
+        </button>
       </header>
 
       <div className="board-left">

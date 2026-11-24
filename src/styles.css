@@ -1544,3 +1544,60 @@ body,
 @keyframes board-arrive {
   to { opacity: 0; visibility: hidden; }
 }
+
+/* Dots that open a hand-drawn scene from the story. Gold, so they read apart from place pins. */
+.drill .door-ring {
+  border-color: #eeb04a;
+  box-shadow: 0 0 0 2px rgba(8, 13, 28, 0.5), inset 0 0 0 5px rgba(8, 13, 28, 0.45), inset 0 0 0 11px #eeb04a;
+}
+.drill .door-pulse {
+  border-color: #eeb04a;
+}
+.drill .door-label {
+  margin: 0 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(8, 13, 28, 0.72);
+  color: #fbeecb;
+  text-shadow: none;
+}
+/* Before the globe is there, the dots sit beside the waters. */
+.opening-dots {
+  position: fixed;
+  left: calc(50% + min(24vw, 21vh));
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2;
+}
+.opening-hint {
+  position: fixed;
+  left: 50%;
+  top: 37%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 7px 16px;
+  border: 2px solid rgba(251, 238, 203, 0.7);
+  border-radius: 999px;
+  background: rgba(8, 13, 28, 0.55);
+  color: #fbeecb;
+  font: italic 15px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  pointer-events: none;
+  animation: opening-hint 2.6s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes opening-hint {
+  50% { transform: translate(calc(-50% + 14px), -50%); }
+}
+@media (max-width: 700px) {
+  .opening-dots {
+    left: 50%;
+    top: 60%;
+    transform: translateX(-15px);
+  }
+}
+
+.board-begin {
+  margin-top: 10px;
+}

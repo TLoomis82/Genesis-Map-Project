@@ -180,6 +180,11 @@ interface Props {
   onDoor?: (id: string) => void;
   /** Share of the height kept clear under the globe for words. The story keeps about a quarter. */
   lift?: number;
+  /** How bright the stars are behind the globe, 0 to 1. */
+  stars?: number;
+  /** Hand-drawn scenes that can be opened from this beat. Each is a dot near the middle of the view. */
+  drills?: { scene: string; label: string }[];
+  onDrill?: (scene: string) => void;
 }
 
 export interface Door {
@@ -192,7 +197,7 @@ export interface Door {
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, doors, openDoor = null, onDoor, lift: liftShare = 0.26 }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -218,13 +223,7 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
           // Older or newer style versions may not have every setting; skip the ones that are missing.
         }
       }
-      m.setFog({
-        color: "rgb(186, 210, 235)",
-        "high-color": "rgb(36, 92, 223)",
-        "horizon-blend": 0.02,
-        "space-color": "rgb(0, 0, 0)",
-        "star-intensity": 0.6, // the globe is first shown at the end of day 4, when the stars are there
-      });
+      m.setFog({ color: "rgb(186, 210, 235)", "high-color": "rgb(36, 92, 223)", "horizon-blend": 0.02, "space-color": "rgb(0, 0, 0)", "star-intensity": stars });
       // Each addition is tried on its own, so one failing does not stop the rest, and the reason is kept
       // for the ?debug readout.
       // Slow clouds around the globe, seen from far out. Add ?clouds=0 to the address to switch them off.
@@ -334,6 +333,42 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       });
     return () => markers.forEach((marker) => marker.remove());
   }, [pins, selectedId, onSelect, ready]);
+
+  // The stars come out on day 4, not before.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    m.setFog({ color: "rgb(186, 210, 235)", "high-color": "rgb(36, 92, 223)", "horizon-blend": 0.02, "space-color": "rgb(0, 0, 0)", "star-intensity": stars });
+  }, [stars, ready]);
+
+  // The dots that say there is more to see here: one for each hand-drawn scene that belongs to this
+  // beat. They sit around the middle of the view (a layout choice, not a location) and go when the
+  // story moves on.
+  const drillLng = camera?.center[0];
+  const drillLat = camera?.center[1];
+  const drillZoom = camera?.zoom;
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !drills?.length || drillLng === undefined || drillLat === undefined || drillZoom === undefined) return;
+    const degreesPerPixel = 360 / (512 * 2 ** Math.max(drillZoom, 1.6));
+    const reach = (drills.length > 1 ? 120 : 96) * degreesPerPixel;
+    const markers = drills.map((drill, i) => {
+      const angle = drills.length > 1 ? -Math.PI / 2 + (i / drills.length) * Math.PI * 2 : Math.PI * 0.2;
+      const lat = Math.max(-80, Math.min(80, drillLat - Math.sin(angle) * reach));
+      const lng = drillLng + (Math.cos(angle) * reach) / Math.max(0.3, Math.cos((lat * Math.PI) / 180));
+      const el = document.createElement("button");
+      el.className = `door drill door-${Math.cos(angle) < -0.3 ? "left" : "right"}`;
+      el.setAttribute("aria-label", drill.label);
+      el.innerHTML = '<span class="door-pulse"></span><span class="door-ring"></span><span class="door-label"></span>';
+      el.querySelector(".door-label")!.textContent = drill.label;
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onDrill?.(drill.scene);
+      });
+      return new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat([lng, lat]).addTo(m);
+    });
+    return () => markers.forEach((marker) => marker.remove());
+  }, [drills, onDrill, drillLng, drillLat, drillZoom, ready]);
 
   // The front door's rings.
   useEffect(() => {

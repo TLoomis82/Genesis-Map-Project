@@ -14,22 +14,24 @@ import GlobeTest from "./spike/GlobeTest.tsx";
 import { beats } from "./story/beats.ts";
 
 // Three views:
-//   board  the interactive storyboard and front door: the world as Genesis pictures it (the default)
-//   story  the playable story, opened from the board or with ?view=story (and with ?debug, for checks)
-//   scene  a finished hand-drawn scene, opened from the board (so far: Eden 1, the man from the dust)
+//   story  the main line and the front door: space, the deep, light, the firmament, then the globe (the default)
+//   board  the storyboard: the plan for every scene, with ?view=board or the "Storyboard" button
+//   scene  a hand-drawn scene, opened from a dot in the story (or from the storyboard)
 //   globe  the M0 globe test, with ?view=globe
 
 type View = "board" | "story" | "scene" | "globe";
 
 const params = new URLSearchParams(window.location.search);
 const asked = params.get("view");
-const initial: View = asked === "globe" ? "globe" : asked === "scene" ? "scene" : asked === "story" || params.has("debug") ? "story" : "board";
+const initial: View = asked === "globe" ? "globe" : asked === "scene" ? "scene" : asked === "board" ? "board" : "story";
 const showSwitch = initial === "globe" || params.has("debug");
 
 export default function App() {
   const [view, setView] = useState<View>(initial);
   const [startBeat, setStartBeat] = useState(0);
   // The handoff from the sketched creation to the detailed globe: the drawing swells and fades, the world fades in.
+  // Where a hand-drawn scene was opened from, so leaving it goes back there.
+  const [from, setFrom] = useState<"story" | "board">("board");
   const [leaving, setLeaving] = useState(false);
   const [arrived, setArrived] = useState(false);
   // Which hand-drawn scene is open: ?scene=day-1 opens one directly.
@@ -41,6 +43,7 @@ export default function App() {
         arrived={arrived}
         onPlay={(sceneId) => {
           setArrived(false);
+          setFrom("board");
           // Scenes drawn in the new hand-drawn style open on their own; the rest open in the story.
           if (sceneId.startsWith("illustrated:")) {
             setScene(sceneId.slice("illustrated:".length));
@@ -55,7 +58,7 @@ export default function App() {
     );
   }
   if (view === "scene") {
-    const home = () => setView("board");
+    const home = () => setView(from);
     // Where this scene leads once it has played: the next hand-drawn scene in story order. Day 7 ends
     // the sketched creation, so it leads out to the finished world: the detailed globe of the front door.
     const drawn = storyOrder.map((s) => s.scene).filter((s) => s.sceneId?.startsWith("illustrated:"));
@@ -70,7 +73,11 @@ export default function App() {
       }, 900);
     };
     const next =
-      scene === "day-7"
+      from === "story"
+        ? scene === "ark"
+          ? null
+          : { label: "Back to the story", go: home }
+        : scene === "day-7"
         ? { label: "See the finished world", go: toWorld }
         : scene !== "ark" && after
           ? { label: `Next: ${after.title}`, go: () => setScene(after.sceneId!.slice("illustrated:".length)) }
@@ -97,7 +104,22 @@ export default function App() {
   }
   return (
     <>
-      {view === "story" ? <StoryPlayer key={startBeat} startBeat={startBeat} onHome={() => setView("board")} /> : <GlobeTest />}
+      {view === "story" ? (
+        <StoryPlayer
+          key={startBeat}
+          startBeat={startBeat}
+          onHome={() => setView("board")}
+          onDrill={(sceneId, beat) => {
+            // Into the drawing, and back to this same verse afterwards.
+            setScene(sceneId);
+            setStartBeat(beat);
+            setFrom("story");
+            setView("scene");
+          }}
+        />
+      ) : (
+        <GlobeTest />
+      )}
       {showSwitch && (
         <button className="view-switch" onClick={() => setView(view === "story" ? "globe" : "story")}>
           {view === "story" ? "Globe test" : "Story"}
