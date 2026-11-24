@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { kjv } from "../data/kjv.ts";
-import { ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { CREAM, Drawn, GOLD, INK, MomentStrip, SceneWords, useMoments, useView } from "./kit.tsx";
+import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
+import { CREAM, Drawn, GOLD, INK, MomentStrip, Painted, Paper, Pencil, SceneWords, strokeTurn, useMoments, useView } from "./kit.tsx";
 
 // The days before there is an earth to look at, hand-drawn on the fly and live under the hand:
 //
@@ -12,6 +12,10 @@ import { CREAM, Drawn, GOLD, INK, MomentStrip, SceneWords, useMoments, useView }
 // The water is a real, simple wave: a row of heights joined by springs. Swipe it and it sloshes,
 // and because the ink lines are drawn from those heights every frame, the drawing itself sloshes.
 // On day 1, dragging in the sky turns light and dark. On day 2, dragging lifts or lowers the vault.
+//
+// Each scene opens as a drawing does. The page is blank; the artist sketches the horizon in pencil,
+// inks the water line by line, then brushes the colour in. In the beginning, the darkness itself is
+// brushed across the blank page, stroke after stroke. Only when the drawing is made does it move.
 //
 // Text is as the verses give it. How any of it looked is illustration; the vault as a solid dome
 // follows BibleProject's reading of the ancient picture of the world.
@@ -61,6 +65,8 @@ export default function Waters({ chapter, onHome }: Props) {
   const hand = useRef({ turn: 0, lift: 0 }); // what the viewer has changed by dragging the sky
   const pointer = useRef<{ x: number; y: number; inSky: boolean } | null>(null);
 
+  // Seconds the artist takes to draw the scene in before it begins to move.
+  const introSeconds = chapter === "beginning" ? 2.4 : 7;
   const clock = useMoments(info.moments.length, (dt, time, t) => {
     const { h, v } = wave.current;
     // Wind stirs the water in the beginning's last moment; otherwise there is only a faint swell.
@@ -75,18 +81,29 @@ export default function Waters({ chapter, onHome }: Props) {
       }
       for (let i = 0; i < COLUMNS; i++) h[i] = Math.max(-90, Math.min(90, h[i] + v[i] * d));
     }
-  });
+  }, introSeconds);
   const { t, time, boil } = clock;
   const moment = Math.min(info.moments.length - 1, Math.max(0, Math.ceil(t - 0.02) - 1));
+  // The drawing-in, 0 to 1: pencil first, then ink, then colour.
+  const intro = clamp01(time / introSeconds);
+  const sketch = ease(intro, 0, chapter === "beginning" ? 0.85 : 0.2);
+  const sketchFade = chapter === "beginning" ? 1 - ease(t, 0.5, 1) : 1 - ease(intro, 0.72, 0.98);
+  const inked = chapter === "beginning" ? clamp01((t - 0.95) / 0.75) : clamp01((intro - 0.16) / 0.4);
+  const paint = chapter === "beginning" ? 1 : clamp01((intro - 0.5) / 0.48);
 
   const scenery = useMemo(() => {
     const rand = seeded(41);
     return {
       // Darkness, scribbled in with long strokes.
-      scribbles: Array.from({ length: 16 }, (_, i) => {
-        const y = -260 + i * 58 + rand() * 20;
-        return handLine(rolling(-200, 1800, y, 14, 60 + i, 90).map(([x, yy]) => [x, yy + (x / 1600) * 60] as Point), 60 + i, 6);
+      // Darkness: broad strokes, each a little lower than the last, that between them cover the page.
+      scribbles: Array.from({ length: 30 }, (_, i) => {
+        const y = -860 + i * 82 + rand() * 16;
+        const line = rolling(-260, 1860, y, 16, 60 + i, 110).map(([x, yy]) => [x, yy + (x / 1600) * 50] as Point);
+        return handLine(i % 2 ? line.reverse() : line, 60 + i, 7); // back and forth, as a hand works
       }),
+      sketchHorizon: handLine(rolling(-200, 1800, SURFACE, 7, 21, 100), 21, 5),
+      sketchHorizon2: handLine(rolling(-200, 1800, SURFACE + 5, 9, 22, 120), 22, 6),
+      sketchWave: handLine(rolling(-200, 1800, SURFACE + 86, 12, 23, 90), 23, 6),
       stars: Array.from({ length: 40 }, () => ({ x: (rand() - 0.5) * 2600, y: -80 - rand() * 1300, s: 4 + rand() * 5, cross: rand() < 0.5 })),
       rays: Array.from({ length: 19 }, (_, i) => {
         const a = Math.PI * (0.04 + (i / 18) * 0.92);
@@ -108,7 +125,6 @@ export default function Waters({ chapter, onHome }: Props) {
 
   // ---- what each part is doing at this point ----
   const begun = chapter !== "beginning";
-  const waterDrawn = begun ? 1 : ease(t, 0.95, 1.9);
   // Day 1: how much light there is, and where the turning line between light and dark stands.
   const light = chapter === "beginning" ? 0 : chapter === "day-1" ? ease(t, 0.35, 1) : 1;
   const divided = chapter === "day-1" ? ease(t, 1, 1.35) : 0;
@@ -147,7 +163,7 @@ export default function Waters({ chapter, onHome }: Props) {
   const toDrawing = (clientX: number, clientY: number) => ({ x: view.x + clientX * view.scale, y: view.y + clientY * view.scale });
 
   return (
-    <div className="hand-scene" style={{ background: "#1c1a3a" }}>
+    <div className="hand-scene" style={{ background: "#f4ead2" }}>
       <svg
         className="hand-canvas"
         viewBox={view.box}
@@ -187,76 +203,90 @@ export default function Waters({ chapter, onHome }: Props) {
           </pattern>
         </defs>
 
-        {/* The dark, scribbled in stroke by stroke. */}
-        <rect x="-400" y="-1800" width="2400" height="4600" fill="#1c1a3a" />
-        {scenery.scribbles.map((d, i) => (
-          <Drawn key={i} d={d} progress={begun ? 1 : ease(t, 0.05 + i * 0.045, 0.3 + i * 0.045)} stroke="#0e0d20" strokeWidth={34} opacity={0.95} />
+        {/* Blank paper, then the pencil finding the horizon. */}
+        <Paper />
+        <Pencil d={scenery.sketchHorizon} d2={scenery.sketchHorizon2} progress={sketch} fade={sketchFade} tool />
+        <Pencil d={scenery.sketchWave} progress={clamp01(sketch * 1.4 - 0.5)} fade={sketchFade} />
+
+        <Painted id={`paint-${chapter}`} progress={paint} view={view}>
+          {/* The ground colour of the page once painted: night, or on day 2 the waters everywhere. */}
+          {begun && <rect x="-400" y="-1800" width="2400" height="4600" fill={chapter === "day-2" ? "#2c6a8f" : "#1c1a3a"} />}
+          {/* In the beginning the darkness is brushed across the blank page, one broad stroke after another. */}
+          {chapter === "beginning" && (
+            <>
+              {scenery.scribbles.map((d, i) => (
+                <Drawn key={i} d={d} progress={strokeTurn(clamp01((t - 0.02) / 0.86), i, scenery.scribbles.length, 1.3)} stroke={i % 3 === 0 ? "#141230" : "#1c1a3a"} strokeWidth={128} tool="brush" />
+              ))}
+              <rect x="-400" y="-1800" width="2400" height="4600" fill="#1c1a3a" opacity={ease(t, 0.84, 1)} />
+            </>
+          )}
+
+          {/* Light: a pale sky, and rays drawn out from where it breaks. No sun: that is day 4. */}
+          {chapter === "day-1" && light > 0 && (
+            <>
+              <rect x="-400" y="-1800" width="2400" height={1800 + SURFACE} fill="#f3e2b6" opacity={light} />
+              {scenery.rays.map((d, i) => (
+                <Drawn key={i} d={d} progress={chapter === "day-1" ? ease(t, 0.2 + i * 0.02, 0.7 + i * 0.02) : 1} stroke={GOLD} strokeWidth={i % 3 === 0 ? 7 : 4} opacity={chapter === "day-1" ? 0.85 : 0.35} />
+              ))}
+            </>
+          )}
+
+          {/* Day 1: the dark half of the sky, turning about the horizon. */}
+          {divided > 0 && (
+            <g transform={`rotate(${-turn} 800 ${SURFACE})`} opacity={divided}>
+              <rect x="-2400" y={SURFACE} width="6400" height="3600" fill="#1b1940" />
+              <g transform={`translate(800 ${SURFACE}) scale(1 -1)`}>
+                {scenery.stars.map((s, i) =>
+                  s.cross ? (
+                    <path key={i} d={`M ${s.x - s.s} ${s.y} h ${2 * s.s} M ${s.x} ${s.y - s.s} v ${2 * s.s}`} stroke={CREAM} strokeWidth="2.4" strokeLinecap="round" />
+                  ) : (
+                    <circle key={i} cx={s.x} cy={s.y} r={s.s / 3} fill={CREAM} />
+                  ),
+                )}
+              </g>
+              <path d={handLine(rolling(-1800, 3400, SURFACE, 5, 300 + boil, 130), 300 + boil, 3)} fill="none" stroke={INK} strokeWidth="6" strokeLinecap="round" />
+            </g>
+          )}
+
+          {/* Day 2: water above, and the vault drawn between. */}
+          {chapter === "day-2" && (
+            <>
+            
+              <path d={`M 180 ${SURFACE} A 620 ${vaultHeight} 0 0 1 1420 ${SURFACE} Z`} fill="#f3e2b6" opacity={cleared} />
+              {[0, 1, 2, 3, 4].map((k) => (
+                <Drawn key={k} d={handLine(upperLine(k), 400 + k * 7 + boil, 2)} progress={ease(t, 0.1 + k * 0.12, 0.7 + k * 0.12)} stroke={k === 0 ? INK : "#bfe3ee"} strokeWidth={k === 0 ? 5 : 3.5} opacity={k === 0 ? 1 : 0.75} />
+              ))}
+              <Drawn d={`M 180 ${SURFACE} A 620 ${vaultHeight} 0 0 1 1420 ${SURFACE}`} progress={vaultDrawn} stroke={INK} strokeWidth={15} />
+              <Drawn d={`M 180 ${SURFACE} A 620 ${vaultHeight} 0 0 1 1420 ${SURFACE}`} progress={vaultDrawn} stroke={CREAM} strokeWidth={8} />
+            </>
+          )}
+
+          {/* Wind over the water: curled strokes that drift. */}
+          {chapter === "beginning" &&
+            scenery.wind.map((d, i) => (
+              <g key={i} transform={`translate(${((time * (50 + i * 9)) % 520) - 160} 0)`} opacity={ease(t, 2.05, 2.4)}>
+                <Drawn d={d} progress={ease(t, 2.05 + i * 0.07, 2.6 + i * 0.07)} stroke={CREAM} strokeWidth={5} opacity={0.8} />
+              </g>
+            ))}
+
+          {/* The body of the water: colour under the ink. */}
+          <path d={body} fill="#16324f" opacity={begun ? 1 : ease(t, 1.5, 1.95)} />
+          <path d={body} fill="#1f6f8b" opacity={(begun ? 1 : ease(t, 1.5, 1.95)) * light * 0.85} />
+          <path d={body} fill="url(#water-hatch)" opacity={begun ? 1 : ease(t, 1.6, 2)} />
+        </Painted>
+
+        {/* The water's ink lines, drawn one after another with the pen, before any colour goes on. */}
+        {[0, 1, 2, 3, 4, 5].map((k) => (
+          <Drawn
+            key={k}
+            d={handLine(k === 0 ? top : waterLine(k), 200 + k * 9 + boil, k === 0 ? 1.6 : 2.4)}
+            progress={strokeTurn(inked, k, 6, 1.5)}
+            tool="pen"
+            stroke={k === 0 ? INK : paint < 0.6 ? "#4d7396" : light > 0.5 ? "#bfe3ee" : "#4d7396"}
+            strokeWidth={k === 0 ? 6 : 3.5}
+            opacity={k === 0 ? 1 : 0.8 - k * 0.09}
+          />
         ))}
-
-        {/* Light: a pale sky, and rays drawn out from where it breaks. No sun: that is day 4. */}
-        {light > 0 && (
-          <>
-            <rect x="-400" y="-1800" width="2400" height={1800 + SURFACE} fill="#f3e2b6" opacity={light} />
-            {scenery.rays.map((d, i) => (
-              <Drawn key={i} d={d} progress={chapter === "day-1" ? ease(t, 0.2 + i * 0.02, 0.7 + i * 0.02) : 1} stroke={GOLD} strokeWidth={i % 3 === 0 ? 7 : 4} opacity={chapter === "day-1" ? 0.85 : 0.35} />
-            ))}
-          </>
-        )}
-
-        {/* Day 1: the dark half of the sky, turning about the horizon. */}
-        {divided > 0 && (
-          <g transform={`rotate(${-turn} 800 ${SURFACE})`} opacity={divided}>
-            <rect x="-2400" y={SURFACE} width="6400" height="3600" fill="#1b1940" />
-            <g transform={`translate(800 ${SURFACE}) scale(1 -1)`}>
-              {scenery.stars.map((s, i) =>
-                s.cross ? (
-                  <path key={i} d={`M ${s.x - s.s} ${s.y} h ${2 * s.s} M ${s.x} ${s.y - s.s} v ${2 * s.s}`} stroke={CREAM} strokeWidth="2.4" strokeLinecap="round" />
-                ) : (
-                  <circle key={i} cx={s.x} cy={s.y} r={s.s / 3} fill={CREAM} />
-                ),
-              )}
-            </g>
-            <path d={handLine(rolling(-1800, 3400, SURFACE, 5, 300 + boil, 130), 300 + boil, 3)} fill="none" stroke={INK} strokeWidth="6" strokeLinecap="round" />
-          </g>
-        )}
-
-        {/* Day 2: water above, and the vault drawn between. */}
-        {chapter === "day-2" && (
-          <>
-            <rect x="-400" y="-1800" width="2400" height={1800 + SURFACE} fill="#2c6a8f" opacity={1 - 0.0 * cleared} />
-            <path d={`M 180 ${SURFACE} A 620 ${vaultHeight} 0 0 1 1420 ${SURFACE} Z`} fill="#f3e2b6" opacity={cleared} />
-            {[0, 1, 2, 3, 4].map((k) => (
-              <Drawn key={k} d={handLine(upperLine(k), 400 + k * 7 + boil, 2)} progress={ease(t, 0.1 + k * 0.12, 0.7 + k * 0.12)} stroke={k === 0 ? INK : "#bfe3ee"} strokeWidth={k === 0 ? 5 : 3.5} opacity={k === 0 ? 1 : 0.75} />
-            ))}
-            <Drawn d={`M 180 ${SURFACE} A 620 ${vaultHeight} 0 0 1 1420 ${SURFACE}`} progress={vaultDrawn} stroke={INK} strokeWidth={15} />
-            <Drawn d={`M 180 ${SURFACE} A 620 ${vaultHeight} 0 0 1 1420 ${SURFACE}`} progress={vaultDrawn} stroke={CREAM} strokeWidth={8} />
-          </>
-        )}
-
-        {/* Wind over the water: curled strokes that drift. */}
-        {chapter === "beginning" &&
-          scenery.wind.map((d, i) => (
-            <g key={i} transform={`translate(${((time * (50 + i * 9)) % 520) - 160} 0)`} opacity={ease(t, 2.05, 2.4)}>
-              <Drawn d={d} progress={ease(t, 2.05 + i * 0.07, 2.6 + i * 0.07)} stroke={CREAM} strokeWidth={5} opacity={0.8} />
-            </g>
-          ))}
-
-        {/* The water itself. */}
-        <g opacity={waterDrawn > 0 ? 1 : 0}>
-          <path d={body} fill="#16324f" opacity={ease(waterDrawn, 0.3, 1)} />
-          <path d={body} fill="#1f6f8b" opacity={ease(waterDrawn, 0.3, 1) * light * 0.85} />
-          <path d={body} fill="url(#water-hatch)" opacity={ease(waterDrawn, 0.5, 1)} />
-          {[0, 1, 2, 3, 4, 5].map((k) => (
-            <Drawn
-              key={k}
-              d={handLine(k === 0 ? top : waterLine(k), 200 + k * 9 + boil, k === 0 ? 1.6 : 2.4)}
-              progress={begun ? 1 : ease(t, 0.95 + k * 0.1, 1.6 + k * 0.1)}
-              stroke={k === 0 ? INK : mix(0, 1, light) > 0.5 ? "#bfe3ee" : "#4d7396"}
-              strokeWidth={k === 0 ? 6 : 3.5}
-              opacity={k === 0 ? 1 : 0.8 - k * 0.09}
-            />
-          ))}
-        </g>
       </svg>
       <div className="hand-paper" aria-hidden="true" />
 

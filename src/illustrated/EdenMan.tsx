@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { Drawn } from "./kit.tsx";
+import { Drawn, Painted, Paper, Pencil, strokeTurn, type View } from "./kit.tsx";
 
 // Eden 1: the man formed from the dust (Genesis 2:7), as a live hand-drawn scene.
 //
@@ -26,6 +26,8 @@ const MOMENTS = ["Dust lifts", "It gathers", "Breath enters", "He sits up"];
 const HIP: Point = [800, 706];
 const SHOULDER: Point = [975, 652];
 const HEAD: Point = [1036, 634];
+/** Seconds the artist takes to draw the scene in before anything moves. */
+const INTRO = 7;
 const BREATH = "M 1530 70 C 1370 150 1500 300 1330 384 S 1196 520 1086 612";
 
 interface Props {
@@ -36,6 +38,8 @@ export default function EdenMan({ onHome }: Props) {
   // Where the scene is, 0 to 4: each whole number is the end of a moment.
   const [t, setT] = useState(0);
   const [boil, setBoil] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const began = useRef(performance.now());
   const [playing, setPlaying] = useState(true);
   const [box, setBox] = useState({ w: window.innerWidth, h: window.innerHeight });
   const want = useRef(1);
@@ -55,6 +59,8 @@ export default function EdenMan({ onHome }: Props) {
       bands: [band(300, 2), band(470, 3), band(560, 4)],
       hills: `${handLine(rolling(-200, 1800, 612, 26, 7), 7, 4)} L 1800 780 L -200 780 Z`,
       hillLine: handLine(rolling(-200, 1800, 612, 26, 7), 7, 4),
+      hillLine2: handLine(rolling(-200, 1800, 616, 30, 7), 17, 7),
+      groundLine2: handLine(rolling(-200, 1800, 724, 10, 9, 80), 19, 6),
       ground: `${handLine(rolling(-200, 1800, 722, 8, 9, 80), 9, 3)} L 1800 2600 L -200 2600 Z`,
       groundLine: handLine(rolling(-200, 1800, 722, 8, 9, 80), 9, 3),
     };
@@ -90,11 +96,14 @@ export default function EdenMan({ onHome }: Props) {
     const tick = (time: number) => {
       const dt = Math.min((time - last) / 1000, 0.1);
       last = time;
-      const gap = want.current - now.current;
+      const sinceOpen = (time - began.current) / 1000;
+      setElapsed(sinceOpen);
+      const waiting = sinceOpen < INTRO; // the artist is still drawing the scene
+      const gap = waiting ? 0 : want.current - now.current;
       now.current += Math.max(-0.5, Math.min(0.5, gap * 2.4)) * dt;
       if (Math.abs(gap) < 0.012) {
         rested += dt;
-        if (playing && rested > 1.1 && want.current < MOMENTS.length) {
+        if (!waiting && playing && rested > 1.1 && want.current < MOMENTS.length) {
           want.current += 1;
           rested = 0;
         }
@@ -128,6 +137,14 @@ export default function EdenMan({ onHome }: Props) {
   const vx = Math.max(0, Math.min(1600 - vw, 810 - vw / 2));
   const vy = 650 - vh * 0.56;
 
+  // The drawing-in: blank paper, a pencil sketch, ink over it, then colour brushed in.
+  const intro = clamp01(elapsed / INTRO);
+  const sketch = ease(intro, 0, 0.22);
+  const sketchFade = 1 - ease(intro, 0.72, 0.98);
+  const inked = clamp01((intro - 0.18) / 0.34);
+  const paint = clamp01((intro - 0.5) / 0.48);
+  const view = { box: `${vx} ${vy} ${vw} ${vh}` } as View;
+
   // What each part is doing at this point in the scene.
   const outline = ease(t, 0.9, 1.5) * (1 - ease(t, 1.8, 2.3)); // the dotted shape, before it is solid
   const solid = ease(t, 1.6, 2.3);
@@ -139,7 +156,7 @@ export default function EdenMan({ onHome }: Props) {
   const moment = Math.min(MOMENTS.length - 1, Math.max(0, Math.ceil(t - 0.02) - 1));
 
   return (
-    <div className="hand-scene">
+    <div className="hand-scene" style={{ background: "#f4ead2" }}>
       <svg
         className="hand-canvas"
         viewBox={`${vx} ${vy} ${vw} ${vh}`}
@@ -168,38 +185,48 @@ export default function EdenMan({ onHome }: Props) {
           </pattern>
         </defs>
 
-        {/* Sky in flat bands, like cut paper; stars as small crosses and dots. */}
-        <rect x="-200" y="-1600" width="2000" height="2500" fill="#2a2752" />
-        <path d={scenery.bands[0]} fill="#3a3466" />
-        <path d={scenery.bands[1]} fill="#5a3f6b" />
-        <path d={scenery.bands[2]} fill="#c6704e" />
-        {scenery.stars.map((s, i) =>
-          s.cross ? (
-            <path key={i} d={`M ${s.x - s.s} ${s.y} h ${2 * s.s} M ${s.x} ${s.y - s.s} v ${2 * s.s}`} stroke={CREAM} strokeWidth="2.2" strokeLinecap="round" />
-          ) : (
-            <circle key={i} cx={s.x} cy={s.y} r={s.s / 3} fill={CREAM} />
-          ),
-        )}
+        {/* Blank paper, then the pencil finding the hills and the ground. */}
+        <Paper />
+        <Pencil d={scenery.hillLine} d2={scenery.hillLine2} progress={sketch} fade={sketchFade} tool />
+        <Pencil d={scenery.groundLine2} progress={clamp01(sketch * 1.4 - 0.4)} fade={sketchFade} />
 
-        {/* Bare hills: no plant of the field was yet in the earth (2:5). */}
-        <path d={scenery.hills} fill="#6b4762" opacity={ease(t, 0.1, 0.45)} />
-        <path d={scenery.hills} fill="url(#hatch-b)" opacity={ease(t, 0.25, 0.6)} />
-        <Drawn d={scenery.hillLine} progress={ease(t, 0, 0.35)} stroke={INK} strokeWidth={4} />
-        {/* The mist that went up from the earth (2:6), drifting. */}
-        {[170, 430, 1260, 1470].map((x, i) => (
-          <g key={x} opacity="0.7" transform={`translate(${Math.sin(t * 0.6 + i) * 14} 0)`}>
-            <path d={`M ${x - 90} ${690 + i * 5} q 30 -26 60 0 t 60 0 t 60 0`} fill="none" stroke={CREAM} strokeWidth="4" strokeLinecap="round" />
-            <path d={`M ${x - 50} ${708 + i * 5} q 24 -18 48 0 t 48 0`} fill="none" stroke={CREAM} strokeWidth="3" strokeLinecap="round" opacity="0.6" />
-          </g>
-        ))}
+        {/* Colour, brushed in over the sketch. */}
+        <Painted id="paint-eden-man" progress={paint} view={view}>
+          {/* Sky in flat bands, like cut paper; stars as small crosses and dots. */}
+          <rect x="-200" y="-1600" width="2000" height="2500" fill="#2a2752" />
+          <path d={scenery.bands[0]} fill="#3a3466" />
+          <path d={scenery.bands[1]} fill="#5a3f6b" />
+          <path d={scenery.bands[2]} fill="#c6704e" />
+          {scenery.stars.map((s, i) =>
+            s.cross ? (
+              <path key={i} d={`M ${s.x - s.s} ${s.y} h ${2 * s.s} M ${s.x} ${s.y - s.s} v ${2 * s.s}`} stroke={CREAM} strokeWidth="2.2" strokeLinecap="round" />
+            ) : (
+              <circle key={i} cx={s.x} cy={s.y} r={s.s / 3} fill={CREAM} />
+            ),
+          )}
 
-        {/* The ground. */}
-        <path d={scenery.ground} fill="#9a6240" opacity={ease(t, 0.05, 0.4)} />
-        <rect x="-200" y="790" width="2000" height="1900" fill="url(#hatch-a)" opacity={ease(t, 0.3, 0.7)} />
-        <Drawn d={scenery.groundLine} progress={ease(t, 0.05, 0.45)} stroke={INK} strokeWidth={5} />
-        {scenery.flicks.map((f, i) => (
-          <path key={i} d={`M ${f.x} ${f.y} l ${f.l} ${f.k}`} stroke={INK} strokeWidth="2" opacity="0.38" strokeLinecap="round" />
-        ))}
+          {/* Bare hills: no plant of the field was yet in the earth (2:5). */}
+          <path d={scenery.hills} fill="#6b4762" />
+          <path d={scenery.hills} fill="url(#hatch-b)" />
+          {/* The mist that went up from the earth (2:6), drifting. */}
+          {[170, 430, 1260, 1470].map((x, i) => (
+            <g key={x} opacity="0.7" transform={`translate(${Math.sin(t * 0.6 + i) * 14} 0)`}>
+              <path d={`M ${x - 90} ${690 + i * 5} q 30 -26 60 0 t 60 0 t 60 0`} fill="none" stroke={CREAM} strokeWidth="4" strokeLinecap="round" />
+              <path d={`M ${x - 50} ${708 + i * 5} q 24 -18 48 0 t 48 0`} fill="none" stroke={CREAM} strokeWidth="3" strokeLinecap="round" opacity="0.6" />
+            </g>
+          ))}
+
+          {/* The ground. */}
+          <path d={scenery.ground} fill="#9a6240" />
+          <rect x="-200" y="790" width="2000" height="1900" fill="url(#hatch-a)" />
+          {scenery.flicks.map((f, i) => (
+            <path key={i} d={`M ${f.x} ${f.y} l ${f.l} ${f.k}`} stroke={INK} strokeWidth="2" opacity="0.38" strokeLinecap="round" />
+          ))}
+        </Painted>
+
+        {/* Ink over the pencil: the two lines of the land, drawn with the pen before the colour goes on. */}
+        <Drawn d={scenery.hillLine} progress={strokeTurn(inked, 0, 2, 1.2)} stroke={INK} strokeWidth={4} tool="pen" />
+        <Drawn d={scenery.groundLine} progress={strokeTurn(inked, 1, 2, 1.2)} stroke={INK} strokeWidth={5} tool="pen" />
 
         {/* The breath: a ribbon of light drawn down to the face. */}
         <g opacity={breathFade}>
@@ -216,7 +243,7 @@ export default function EdenMan({ onHome }: Props) {
         </g>
 
         {/* The dust: lying, lifting, and drawing into the body. */}
-        <g opacity={1 - ease(t, 1.75, 2.3)}>
+        <g opacity={(1 - ease(t, 1.75, 2.3)) * ease(intro, 0.92, 1)}>
           {dust.map((d, i) => {
             const lift = ease(t, d.delay * 0.55, d.delay * 0.55 + 0.45);
             const gather = ease(t, 1 + d.delay * 0.45, 1.5 + d.delay * 0.45);

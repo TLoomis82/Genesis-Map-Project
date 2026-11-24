@@ -9,6 +9,9 @@ before it is built.
 
 - **The earth stays detailed.** The globe as built (land with relief, sea depths, clouds, day and night) is the world
   you see and tap. It is not redrawn as illustration.
+- **Each hand-drawn scene opens the way a drawing does** (Tyler, 2026-11-24: "like an artist just started drawing the
+  scene"): blank paper; a light pencil sketch; ink over the pencil, line by line; then colour brushed in. The
+  artist's pencil, pen and brush are seen at work. Only then does the scene move. Built into `src/illustrated/kit.tsx`.
 - **Every event you drill into is hand-drawn, and drawn on the fly:** lines draw themselves in as you watch, as if a
   hand were sketching the scene in front of you.
 - **The days before there is a globe (the beginning, days 1 and 2, and on until the earth is finished) are hand-drawn
