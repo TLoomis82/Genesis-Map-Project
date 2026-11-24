@@ -201,3 +201,6 @@ Still to do in M3:
 - 3D relief added for the Scotese models: Terrain-RGB height tiles (`public/land/dem/`, zoom 0 to 3) and
   `setTerrain`, exaggerated 30 times by default (`&relief=` to change). Pictures now use real sea depths and a
   richer height colour ramp at 4096 px. Untested on a real Mapbox globe.
+- Clouds added (`src/story/cloudLayer.ts`): a slow shell of cloud around the globe as a three.js custom layer, using
+  the M0 method. Decoration only. Fades out between zoom 3.5 and 4.5. `?clouds=0` switches it off. Tested on a
+  stand-in globe; not yet seen on Mapbox. It keeps the map redrawing every frame while shown: check phone speed.

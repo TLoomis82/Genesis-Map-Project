@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { MapFeature } from "../data/types.ts";
 import type { GlobeCamera } from "./beats.ts";
+import { createCloudLayer } from "./cloudLayer.ts";
 
 // The one Mapbox globe used by the whole story. It is created a little before the opening
 // fades away, sits underneath the opening canvas, and from day 5 on it is the stage: each beat
@@ -125,6 +126,8 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
         "star-intensity": 0.6, // the globe is first shown at the end of day 4, when the stars are there
       });
       if (LAND_ON && TEST_LAND) addTestLand(m, TEST_LAND);
+      // Slow clouds around the globe, seen from far out. Add ?clouds=0 to the address to switch them off.
+      if (new URLSearchParams(window.location.search).get("clouds") !== "0") m.addLayer(createCloudLayer());
       setReady(true);
     });
     map.current = m;
