@@ -5,10 +5,11 @@ import { features } from "../data/features.ts";
 import { scenes } from "../data/scenes.ts";
 import type { MapFeature } from "../data/types.ts";
 import { useFps } from "../useFps.ts";
-import { beats, chapters, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, MOON_ROUND, skyWith, UNDER_WATER } from "./beats.ts";
+import { beats, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, MOON_ROUND, skyWith, UNDER_WATER } from "./beats.ts";
 import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
+import StoryTimeline from "./StoryTimeline.tsx";
 
 // Plays the whole story, one verse (a "beat") at a time. This is the main line of the piece.
 // It opens on empty space; then the deep, seen from far off where the earth will be, which can be
@@ -21,8 +22,6 @@ import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
 // verse says so. On the globe, each pin and card carries its own tier, and the "Text only"
 // switch hides everything that is not stated in Genesis.
 
-/** Load the globe this many beats before it is first shown, so it is ready for the fade. */
-const GLOBE_LEAD = 4;
 
 // For checks and screenshots only: with ?debug in the address, the page exposes a way to jump
 // to a beat and run the opening scene forward without waiting.
@@ -64,7 +63,6 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const [playing, setPlaying] = useState(false);
   const [faded, setFaded] = useState(false);
   const [textOnly, setTextOnly] = useState(false);
-  const [chaptersOpen, setChaptersOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exploring, setExploring] = useState(false);
   const fps = useFps();
@@ -73,7 +71,6 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const current = scenes.find((s) => s.id === beat.sceneId);
   const onGlobe = beat.camera !== undefined;
   const isLast = index === beats.length - 1;
-  const globeNeeded = index >= FIRST_GLOBE_BEAT - GLOBE_LEAD;
 
   // What this scene may show: its features, less anything above tier "text" when the switch is on.
   const sceneFeatures = useMemo(() => {
@@ -117,6 +114,12 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, beats.length - 1))), []);
   const setDisc = useCallback((disc: { x: number; y: number; r: number }) => scene.current?.setDisc(disc), []);
   const drillFromHere = useCallback((sceneId: string) => onDrill?.(sceneId, index), [onDrill, index]);
+
+  // The timeline takes a strip along the bottom; everything else on the page makes room for it.
+  useEffect(() => {
+    document.documentElement.classList.add("has-timeline");
+    return () => document.documentElement.classList.remove("has-timeline");
+  }, []);
 
   // Create the opening once.
   useEffect(() => {
@@ -197,7 +200,6 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
       if (e.key === "ArrowLeft") setIndex((i) => Math.max(i - 1, 0));
       if (e.key === "Escape") {
         setSelectedId(null);
-        setChaptersOpen(false);
       }
       if (e.key === " ") {
         e.preventDefault();
@@ -219,7 +221,8 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
 
   return (
     <>
-      {globeNeeded && (
+      {/* The globe is there from the start, out of sight under the opening, so the waters can sit exactly on it. */}
+      {(
         <GlobeStage
           camera={beat.camera ?? WAITING_CAMERA}
           quiet={!onGlobe}
@@ -266,9 +269,6 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
             Storyboard
           </button>
         )}
-        <button className="story-button" onClick={() => setChaptersOpen((o) => !o)} aria-expanded={chaptersOpen}>
-          Chapters
-        </button>
         <span className="story-title">{current?.title}</span>
         <button
           className={`story-button ${textOnly ? "is-on" : ""}`}
@@ -285,24 +285,6 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         )}
         {DEBUG && <span className="opening-fps">{fps} fps</span>}
       </div>
-
-      {chaptersOpen && (
-        <nav className="chapters" aria-label="Chapters">
-          {chapters.map(({ scene: s, first }) => (
-            <button
-              key={s.id}
-              className={`chapter ${s.id === beat.sceneId ? "is-current" : ""}`}
-              onClick={() => {
-                go(first);
-                setChaptersOpen(false);
-              }}
-            >
-              <span className="chapter-title">{s.title}</span>
-              <span className="chapter-verses">{s.verses.join(", ")}</span>
-            </button>
-          ))}
-        </nav>
-      )}
 
       {onGlobe && sceneFeatures.length > 0 && (
         <div className="scene-features">
@@ -397,17 +379,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         </span>
       </div>
 
-      <div className="progress" aria-hidden="true">
-        {chapters.map(({ scene: s, first }, i) => {
-          const end = chapters[i + 1]?.first ?? beats.length;
-          const done = Math.max(0, Math.min(index + 1, end) - first) / (end - first);
-          return (
-            <span key={s.id} className="progress-part" style={{ flexGrow: end - first }}>
-              <span className="progress-fill" style={{ transform: `scaleX(${done})` }} />
-            </span>
-          );
-        })}
-      </div>
+      <StoryTimeline index={index} onGo={go} />
 
       {Explore && exploring && <Explore onClose={() => setExploring(false)} />}
     </>

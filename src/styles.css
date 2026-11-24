@@ -10,7 +10,7 @@ body,
 
 .globe {
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--tl, 0px) 0;
 }
 
 .notice {
@@ -100,9 +100,9 @@ body,
 /* Opening (Gen 1:1-8) */
 .opening-canvas {
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--tl, 0px) 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - var(--tl, 0px));
   display: block;
   transition: opacity 3.5s ease-in-out;
 }
@@ -138,7 +138,7 @@ body,
 .verse {
   position: fixed;
   left: 50%;
-  bottom: calc(92px + env(safe-area-inset-bottom));
+  bottom: calc(92px + var(--tl, 0px) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: min(680px, calc(100% - 40px));
   text-align: center;
@@ -185,7 +185,7 @@ body,
 .opening-controls {
   position: fixed;
   left: 50%;
-  bottom: calc(22px + env(safe-area-inset-bottom));
+  bottom: calc(18px + var(--tl, 0px) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   gap: 10px;
@@ -548,7 +548,7 @@ body,
 .land-credit {
   position: fixed;
   left: 12px;
-  bottom: calc(44px + env(safe-area-inset-bottom)); /* clear of the Mapbox logo */
+  bottom: calc(44px + var(--tl, 0px) + env(safe-area-inset-bottom)); /* clear of the Mapbox logo */
   z-index: 13;
   max-width: 300px;
   margin: 0;
@@ -1642,7 +1642,7 @@ body,
 .hand-panel {
   position: fixed;
   left: 50%;
-  bottom: calc(82px + env(safe-area-inset-bottom));
+  bottom: calc(78px + var(--tl, 0px) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 3;
   display: flex;
@@ -1670,10 +1670,83 @@ body,
   accent-color: #eeb04a;
 }
 .verse.has-hand {
-  bottom: calc(158px + env(safe-area-inset-bottom));
+  bottom: calc(158px + var(--tl, 0px) + env(safe-area-inset-bottom));
 }
 @media (max-width: 700px) {
   .verse.has-hand {
-    bottom: calc(236px + env(safe-area-inset-bottom));
+    bottom: calc(236px + var(--tl, 0px) + env(safe-area-inset-bottom));
+  }
+}
+
+/* ------------------------------------------------------------------ the timeline along the bottom of the story */
+:root.has-timeline {
+  --tl: calc(66px + env(safe-area-inset-bottom));
+}
+.story-timeline {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  height: var(--tl);
+  box-sizing: border-box;
+  padding: 6px 10px env(safe-area-inset-bottom);
+  background: #0b1226;
+  border-top: 1px solid #22304f;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.story-timeline::-webkit-scrollbar {
+  display: none;
+}
+.story-timeline .timeline-track {
+  --cell: 18px;
+  gap: 4px 3px;
+}
+.story-timeline .timeline-era {
+  padding: 0 2px 2px;
+}
+.story-timeline .timeline-era strong span {
+  margin-left: 6px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #9fb0c8;
+}
+.story-timeline .timeline-part {
+  position: relative;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  cursor: pointer;
+  flex-direction: row;
+  align-items: center;
+}
+.story-timeline .timeline-part.is-open {
+  background: color-mix(in srgb, var(--era) 45%, #101a33);
+}
+.timeline-part-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--era);
+  opacity: 0.55;
+  transform-origin: left;
+  transition: transform 0.6s ease;
+}
+.story-timeline .timeline-part-name {
+  position: relative;
+  overflow: visible;
+  padding: 0 7px;
+  font-size: 11px;
+  color: #fff6d8;
+}
+.story-timeline .timeline-part.is-open .timeline-part-name {
+  color: #fff6d8;
+}
+@media (max-width: 900px) {
+  .story-timeline .timeline-track {
+    --cell: 34px;
   }
 }

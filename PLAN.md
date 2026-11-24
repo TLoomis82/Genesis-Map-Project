@@ -357,5 +357,9 @@ Not done, in order:
   the sky layer measures the globe's outline on screen and the waters ease onto it); and the waters ended bright
   blue and half lit where the globe is navy and fully lit (now the last verse of day 2 turns the light to the near
   side and the water takes the globe's sea colour). NOT seen on Mapbox.
+- Timeline under the story (`src/story/StoryTimeline.tsx`): one strip along the bottom with the four eras and a
+  block per part, each filling as its verses play; tap a block to go there. It replaces the thin progress bar and
+  the Chapters menu. The globe and the opening now stop above the strip, so the Mapbox logo and credits stay in
+  view. The globe also loads from the first verse now, so the opening can sit on its measured outline throughout.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.
