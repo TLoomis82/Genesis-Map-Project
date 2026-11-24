@@ -198,6 +198,10 @@ const atRest: Depiction = {
 
 // From Eden to the ark the story is still before the flood, so it stays on the land before the flood. No
 // place on that land can be pinned: the pins are present-day positions and are shown only on today's map.
+const dryEarth: Depiction = {
+  badge: "Model",
+  note: "Today's map. The text names the mountains of Ararat (8:4), a region and not a peak; the sites marked are proposals, each with its card. The ark's exact place is not known.",
+};
 const stillBeforeFlood: Depiction = {
   badge: "Illustration",
   note: "People are shown as lights, and every position is layout only: no place on the land before the flood can be known. The land is a model, not from the text.",
@@ -293,8 +297,8 @@ const globePlan: PlanBeat[] = [
   { sceneId: "end-grounding", verse: "8:4", camera: araratWide, hold: 10, land: TODAY, flood: { level: 5600, storm: 0.1 }, relief: 0, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
   { sceneId: "end-receding", verse: "8:5", camera: { ...araratWide, zoom: 2.2, bearing: 8 }, hold: 11, land: TODAY, flood: { level: 3200, storm: 0.05 }, relief: 8, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
   { sceneId: "end-pullback", verse: "8:13", camera: { center: ararat, zoom: 1.5, seconds: 12 }, hold: 18, land: TODAY, flood: { level: 0, storm: 0 }, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
-  { sceneId: "end-pullback", verse: "8:14", camera: { center: ararat, zoom: 1.5, seconds: 6, driftDegrees: 25 }, hold: 16, ark: arkAt(ararat[0], ararat[1], false) },
-  { sceneId: "end-return", verse: "8:4", camera: { center: ararat, zoom: 9, pitch: 66, bearing: -15, seconds: 14 }, hold: 20, ark: arkAt(ararat[0], ararat[1], false) },
+  { sceneId: "end-pullback", verse: "8:14", camera: { center: ararat, zoom: 1.5, seconds: 6, driftDegrees: 25 }, hold: 16, depiction: dryEarth, ark: arkAt(ararat[0], ararat[1], false) },
+  { sceneId: "end-return", verse: "8:4", camera: { center: ararat, zoom: 9, pitch: 66, bearing: -15, seconds: 14 }, hold: 20, depiction: dryEarth, ark: arkAt(ararat[0], ararat[1], false) },
 ];
 
 const openingBeats: Beat[] = spaceSteps.map((s, i) => ({

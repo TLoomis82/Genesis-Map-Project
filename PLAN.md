@@ -411,5 +411,10 @@ Not done, in order:
   - Phone: the three kind buttons of day 6 moved into the hand panel, where they no longer cover the chips.
   - What is still unseen on Mapbox: everything that needs the real globe under it. See the table at the top of
     STORYBOARD.md.
+- A way in and a way out: a title card the first time the story opens ("Begin", "Step through it myself", "About
+  and sources"); at the last verse, "Play again", "Storyboard", "About and sources". `src/story/About.tsx` lists the
+  order of authority, what each label means, the sources read (from `sources.ts`, only those marked opened), the
+  ones not yet read, and credits and licences. A drawn scene's way out now says where it goes ("Back to the story"
+  or "Storyboard"). The last two verses had a "not built yet" note; they now say what is shown.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

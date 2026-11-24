@@ -240,11 +240,12 @@ export function Hints({ hints, used, show, time }: { hints: Hint[]; used: string
 }
 
 export function SceneWords({ title, verse, reference, note, onHome, onTips }: { title: string; verse: string; reference: string; note: string; onHome: () => void; onTips?: () => void }) {
+  const homeLabel = useContext(HomeLabel);
   return (
     <>
       <div className="story-top">
         <button className="story-button" onClick={onHome}>
-          World
+          {homeLabel}
         </button>
         <span className="story-title">{title}</span>
         {onTips && (
@@ -267,6 +268,9 @@ export function SceneWords({ title, verse, reference, note, onHome, onTips }: { 
     </>
   );
 }
+
+/** What the way out of a drawn scene is called: it goes back to wherever the scene was opened from. */
+export const HomeLabel = createContext("World");
 
 /** Where a scene leads when it has played through: the next scene, or back out to the world. The app sets it. */
 export const NextScene = createContext<{ label: string; go: () => void } | null>(null);

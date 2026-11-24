@@ -1,7 +1,7 @@
 import { useState } from "react";
 import StoryBoard from "./board/StoryBoard.tsx";
 import { storyOrder } from "./board/board.ts";
-import { NextScene } from "./illustrated/kit.tsx";
+import { HomeLabel, NextScene } from "./illustrated/kit.tsx";
 import StoryPlayer from "./story/StoryPlayer.tsx";
 import EdenMan from "./illustrated/EdenMan.tsx";
 import Waters, { type WatersChapter } from "./illustrated/Waters.tsx";
@@ -101,9 +101,11 @@ export default function App() {
     else if (scene === "day-3" || scene === "day-4") drawing = <Land key={scene} chapter={scene as LandChapter} onHome={home} />;
     else drawing = <Waters key={scene} chapter={scene as WatersChapter} onHome={home} />;
     return (
-      <NextScene.Provider value={next}>
-        <div className={`scene-wrap ${leaving ? "is-leaving" : ""}`}>{drawing}</div>
-      </NextScene.Provider>
+      <HomeLabel.Provider value={from === "story" ? "Back to the story" : "Storyboard"}>
+        <NextScene.Provider value={next}>
+          <div className={`scene-wrap ${leaving ? "is-leaving" : ""}`}>{drawing}</div>
+        </NextScene.Provider>
+      </HomeLabel.Provider>
     );
   }
   return (

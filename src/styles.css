@@ -1408,11 +1408,11 @@ body,
   outline-color: #fff6d8;
 }
 .timeline-part-name {
-  padding: 8px 4px 2px;
+  padding: 8px 3px 2px;
   border: 0;
   background: none;
   color: #f4ead0;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   text-align: left;
   white-space: nowrap;
@@ -1807,4 +1807,148 @@ body,
   .story-top .story-button {
     flex-shrink: 0;
   }
+}
+
+/* ------------------------------------------------------------------ title card, end of story, about */
+.title-card {
+  position: fixed;
+  inset: 0 0 var(--tl, 0px) 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: #f4ead0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(8, 13, 28, 0.86), rgba(0, 0, 0, 0.96) 70%);
+  animation: title-in 1.6s ease-out both;
+}
+@keyframes title-in {
+  from { opacity: 0; }
+}
+.title-card h1 {
+  margin: 0;
+  max-width: 16em;
+  font: 500 clamp(30px, 6vw, 58px) / 1.12 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+.title-over {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #eeb04a;
+}
+.title-under {
+  margin: 4px 0 12px;
+  max-width: 34em;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #c9d3e4;
+}
+.title-buttons,
+.story-end {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.title-buttons button,
+.story-end button,
+.board-about {
+  padding: 10px 18px;
+  border: 1px solid rgba(244, 234, 208, 0.45);
+  border-radius: 999px;
+  background: rgba(8, 13, 28, 0.55);
+  color: #f4ead0;
+  font: inherit;
+  cursor: pointer;
+}
+.title-buttons .title-begin {
+  background: #eeb04a;
+  border-color: #eeb04a;
+  color: #1d1a33;
+  font-weight: 600;
+}
+.title-note {
+  margin: 14px 0 0;
+  max-width: 36em;
+  font-size: 12px;
+  color: #8f9db5;
+}
+.story-end {
+  position: fixed;
+  left: 50%;
+  bottom: calc(80px + var(--tl, 0px) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 6;
+  width: max-content;
+  max-width: calc(100% - 24px);
+}
+.board-about {
+  margin: 10px 0 0 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.about {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  background: rgba(4, 7, 16, 0.94);
+  color: #dfe6f2;
+}
+.about-page {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: calc(28px + env(safe-area-inset-top)) 22px 60px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.about-page h1 {
+  margin: 0 0 8px;
+  color: #f4ead0;
+  font: 500 30px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+.about-page h2 {
+  margin: 26px 0 6px;
+  color: #eeb04a;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.about-page p {
+  margin: 0 0 8px;
+}
+.about-page dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 14px;
+  margin: 0 0 10px;
+}
+.about-page dd {
+  margin: 0;
+}
+.about-page ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.about-page li {
+  margin-bottom: 6px;
+}
+.about-page a {
+  color: #8fc4f0;
+}
+.about-waiting {
+  color: #8f9db5;
+  font-size: 13.5px;
+}
+.about-close {
+  position: sticky;
+  top: calc(12px + env(safe-area-inset-top));
+  float: right;
+  z-index: 1;
 }

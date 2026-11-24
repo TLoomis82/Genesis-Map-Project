@@ -6,6 +6,7 @@ import hubPicture from "./hub.svg?raw";
 import { moments, storyOrder, targets, type BoardScene } from "./board.ts";
 import { kjv } from "../data/kjv.ts";
 import Timeline from "./Timeline.tsx";
+import About from "../story/About.tsx";
 
 // The interactive storyboard. You see the world as Genesis pictures it; tap a ring (or a line in the
 // list) and the view moves in to that part and opens its scene card: the verse, a line of narration,
@@ -41,6 +42,7 @@ interface Props {
 export default function StoryBoard({ onPlay, arrived = false }: Props) {
   // Position in story order, or null for the whole hub.
   const [at, setAt] = useState<number | null>(null);
+  const [about, setAbout] = useState(false);
   const current = at === null ? null : storyOrder[at];
   const target = current?.target ?? null;
 
@@ -75,15 +77,19 @@ export default function StoryBoard({ onPlay, arrived = false }: Props) {
     <div className="board">
       {arrived && <div className="board-arrive" aria-hidden="true" />}
       <header className="board-head">
-        <h1>{ON_GLOBE ? "Genesis, from the beginning to the ark at rest" : "The world as Genesis pictures it"}</h1>
+        <h1>The storyboard</h1>
         <p>
           {ON_GLOBE
-            ? "The storyboard: the plan for every scene. Use the timeline to move through them. Rings on the earth mark only the parts that are places."
-            : "Tap a ring to move in to a scene. This is the storyboard: the plan for each scene, and a way into the ones already built."}
+            ? "The plan for every hand-drawn scene, and a way straight into each. The story itself is played on the earth. Rings on the globe here mark only the parts that are places."
+            : "The plan for every hand-drawn scene, and a way straight into each. The story itself is played on the earth. Tap a ring, a block on the timeline, or a line in the list."}
         </p>
         <button className="board-play board-begin" onClick={() => onPlay("verse:1:1")}>
           Play the story from the beginning
         </button>
+        <button className="board-about" onClick={() => setAbout(true)}>
+          About and sources
+        </button>
+        {about && <About onClose={() => setAbout(false)} />}
       </header>
 
       <div className="board-left">

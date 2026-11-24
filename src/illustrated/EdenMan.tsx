@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { kjv } from "../data/kjv.ts";
 import { clamp01, ease, handLine, mix, rolling, seeded, type Point } from "./hand.ts";
-import { Drawn, Hints, NextButton, Painted, Paper, Pencil, strokeTurn, useHints, type View } from "./kit.tsx";
+import { Drawn, Hints, HomeLabel, NextButton, Painted, Paper, Pencil, strokeTurn, useHints, type View } from "./kit.tsx";
 
 // Eden 1: the man formed from the dust (Genesis 2:7), as a live hand-drawn scene.
 //
@@ -35,6 +35,7 @@ interface Props {
 }
 
 export default function EdenMan({ onHome }: Props) {
+  const homeLabel = useContext(HomeLabel);
   // Where the scene is, 0 to 4: each whole number is the end of a moment.
   const [t, setT] = useState(0);
   const [boil, setBoil] = useState(0);
@@ -306,7 +307,7 @@ export default function EdenMan({ onHome }: Props) {
 
       <div className="story-top">
         <button className="story-button" onClick={onHome}>
-          World
+          {homeLabel}
         </button>
         <span className="story-title">Eden 1: the man from the dust</span>
         <button className="story-button" onClick={tips.reset}>

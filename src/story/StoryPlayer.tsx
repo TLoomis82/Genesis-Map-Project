@@ -10,6 +10,7 @@ import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
 import StoryTimeline from "./StoryTimeline.tsx";
+import About from "./About.tsx";
 import { KINDS } from "./lifeLayer.ts";
 
 // Plays the whole story, one verse (a "beat") at a time. This is the main line of the piece.
@@ -46,6 +47,9 @@ const HAND: Record<string, { mode: "swipe" | "light" | "vault"; hint: string }> 
 const FIRST_FLOOD_BEAT = floodKeys[0].beat;
 const LAST_FLOOD_BEAT = floodKeys[floodKeys.length - 1].beat;
 
+// The title card is shown once, the first time the story opens at its first verse.
+let titleSeen = false;
+
 interface Props {
   /** The beat to open on. */
   startBeat?: number;
@@ -59,6 +63,13 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const scene = useRef<SpaceOpening | null>(null);
   const [swiped, setSwiped] = useState(false);
+  const [title, setTitle] = useState(!titleSeen && startBeat === 0 && !DEBUG);
+  const [about, setAbout] = useState(false);
+  const leaveTitle = (play: boolean) => {
+    titleSeen = true;
+    setTitle(false);
+    if (play) setPlaying(true);
+  };
   // How wide the earth looks just now (the sine of the angle its radius takes up), for framing the sun and moon.
   const [edge, setEdge] = useState(0.15);
   // For the parts with places people point to today: false = the land before the flood, true = today's map.
@@ -431,7 +442,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         </div>
       )}
 
-      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood || beat.years || hasHerds ? "has-hand" : ""}`} key={index}>
+      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood || beat.years || hasHerds || (isLast && !playing) ? "has-hand" : ""}`} key={index}>
         <p className="verse-text">{beat.text}</p>
         <p className="verse-ref">
           <span className="tier-badge">Text</span>
@@ -459,6 +470,32 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
       </div>
 
       <StoryTimeline index={index} onGo={go} />
+
+      {/* The end of the story: where to go from here. */}
+      {isLast && !playing && !title && (
+        <div className="story-end">
+          <button onClick={() => (go(0), setPlaying(true))}>Play again</button>
+          {onHome && <button onClick={onHome}>Storyboard</button>}
+          <button onClick={() => setAbout(true)}>About and sources</button>
+        </div>
+      )}
+
+      {title && (
+        <div className="title-card">
+          <p className="title-over">Genesis 1:1 to 8:14</p>
+          <h1>From the beginning to the ark at rest</h1>
+          <p className="title-under">Verse by verse, on the earth itself. Touch it as you go: every place you can is labelled.</p>
+          <div className="title-buttons">
+            <button className="title-begin" onClick={() => leaveTitle(true)}>
+              Begin
+            </button>
+            <button onClick={() => leaveTitle(false)}>Step through it myself</button>
+            <button onClick={() => setAbout(true)}>About and sources</button>
+          </div>
+          <p className="title-note">King James Version. What is text, what is a scholar's reading and what is illustration is marked throughout.</p>
+        </div>
+      )}
+      {about && <About onClose={() => setAbout(false)} />}
 
       {Explore && exploring && <Explore onClose={() => setExploring(false)} />}
     </>

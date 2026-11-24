@@ -23,7 +23,7 @@ const ERAS: { id: string; label: string; targets: string[] }[] = [
   { id: "flood", label: "The flood", targets: ["flood", "ararat"] },
 ];
 const SHORT: Record<string, string> = {
-  deep: "Begin",
+  deep: "Start",
   light: "Day 1",
   vault: "Day 2",
   land: "Day 3",
