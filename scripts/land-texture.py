@@ -9,7 +9,7 @@ projection, covering longitude -180..180 and latitude -85.05..85.05, which is wh
 image source expects.
 
 "dem" uses the real heights and sea depths in the file for colour and shading.
-"tiles" writes <out-folder>/{z}/{x}/{y}.png for zoom 0 to 3 (0 to 4 from the finer .nc files), with the sea floor set level at 0.
+"tiles" writes <out-folder>/{z}/{x}/{y}.png for zoom 0 to 3, with the sea floor set level at 0.
 "zones" has no heights to use: the texture inside the uplands is made up so the land reads as
 land. Wherever a "zones" picture is shown, the on-screen note must say so.
 """
@@ -114,7 +114,6 @@ def from_dem(path):
 
 
 def write_tiles(path, folder, max_zoom=3):
-    max_zoom = 4 if path.endswith(".nc") else max_zoom  # the finer data earns one more level
     import os
 
     big = np.clip(load_dem(path), 0, None)  # level sea, so only the land stands up

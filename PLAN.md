@@ -211,3 +211,8 @@ Still to do in M3:
 - Fine data (2026-11-23): Tyler supplied the PALEOMAP 6-minute netCDF files (ten times finer). `land-texture.py`
   reads them directly (the grid is one plain block of 32-bit numbers; no netCDF library needed). Today and 85 Ma
   are remade from them, with height tiles to zoom 4. 200 and 250 Ma follow when their files arrive.
+- All five test ages (0, 85, 200, 250, 540 Ma) are now built from the 6-minute files; height tiles kept to zoom 3
+  (about 6.5 MB in all). The full set of 109 fine files is in hand outside the repo.
+- Tyler also supplied the PALEOMAP atlas index. It lists maps older than the height files reach: 560 to 600 Ma
+  (the time of Pannotia) and 750 to 1000 Ma (the time of Rodinia). Those exist as atlas maps, not height files,
+  so a Rodinia or Pannotia option would need the atlas package (`PALEOMAP_PaleoAtlases.zip` on EarthByte).
