@@ -252,3 +252,15 @@ Still to do in M3:
   for and against. It is a press announcement, not a published result: revisit when a paper or independent review
   appears. The ending still shows the region the text names, not a single site.
 - To do: a checked position for the formation before it can have a pin; read Collins and Fasold (1996) first-hand.
+
+## Direction change (agreed 2026-11-23): the Bible's own cosmos is the hub
+
+- Read `STORYBOARD.md` next to this plan. It now leads.
+- The main stage is the world as Genesis pictures it (deep, land, vault, waters above, a garden on a height). The
+  viewer turns it, taps a part, and the view moves into that event: watch once, then one touch control.
+- The realistic globe with its land models becomes the second layer, "Where on earth?". Nothing built is dropped:
+  the flood layer, clouds, land engine, cards and pins all carry over.
+- Reason: BibleProject's own lens is the ancient cosmos and the story's literary design, not flood geology. Leading
+  with a Pangaea-like land could put them off.
+- People are figures of light; God is never drawn as a figure.
+- Open decisions are listed at the end of the storyboard (the fall, narration, art direction).

@@ -8,6 +8,7 @@ export const sources: Source[] = [
   { id: 'bibleproject-cosmology', author: 'Tim Mackie and Jon Collins', title: 'Ancient Cosmology (podcast series)', url: 'https://bibleproject.com/podcast/series/ancient-cosmology/', status: 'opened' },
   // Summary read first-hand (tyndalebulletin.org/article/30252). Read the full article before launch.
   { id: 'rudolph-festivals', author: 'David J. Rudolph', title: 'Festivals in Genesis 1:14 (Tyndale Bulletin 54.2)', year: 2003, url: 'https://doi.org/10.53751/001c.30252', status: 'to-read' },
+  { id: 'bibleproject-eden-priests', author: 'Shara Drimalla and BibleProject Team', title: 'Were Adam and Eve Priests in Eden?', year: 2021, url: 'https://bibleproject.com/articles/were-adam-and-eve-priests-eden/', status: 'opened' },
   { id: 'bibleproject-lens', author: 'BibleProject', title: 'Creation through the Lens of Ancient Cosmology', url: 'https://bibleproject.com/articles/creation-through-the-lens-of-ancient-cosmology/', status: 'opened' },
   { id: 'walton-interview', author: 'John Walton', title: 'Genesis 1-2: Origins or Identity? (BibleProject interview)', url: 'https://bibleproject.com/podcast/genesis-1-2-origins-or-identity', status: 'opened' },
   { id: 'walton-new-explorations', author: 'John Walton', title: 'New Explorations in the Lost World of Genesis', year: 2025, status: 'to-read' },

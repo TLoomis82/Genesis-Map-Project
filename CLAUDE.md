@@ -1,6 +1,6 @@
 # Genesis Map: project instructions
 
-Read `PLAN.md` before any work.
+Read `PLAN.md` and `STORYBOARD.md` before any work. The storyboard decides what each scene shows.
 
 ## Content rules
 
