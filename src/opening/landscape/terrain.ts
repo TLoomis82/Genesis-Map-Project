@@ -170,7 +170,7 @@ export interface Terrain {
   /** Fast lookup of the drawn surface. Returns false outside the land. */
   sample(x: number, z: number, out: GroundSample): boolean;
   /** Shared with the grass: how far the growth has reached along the route. */
-  uniforms: { uFront: { value: number }; uBand: { value: number } };
+  uniforms: { uFront: { value: number }; uBand: { value: number }; uSeason: { value: THREE.Vector2 } };
   dispose(): void;
 }
 
@@ -224,7 +224,7 @@ export function buildTerrain(flight: Flight): Terrain {
   geometry.setAttribute("aFertile", new THREE.BufferAttribute(fertile, 1));
 
   const grain = buildGrainTexture();
-  const uniforms = { uFront: { value: -1 }, uBand: { value: 0.03 } };
+  const uniforms = { uFront: { value: -1 }, uBand: { value: 0.03 }, uSeason: { value: new THREE.Vector2(0, 0) } };
   const material = new THREE.MeshStandardMaterial({
     vertexColors: true,
     map: grain,
@@ -239,6 +239,7 @@ export function buildTerrain(flight: Flight): Terrain {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uFront = uniforms.uFront;
     shader.uniforms.uBand = uniforms.uBand;
+    shader.uniforms.uSeason = uniforms.uSeason;
     shader.vertexShader = shader.vertexShader
       .replace(
         "#include <common>",
@@ -248,13 +249,16 @@ export function buildTerrain(flight: Flight): Terrain {
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
-        "#include <common>\nuniform float uFront;\nuniform float uBand;\nvarying float vProgress;\nvarying float vFertile;",
+        "#include <common>\nuniform float uFront;\nuniform float uBand;\nuniform vec2 uSeason;\nvarying float vProgress;\nvarying float vFertile;",
       )
       .replace(
         "#include <color_fragment>",
         `#include <color_fragment>
         float grown = clamp((uFront - vProgress) / uBand, 0.0, 1.0) * vFertile;
         vec3 turf = mix(vec3(0.020, 0.075, 0.012), vec3(0.085, 0.20, 0.035), smoothstep(0.03, 0.14, diffuseColor.g));
+        // Through the year the turf turns golden in autumn and pale in winter (x = autumn, y = winter).
+        turf = mix(turf, vec3(0.20, 0.14, 0.03), uSeason.x * 0.6);
+        turf = mix(turf, vec3(0.10, 0.105, 0.07), uSeason.y * 0.6);
         diffuseColor.rgb = mix(diffuseColor.rgb, turf, grown * 0.9);`,
       );
   };

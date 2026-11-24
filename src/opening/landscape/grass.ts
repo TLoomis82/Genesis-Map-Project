@@ -64,6 +64,7 @@ const vertexShader = /* glsl */ `
 const fragmentShader = /* glsl */ `
   uniform float uLight;
   uniform vec3 uTint;       // colour of the light: warm at sunset, cool by moonlight
+  uniform vec2 uSeason;     // x = autumn, y = winter, each 0..1
   uniform vec3 uFogColor;
   uniform float uFogDensity;
 
@@ -78,6 +79,9 @@ const fragmentShader = /* glsl */ `
     vec3 fresh = vec3(0.26, 0.47, 0.11);
     vec3 dry = vec3(0.50, 0.55, 0.20);
     vec3 tip = mix(fresh, dry, smoothstep(0.55, 0.95, vTint));
+    tip = mix(tip, vec3(0.66, 0.52, 0.17), uSeason.x * 0.75);
+    tip = mix(tip, vec3(0.47, 0.47, 0.36), uSeason.y * 0.65);
+    root = mix(root, vec3(0.16, 0.12, 0.04), max(uSeason.x, uSeason.y) * 0.6);
     vec3 color = mix(root, tip, vAlong * (0.5 + 0.5 * vAlong));
 
     // Flower heads: white, yellow, violet or red, chosen by the blade's own variation.
@@ -106,6 +110,7 @@ export interface Grass {
     uWind: { value: number };
     uLight: { value: number };
     uTint: { value: THREE.Color };
+    uSeason: { value: THREE.Vector2 };
     uFogColor: { value: THREE.Color };
     uFogDensity: { value: number };
   };
@@ -154,6 +159,7 @@ export function buildGrass(flight: Flight, terrain: Terrain, stretches: number, 
     uWind: { value: 1 },
     uLight: { value: 1 },
     uTint: { value: new THREE.Color(1, 1, 1) },
+    uSeason: { value: new THREE.Vector2(0, 0) },
     uFogColor: { value: new THREE.Color() },
     uFogDensity: { value: 0.0011 },
   };

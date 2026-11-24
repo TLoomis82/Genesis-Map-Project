@@ -48,7 +48,13 @@ const growth: Depiction = {
 
 const lights: Depiction = {
   badge: "Illustration",
-  note: "The paths of the sun, moon and stars and the speed of the day are illustrative. The text says they were set in the firmament to rule the day and the night.",
+  note: "The paths and sizes of the sun, moon and stars and the speed of time are illustrative. The text says they were set in the firmament to rule the day and the night.",
+};
+
+const calendar: Depiction = {
+  badge: "Scholarly reading",
+  note: "A year is pictured by the sunrise moving along the horizon and the land changing colour. The word for 'seasons' in Genesis 1:14 can also be translated 'festivals' (Rudolph, Tyndale Bulletin, 2003). Summer and winter are first named in Genesis 8:22.",
+  source: "rudolph-festivals",
 };
 
 const globeView: Depiction = {
@@ -174,7 +180,7 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-4",
     reference: "Genesis 1:14",
     text: "And God said, Let there be lights in the firmament of the heaven to divide the day from the night; and let them be for signs, and for seasons, and for days, and years:",
-    targets: { ...grownLand, sun: 1, hour: 8.2, gaze: 2 },
+    targets: { ...grownLand, sun: 1, hour: 7.3, gaze: 16 },
     hold: 13,
     depiction: lights,
   },
@@ -182,15 +188,15 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-4",
     reference: "Genesis 1:15",
     text: "And let them be for lights in the firmament of the heaven to give light upon the earth: and it was so.",
-    targets: { ...grownLand, sun: 1, hour: 12.5, gaze: -12 },
-    hold: 10,
+    targets: { ...grownLand, sun: 1, hour: 13.2, gaze: -16 },
+    hold: 12,
     depiction: lights,
   },
   {
     sceneId: "day-4",
     reference: "Genesis 1:16",
     text: "And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also.",
-    targets: { ...grownLand, sun: 1, hour: 21.5, gaze: 4 },
+    targets: { ...grownLand, sun: 1, hour: 21.6, gaze: 22 },
     hold: 15,
     depiction: lights,
   },
@@ -198,23 +204,23 @@ export const openingSteps: OpeningStep[] = [
     sceneId: "day-4",
     reference: "Genesis 1:17",
     text: "And God set them in the firmament of the heaven to give light upon the earth,",
-    targets: { ...grownLand, sun: 1, hour: 24.5, gaze: 2 },
-    hold: 9,
+    targets: { ...grownLand, sun: 1, hour: 24, month: 1, gaze: 26 },
+    hold: 14,
     depiction: lights,
   },
   {
     sceneId: "day-4",
     reference: "Genesis 1:18",
     text: "And to rule over the day and over the night, and to divide the light from the darkness: and God saw that it was good.",
-    targets: { ...grownLand, sun: 1, hour: 31.2, gaze: 0 },
-    hold: 12,
-    depiction: lights,
+    targets: { ...grownLand, sun: 1, hour: 31.3, month: 1, year: 1, gaze: 4 },
+    hold: 19,
+    depiction: calendar,
   },
   {
     sceneId: "day-4",
     reference: "Genesis 1:19",
     text: "And the evening and the morning were the fourth day.",
-    targets: { ...grownLand, sun: 1, hour: 35, gaze: -10 },
+    targets: { ...grownLand, sun: 1, hour: 35, month: 1, year: 1, gaze: -10 },
     hold: 28,
     ascendAfter: 8,
     fadeToGlobeAfter: 12,

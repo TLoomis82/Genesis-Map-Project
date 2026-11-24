@@ -116,6 +116,8 @@ export interface Orchard {
   group: THREE.Group;
   /** reach: how far growth has come along the route (the view's own position once plants are called for). */
   update(reach: number, time: number, eye: THREE.Vector3): void;
+  /** Tint the leaves for the time of year: autumn and winter each 0..1. */
+  setSeason(autumn: number, winter: number): void;
   dispose(): void;
 }
 
@@ -130,7 +132,16 @@ const FAR_SPAN = 0.11;
 
 const easeOut = (t: number) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
 
-export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number, herbCount: number): Orchard {
+const AUTUMN_LEAF = new THREE.Color(0xe0a23c);
+const WINTER_LEAF = new THREE.Color(0x9a9870);
+
+export function buildOrchard(
+  flight: Flight,
+  terrain: Terrain,
+  treeCount: number,
+  herbCount: number,
+  shadows: boolean,
+): Orchard {
   const group = new THREE.Group();
   const trees = TREE_SHAPES.map(makePrototype);
   const herbs = HERB_SHAPES.map(makePrototype);
@@ -171,6 +182,7 @@ export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number
       tree.rotation.y = random() * Math.PI * 2;
       const branches = new THREE.Mesh(prototype.tree.branchesMesh.geometry, prototype.tree.branchesMesh.material);
       const leaves = new THREE.Mesh(prototype.tree.leavesMesh.geometry, prototype.tree.leavesMesh.material);
+      branches.castShadow = leaves.castShadow = shadows;
       tree.add(branches, leaves);
 
       let fruit: THREE.InstancedMesh | null = null;
@@ -253,6 +265,12 @@ export function buildOrchard(flight: Flight, terrain: Terrain, treeCount: number
           }
           t.fruit.instanceMatrix.needsUpdate = true;
         }
+      }
+    },
+    setSeason(autumn: number, winter: number) {
+      for (const p of prototypes) {
+        const mat = p.tree.leavesMesh.material as THREE.MeshPhongMaterial;
+        mat.color.set(p.shape.leafTint).lerp(AUTUMN_LEAF, autumn * 0.8).lerp(WINTER_LEAF, winter * 0.7);
       }
     },
     dispose() {

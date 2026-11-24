@@ -26,7 +26,11 @@
 //   sun       0 = no sun, moon or stars yet; 1 = they are there
 //   hour      time of day, 0..24 and beyond (30 = six the next morning). It moves at a limited speed,
 //             so a day passes as one continuous sweep of the sun, then the moon and stars.
-// Their paths across the sky and the speed of the day are illustrative.
+//   month     months passed. As it moves, the moon runs through its phases and the stars wheel.
+//   year      years passed. As it moves, the place where the sun rises slides along the horizon
+//             and back, and the land's colours shift through the seasons.
+// Their paths across the sky and the speed of time are illustrative. The season of the year is
+// kept as a single value (see seasonOf) so that it can be set directly later, for example from tabs.
 
 import * as THREE from "three";
 import { buildFlight } from "./landscape/terrain.ts";
@@ -43,6 +47,8 @@ export interface OpeningTargets {
   flight: number;
   sun: number;
   hour: number;
+  month: number;
+  year: number;
   /** Which way the view faces, as a turn away from the route's direction, in radians. */
   turn: number;
   altitude: number;
@@ -59,7 +65,7 @@ export interface OpeningEvents {
   ascendAfter?: number;
 }
 
-export const SURFACE = { land: 0, green: 0, flight: 0, sun: 0, hour: 12, turn: 0, altitude: 0, gaze: -10, veil: 0 } as const;
+export const SURFACE = { land: 0, green: 0, flight: 0, sun: 0, hour: 12, month: 0, year: 0, turn: 0, altitude: 0, gaze: -10, veil: 0 } as const;
 
 export const VAULT_CLOSED = -0.05;
 export const VAULT_OPEN = 1.2;
@@ -79,9 +85,14 @@ const common = /* glsl */ `
   uniform float uStars;    // how strongly the stars show
   uniform vec3 uSunDir;
   uniform vec3 uMoonDir;
+  uniform float uMoonPhase;
+  uniform float uStarTurn;   // how far the star field has turned, in radians
+  uniform float uStarTrail;  // 0 = points, 1 = full trails
   uniform vec3 uCamera;
 
   const vec3 DARK = vec3(0.0, 0.002, 0.005);
+  // The point the stars turn about: above the sea, part-way up the sky.
+  const vec3 STAR_POLE = vec3(0.2, 0.37, 0.907);
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -149,30 +160,54 @@ const common = /* glsl */ `
 
     vec3 clear = mix(above, clearHorizon, pow(1.0 - y, 4.0));
 
-    // The lights set in the vault on day 4.
+    // The lights set in the vault on day 4. Sun and moon are drawn several times life size,
+    // so they read as the "two great lights" on a small screen.
     float sunUp = smoothstep(-0.06, 0.02, uSunDir.y);
     float low = 1.0 - smoothstep(0.0, 0.4, uSunDir.y);            // 1 when the sun is near the horizon
     float sd = max(dot(dir, uSunDir), 0.0);
-    vec3 sunColor = mix(vec3(1.0, 0.97, 0.88), vec3(1.0, 0.60, 0.28), low);
+    vec3 sunColor = mix(vec3(1.0, 0.97, 0.88), vec3(1.0, 0.58, 0.26), low);
     // Evening and morning colour along the horizon, strongest toward the sun.
     float band = pow(1.0 - y, 5.0) * pow(sd, 2.5) * low * smoothstep(-0.3, 0.0, uSunDir.y) * uSun;
     clear = mix(clear, vec3(1.0, 0.56, 0.26), clamp(band * 0.85, 0.0, 1.0));
 
     vec3 lights = sunColor * uSun * sunUp
-      * (smoothstep(0.99978, 0.99990, sd) * 3.0 + pow(sd, 1400.0) * 0.9 + pow(sd, 60.0) * 0.16 + pow(sd, 6.0) * 0.09 * (0.4 + low));
+      * (smoothstep(0.99945, 0.99962, sd) * 3.0 + pow(sd, 700.0) * 0.8 + pow(sd, 50.0) * 0.16 + pow(sd, 6.0) * 0.09 * (0.4 + low));
 
+    // The moon: a small lit ball, so it can wax and wane. uMoonPhase runs 0 (new) to 0.5 (full) to 1.
+    vec3 moonRight = normalize(cross(vec3(0.0, 1.0, 0.0), uMoonDir));
+    vec3 moonTop = cross(uMoonDir, moonRight);
+    vec3 offMoon = dir - uMoonDir;
+    vec2 onDisc = vec2(dot(offMoon, moonRight), dot(offMoon, moonTop)) / 0.031;
+    float moonR2 = dot(onDisc, onDisc);
+    if (moonR2 < 1.0) {
+      vec3 moonN = vec3(onDisc, sqrt(1.0 - moonR2));
+      float phaseAngle = uMoonPhase * 6.2831853;
+      float lit = smoothstep(-0.06, 0.10, dot(moonN, vec3(sin(phaseAngle), 0.0, -cos(phaseAngle))));
+      float moonFace = 0.74 + 0.26 * vnoise(onDisc * 3.2 + 4.0);       // faint markings
+      float moonEdge = 1.0 - smoothstep(0.90, 1.0, moonR2);
+      lights += vec3(0.93, 0.95, 1.0) * uMoon * moonEdge * moonFace * (0.035 + 0.965 * lit);
+    }
     float md = max(dot(dir, uMoonDir), 0.0);
-    float face = 0.78 + 0.22 * vnoise(dir.xy * 260.0);              // faint markings on the moon
-    lights += vec3(0.92, 0.94, 1.0) * uMoon
-      * (smoothstep(0.99986, 0.99992, md) * face + pow(md, 600.0) * 0.16 + pow(md, 30.0) * 0.04);
+    float moonFull = 0.5 - 0.5 * cos(uMoonPhase * 6.2831853);      // 0 at new, 1 at full
+    lights += vec3(0.80, 0.86, 1.0) * uMoon * moonFull * (pow(md, 500.0) * 0.14 + pow(md, 30.0) * 0.04);
 
-    // Stars: a sparse scatter of points, each with its own brightness and a slow twinkle.
-    vec3 starGrid = dir * 260.0;
-    vec3 cell = floor(starGrid);
-    float pick = hash(cell.xy + cell.z * 37.0);
-    float star = step(0.9965, pick) * smoothstep(0.40, 0.05, length(fract(starGrid) - 0.5));
-    float twinkle = 0.72 + 0.28 * sin(uTime * 2.6 + pick * 400.0);
-    lights += vec3(0.95, 0.96, 1.0) * star * twinkle * (0.45 + 1.6 * fract(pick * 91.7)) * uStars * smoothstep(0.02, 0.22, y);
+    // Stars: a scatter of points, each with its own brightness and a slow twinkle. The whole
+    // field turns about a fixed point in the sky, and while it turns fast each star leaves a trail.
+    float starLight = 0.0;
+    for (int k = 0; k < 10; k++) {
+      float back = float(k) * 0.007 * uStarTrail;
+      float turn = uStarTurn - back;
+      // Rotate the direction about the pole (Rodrigues' formula).
+      vec3 sdir = dir * cos(turn) + cross(STAR_POLE, dir) * sin(turn) + STAR_POLE * dot(STAR_POLE, dir) * (1.0 - cos(turn));
+      vec3 starGrid = sdir * 260.0;
+      vec3 cell = floor(starGrid);
+      float pick = hash(cell.xy + cell.z * 37.0);
+      float star = step(0.9900, pick) * smoothstep(0.40, 0.05, length(fract(starGrid) - 0.5));
+      float twinkle = 0.72 + 0.28 * sin(uTime * 2.6 + pick * 400.0);
+      starLight += star * twinkle * (0.35 + 1.7 * fract(pick * 91.7)) * (k == 0 ? 1.0 : 0.55 * uStarTrail * (1.0 - float(k) / 10.0));
+      if (uStarTrail < 0.02) break;                                // no trails: one pass is enough
+    }
+    lights += vec3(0.95, 0.96, 1.0) * starLight * uStars * smoothstep(0.02, 0.22, y);
 
     return mix(mistColor(l), clear + lights * shimmerAmountForLights(shimmerAmount), expanseOpen(y));
   }
@@ -308,11 +343,31 @@ function buildWaterGeometry(): THREE.BufferGeometry {
 
 /** Fastest the day passes, in hours per second. */
 const HOUR_SPEED = 1.15;
+/** Fastest the months and years pass, per second: a month in about eight seconds, a year in about fifteen. */
+const MONTH_SPEED = 0.13;
+const YEAR_SPEED = 0.075;
+
+/**
+ * The season at a point in the year. year counts whole years; its fraction is the time of year,
+ * starting from the green of spring: 0.25 summer, 0.5 autumn, 0.75 winter.
+ * swing runs -1..1 and moves the sunrise along the horizon; autumn and winter run 0..1 and tint the land.
+ */
+export function seasonOf(year: number): { swing: number; autumn: number; winter: number } {
+  const phase = year - Math.floor(year);
+  const bump = (centre: number, width: number) => {
+    const d = Math.abs(phase - centre);
+    return THREE.MathUtils.smoothstep(1 - d / width, 0, 1);
+  };
+  return { swing: Math.sin(phase * Math.PI * 2), autumn: bump(0.5, 0.24), winter: bump(0.75, 0.22) };
+}
 const SUNSET_LIGHT = new THREE.Color(1, 0.62, 0.34);
 const MOON_LIGHT = new THREE.Color(0.62, 0.72, 1);
 
 /** Fastest the flight moves, as a share of the route per second (about 24 metres a second). */
 const FLIGHT_SPEED = 0.016;
+
+/** Phones and other small screens get a lighter version of the land. */
+const SMALL_SCREEN = Math.min(window.innerWidth, window.innerHeight) < 600;
 
 const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
@@ -339,6 +394,9 @@ export class OpeningScene {
     uStars: { value: 0 },
     uSunDir: { value: new THREE.Vector3(0, 1, 0) },
     uMoonDir: { value: new THREE.Vector3(0, -1, 0) },
+    uMoonPhase: { value: 0.5 },
+    uStarTurn: { value: 0 },
+    uStarTrail: { value: 0 },
     uCamera: { value: new THREE.Vector3(0, 3.2, 0) },
   };
   private disposables: { dispose(): void }[] = [];
@@ -352,6 +410,8 @@ export class OpeningScene {
   private flight = buildFlight();
   private flightSpeed = 0;
   private hourSpeed = 0;
+  private monthSpeed = 0;
+  private yearSpeed = 0;
   private lightDir = new THREE.Vector3();
   private lightColor = new THREE.Color();
   private landscape: Landscape | null = null;
@@ -375,6 +435,8 @@ export class OpeningScene {
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = !SMALL_SCREEN; // tree shadows on larger screens only, for speed
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const waterGeometry = buildWaterGeometry();
     const waterMaterial = new THREE.ShaderMaterial({ vertexShader: waterVertex, fragmentShader: waterFragment, uniforms: this.uniforms });
@@ -409,12 +471,11 @@ export class OpeningScene {
     // The code for the land (including the tree library) is fetched only now, so the opening itself loads fast.
     this.landscapeLoading ??= import("./landscape/index.ts").then(({ Landscape }) => {
       if (this.disposed) return;
-      const small = Math.min(window.innerWidth, window.innerHeight) < 600;
       this.landscape = new Landscape(
         this.flight,
-        small
-          ? { grassStretches: 60, bladesPerStretch: 9000, trees: 85, herbs: 100 }
-          : { grassStretches: 60, bladesPerStretch: 22000, trees: 170, herbs: 180 },
+        SMALL_SCREEN
+          ? { grassStretches: 60, bladesPerStretch: 9000, trees: 85, herbs: 100, shadows: false }
+          : { grassStretches: 60, bladesPerStretch: 22000, trees: 170, herbs: 180, shadows: true },
       );
       this.scene.add(this.landscape.group);
     });
@@ -454,6 +515,8 @@ export class OpeningScene {
     this.dim = 0;
     this.flightSpeed = 0;
     this.hourSpeed = 0;
+    this.monthSpeed = 0;
+    this.yearSpeed = 0;
     this.heading.set(0, 0, 0);
     this.bank = 0;
     this.angle = SWEEP_FROM;
@@ -540,6 +603,12 @@ export class OpeningScene {
     const hourWanted = THREE.MathUtils.clamp((g.hour - c.hour) * 0.7, -HOUR_SPEED, HOUR_SPEED);
     this.hourSpeed += (hourWanted - this.hourSpeed) * (1 - Math.exp(-dt * 1.4));
     c.hour += this.hourSpeed * dt;
+    const monthWanted = THREE.MathUtils.clamp((g.month - c.month) * 0.7, -MONTH_SPEED, MONTH_SPEED);
+    this.monthSpeed += (monthWanted - this.monthSpeed) * (1 - Math.exp(-dt * 1.4));
+    c.month += this.monthSpeed * dt;
+    const yearWanted = THREE.MathUtils.clamp((g.year - c.year) * 0.7, -YEAR_SPEED, YEAR_SPEED);
+    this.yearSpeed += (yearWanted - this.yearSpeed) * (1 - Math.exp(-dt * 1.4));
+    c.year += this.yearSpeed * dt;
 
     // The flight moves at a steady, limited speed, easing in and out, however far away its target is.
     const wanted = THREE.MathUtils.clamp((g.flight - c.flight) * 0.7, -FLIGHT_SPEED, FLIGHT_SPEED);
@@ -547,13 +616,20 @@ export class OpeningScene {
     c.flight = THREE.MathUtils.clamp(c.flight + this.flightSpeed * dt, 0, 1);
 
     // Where the sun and moon stand. On day 4 the view has turned to look back down the valley to the
-    // sea (toward +z), and both lights cross the sky in front of it: the sun rises on the left at 6,
-    // stands highest at 12 and sets on the right at 18; the moon follows it up.
+    // sea (toward +z), and both lights cross the sky right in front of it: the sun rises just left of
+    // centre at 6, stands highest at 12 and sets just right of centre at 18; the moon follows it up.
+    // Through a year the sunrise slides along the horizon and back, and the noon sun stands higher or lower.
     const u = this.uniforms;
+    const season = seasonOf(c.year);
     const sunAngle = ((c.hour - 6) / 12) * Math.PI;
-    u.uSunDir.value.set(Math.cos(sunAngle) * 0.62, Math.sin(sunAngle) * 0.62, 0.78).normalize();
+    u.uSunDir.value
+      .set(Math.cos(sunAngle) * 0.3 + season.swing * 0.42, Math.sin(sunAngle) * (0.62 - season.swing * 0.12), 0.78)
+      .normalize();
     const moonAngle = sunAngle - Math.PI + 0.25;
-    u.uMoonDir.value.set(Math.cos(moonAngle) * 0.58, Math.sin(moonAngle) * 0.55, 0.8).normalize();
+    u.uMoonDir.value.set(Math.cos(moonAngle) * 0.3 - 0.12, Math.sin(moonAngle) * 0.3, 0.8).normalize();
+    u.uMoonPhase.value = 0.5 + c.month; // full when first seen, then waning and waxing
+    u.uStarTurn.value = (c.hour / 24) * Math.PI * 2 * 0.25 + c.month * Math.PI * 2 * 0.7;
+    u.uStarTrail.value = THREE.MathUtils.clamp(Math.abs(this.monthSpeed) / MONTH_SPEED, 0, 1);
     const daylight = THREE.MathUtils.smoothstep(u.uSunDir.value.y, -0.1, 0.22);
     const moonUp = THREE.MathUtils.smoothstep(u.uMoonDir.value.y, -0.05, 0.2);
     u.uSun.value = c.sun;
@@ -640,6 +716,9 @@ export class OpeningScene {
       lightDir: this.lightDir,
       lightColor: this.lightColor,
       direct: direct * c.light * (1 - 0.9 * this.dim),
+      autumn: season.autumn,
+      winter: season.winter,
+      focus: this.lookAt,
       wind: c.wind,
       fogColor: this.fogDisplay,
       fogDensity: this.fog.density,

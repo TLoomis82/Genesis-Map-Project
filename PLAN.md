@@ -116,3 +116,17 @@ Working method from here: the workspace can now install packages, type check, bu
 - KJV or World English Bible for on-screen verses.
 - Find out whether and how BibleProject accepts outside pitches.
 - Find a seminary-trained reader to review the verse table.
+
+## Day 4 direction (2026-11-23)
+
+Day 4 is built around the lights as timekeepers: a large sun rising in the middle of the view, tree shadows
+swinging (larger screens only), sunset into a large moon and thick stars, the moon running through its phases
+while the stars wheel and leave trails, then a year passing with the sunrise sliding along the horizon and the
+land changing colour.
+
+- The time of year is one value (`seasonOf(year)` in `src/opening/openingScene.ts`). **Planned: season tabs**
+  (spring, summer, autumn, winter) that set this value directly, as part of M8 explore mode.
+- "Seasons" in 1:14 is shown under a "Scholarly reading" note (Rudolph, Tyndale Bulletin 2003: the word can be
+  translated "festivals"). No snow or bare trees are shown: the text does not describe them.
+- Mapbox cannot tilt its camera above the horizon, so the sky scenes stay in the three.js engine. From M3, day 3's
+  valley moves onto the Mapbox globe as a custom layer so everything from day 3 on is one world.

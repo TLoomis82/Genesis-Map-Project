@@ -34,6 +34,11 @@ export interface LandscapeState {
   lightDir: THREE.Vector3;
   lightColor: THREE.Color;
   direct: number;
+  /** Season tints, each 0..1 (see seasonOf in openingScene.ts). */
+  autumn: number;
+  winter: number;
+  /** The point the view is looking at, 100 metres ahead. */
+  focus: THREE.Vector3;
   wind: number;
   /** Fog colour as it should appear on screen. */
   fogColor: THREE.Color;
@@ -47,14 +52,31 @@ export class Landscape {
   private orchard: Orchard;
   private sunLike = new THREE.DirectionalLight(0xfff1dc, 2.4);
   private skyLight = new THREE.HemisphereLight(0xcfe0ff, 0x4a4034, 1.1);
+  private shadowFocus = new THREE.Vector3();
 
-  constructor(flight: Flight, options: { grassStretches: number; bladesPerStretch: number; trees: number; herbs: number }) {
+  constructor(
+    flight: Flight,
+    options: { grassStretches: number; bladesPerStretch: number; trees: number; herbs: number; shadows: boolean },
+  ) {
     this.terrain = buildTerrain(flight);
     this.grass = buildGrass(flight, this.terrain, options.grassStretches, options.bladesPerStretch);
-    this.orchard = buildOrchard(flight, this.terrain, options.trees, options.herbs);
+    this.orchard = buildOrchard(flight, this.terrain, options.trees, options.herbs, options.shadows);
 
-    // Low and from one side, so slopes and trunks have form. No sun is drawn in the sky.
-    this.sunLike.position.set(-0.55, 0.5, 0.35).multiplyScalar(1000);
+    // Trees cast shadows on the ground within about 150 metres of where the view is looking.
+    if (options.shadows) {
+      this.terrain.mesh.receiveShadow = true;
+      this.sunLike.castShadow = true;
+      this.sunLike.shadow.mapSize.set(2048, 2048);
+      const cam = this.sunLike.shadow.camera;
+      cam.left = cam.bottom = -150;
+      cam.right = cam.top = 150;
+      cam.near = 1;
+      cam.far = 900;
+      cam.updateProjectionMatrix();
+      this.sunLike.shadow.bias = -0.0006;
+      this.sunLike.shadow.normalBias = 0.6;
+    }
+
     this.group.add(this.terrain.mesh, this.grass.group, this.orchard.group, this.sunLike, this.sunLike.target, this.skyLight);
   }
 
@@ -85,11 +107,19 @@ export class Landscape {
 
     this.orchard.update(reach, state.time, state.eye);
 
-    this.sunLike.position.copy(state.lightDir).multiplyScalar(1000);
+    // The light keeps its direction but stays centred a little ahead of the view, so its shadows
+    // cover what is on screen.
+    this.shadowFocus.copy(state.eye).lerp(state.focus, 0.7);
+    this.sunLike.target.position.copy(this.shadowFocus);
+    this.sunLike.position.copy(this.shadowFocus).addScaledVector(state.lightDir, 420);
+    this.sunLike.target.updateMatrixWorld();
     this.sunLike.color.copy(state.lightColor);
     this.sunLike.intensity = 2.4 * state.direct;
     this.skyLight.intensity = 1.1 * state.light;
     g.uTint.value.copy(state.lightColor);
+    g.uSeason.value.set(state.autumn, state.winter);
+    this.terrain.uniforms.uSeason.value.set(state.autumn, state.winter);
+    this.orchard.setSeason(state.autumn, state.winter);
   }
 
   dispose() {
