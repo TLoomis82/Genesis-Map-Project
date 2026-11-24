@@ -221,7 +221,8 @@ export const targets: BoardTarget[] = [
         text: "Formed of the dust of the ground; the breath of life breathed into his nostrils; man became a living soul.",
         illustration: "How the forming looked. God is shown only by what happens: no figure.",
         frame: "eden-man.jpg",
-        built: "storyboard only",
+        sceneId: "illustrated:eden-man",
+        built: "playable",
       },
       {
         id: "eden-garden",
@@ -363,6 +364,31 @@ export const targets: BoardTarget[] = [
     ],
   },
 ];
+
+/**
+ * The moments of each scene, in order: the small steps the scene moves through. On a built scene these
+ * are tappable drawings (see src/illustrated/EdenMan.tsx); on the board they are the scene's outline.
+ */
+export const moments: Record<string, string[]> = {
+  beginning: ["Darkness", "The deep", "Wind over the water"],
+  "day-1": ["Let there be light", "Light divided from dark", "Evening and morning"],
+  "day-2": ["The waters", "A vault opens", "Waters above and below"],
+  "day-3": ["The waters gather", "Dry land", "Grass and herbs", "Fruit trees"],
+  "day-4": ["The sun", "Moon and stars", "A month", "A year"],
+  "day-5": ["Under the surface", "Shoals", "Great creatures", "Birds above"],
+  "day-6": ["Cattle", "Creeping things", "Beasts of the earth", "Humankind"],
+  "day-7": ["Finished", "Rest", "Blessed"],
+  "eden-man": ["Dust lifts", "It gathers", "Breath enters", "He sits up"],
+  "eden-garden": ["A garden planted", "Every tree", "Two trees in the midst", "To dress and keep it"],
+  "eden-river": ["A river rises", "It waters the garden", "It parts into four"],
+  "eden-naming": ["Brought to the man", "He names them", "No match found"],
+  "eden-woman": ["A deep sleep", "From his side", "A woman", "Brought to the man"],
+  "eden-fall": ["The serpent", "She eats, he eats", "Eyes opened", "Hiding", "Clothed"],
+  exile: ["Sent out", "The way guarded", "East to Nod", "A city"],
+  generations: ["Adam to Seth", "Ten generations", "Noah"],
+  flood: ["The deep breaks open", "The waters rise", "All covered", "The ark afloat"],
+  "rest-of-ark": ["The ark rests", "Mountain tops seen", "The earth dries"],
+};
 
 /** Every scene in story order, with the target it belongs to. */
 export const storyOrder: { target: BoardTarget; scene: BoardScene }[] = [

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import hubPicture from "./hub.svg?raw";
-import { storyOrder, targets, type BoardScene } from "./board.ts";
+import { moments, storyOrder, targets, type BoardScene } from "./board.ts";
 import { kjv } from "../data/kjv.ts";
 
 // The interactive storyboard. You see the world as Genesis pictures it; tap a ring (or a line in the
@@ -165,6 +165,15 @@ function SceneCard({ scene, place, siblings, onSibling, onPrev, onNext, count, o
       </blockquote>
 
       <p className="board-narration">{scene.narration}</p>
+
+      <ol className="board-moments" aria-label="Moments in this scene">
+        {(moments[scene.id] ?? []).map((m, i) => (
+          <li key={m}>
+            <span>{i + 1}</span>
+            {m}
+          </li>
+        ))}
+      </ol>
 
       <dl className="board-plan">
         <dt>Watch</dt>

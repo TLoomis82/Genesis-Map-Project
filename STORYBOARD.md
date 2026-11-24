@@ -27,6 +27,8 @@ So the main stage is the Bible's own cosmos, and the realistic globe with its la
 ## Rules for every page
 
 1. **Watch, then touch.** The verse plays; then one control appears. One control per scene, tied to the verse.
+   Every scene also has its **moments**: three to five small drawings in a strip that show its steps in order and
+   let the viewer tap to any of them (Tyler, 2026-11-23: keep these).
 2. **Three labels.** Text (stated in Genesis), Scholarly reading (a named scholar's reading), Illustration or Model
    (ours, or an outside reconstruction). Every scene says which parts are which.
 3. **God is never drawn as a figure.** His acts are shown by their effect: light, breath, movement.
@@ -35,7 +37,8 @@ So the main stage is the Bible's own cosmos, and the realistic globe with its la
    figures' light dimming and then being covered, not by bodies.
 5. **Add nothing the text does not give**, unless it is labelled Illustration.
 6. **Phone first.** Every control works with one thumb.
-7. **One illustrated style everywhere, consistent with BibleProject's illustrations** (Tyler, 2026-11-23): the hub,
+7. **Hand-drawn** (Tyler, 2026-11-23, choosing style frame 2b over 2): ink lines that wobble, flat colour, hatching,
+   drawn rays in place of glows, lines that "boil" on living things. **One illustrated style everywhere, consistent with BibleProject's illustrations** (Tyler, 2026-11-23): the hub,
    every scene, the cards and the "Where on earth?" layer should feel like one piece of work.
    **Illustrated, not realistic.** Flat shapes, a small set of colours, paper grain, in the spirit of BibleProject's
    explainer art. All artwork is our own: nothing of theirs is copied or imitated closely. Style frames so far:
@@ -120,6 +123,10 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
   seventh (`bibleproject-eden-priests`): offered as a Scholarly reading on the card.
 
 ### Eden 1: the man from the dust (Gen 2:7)
+- **Status: built, first cut, hand-drawn** (`src/illustrated/EdenMan.tsx`). Four moments (dust lifts, it gathers, breath
+  enters, he sits up) shown as a strip of small drawings that is also the control: tap a moment to go to it, or
+  drag across the picture to move through the forming by hand. The figure is still very simple and needs more
+  human shape. This strip of moments is the pattern for every scene.
 - **Watch:** close on bare ground. Dust lifts and draws together into a human shape lying on the earth. Light enters
   at the face. The chest rises. The figure sits up.
 - **Touch:** none during the forming. Afterward, turn the view around him.
