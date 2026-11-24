@@ -172,9 +172,15 @@ interface Props {
   pins: MapFeature[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Where the ark is for the current beat, or null when it is not shown. */
+  ark?: { at: [number, number]; afloat: boolean } | null;
 }
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect }: Props) {
+const ARK_DRAWING =
+  '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
+
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null }: Props) {
+  const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
   const container = useRef<HTMLDivElement>(null);
@@ -315,6 +321,43 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       });
     return () => markers.forEach((marker) => marker.remove());
   }, [pins, selectedId, onSelect, ready]);
+
+  // The ark. One marker, moved to its place for each beat: carried over the water while the flood
+  // is up, then at rest in the mountains of Ararat. The marker moves; the camera is not touched.
+  const arkLng = ark?.at[0];
+  const arkLat = ark?.at[1];
+  const arkAfloat = ark?.afloat ?? false;
+  const arkSeconds = Math.max(camera?.seconds ?? 8, hold);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    if (arkLng === undefined || arkLat === undefined) {
+      arkMarker.current?.marker.remove();
+      arkMarker.current = null;
+      return;
+    }
+    if (!arkMarker.current) {
+      const el = document.createElement("div");
+      el.className = "ark-marker";
+      el.innerHTML = `${ARK_DRAWING}<span></span>`;
+      arkMarker.current = { el, at: [arkLng, arkLat], marker: new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat([arkLng, arkLat]).addTo(m) };
+    }
+    const held = arkMarker.current;
+    held.el.classList.toggle("is-afloat", arkAfloat);
+    held.el.querySelector("span")!.textContent = arkAfloat ? "The ark (its track is illustration)" : "The ark";
+    const from = held.at;
+    const start = performance.now();
+    let raf = 0;
+    const step = (clock: number) => {
+      const k = Math.min(1, (clock - start) / (arkSeconds * 1000));
+      const e = k * k * (3 - 2 * k);
+      held.at = [from[0] + (arkLng - from[0]) * e, from[1] + (arkLat - from[1]) * e];
+      held.marker.setLngLat(held.at);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [arkLng, arkLat, arkAfloat, arkSeconds, ready]);
 
   if (!TOKEN) {
     return camera ? <div className="notice globe-notice">The globe needs a Mapbox token in VITE_MAPBOX_TOKEN (.env.local).</div> : null;

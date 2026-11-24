@@ -168,6 +168,15 @@ export const features: MapFeature[] = [
     approxCenter: [42.4, 37.4],
   },
   {
+    id: 'ark-afloat',
+    name: 'The ark on the waters',
+    tier: 'text',
+    confidence: 'illustration',
+    verses: ['Gen 7:17-18', 'Gen 8:4'],
+    sources: [],
+    note: 'The ark went upon the face of the waters and rested on the mountains of Ararat. Where it was built and the track it was carried along are not given: the track drawn is illustration.',
+  },
+  {
     id: 'ark-resting-place',
     name: 'The ark at rest',
     tier: 'text',

@@ -1175,3 +1175,55 @@ body,
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* The way on from a hand-drawn scene into the next part of the story. */
+.scene-next {
+  position: absolute;
+  left: 50%;
+  bottom: calc(170px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border: 3px solid #1d1a33;
+  border-radius: 14px 18px 15px 17px;
+  background: #eeb04a;
+  color: #1d1a33;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-style: italic;
+  font-size: 17px;
+  cursor: pointer;
+  white-space: nowrap;
+  animation: scene-next-in 0.6s ease both;
+}
+@keyframes scene-next-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+}
+
+/* The ark on the globe: carried over the waters, then at rest. */
+.ark-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+}
+.ark-marker svg {
+  width: 58px;
+  height: 26px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
+}
+.ark-marker.is-afloat svg {
+  animation: ark-bob 3.4s ease-in-out infinite;
+}
+.ark-marker span {
+  margin-top: 3px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: rgba(29, 26, 51, 0.78);
+  color: #fbeecb;
+  font-size: 11px;
+  white-space: nowrap;
+}
+@keyframes ark-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-3px) rotate(3deg); }
+}

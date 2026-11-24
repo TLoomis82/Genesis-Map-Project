@@ -303,5 +303,9 @@ Not done, in order:
   (`src/illustrated/Generations.tsx`) built hand-drawn and live, each with labelled interactions. Every chapter
   before the flood now opens as a hand-drawn scene from the hub. Checked as stills and with scripted taps and
   drags, desktop and phone size; not yet on a real iPhone.
+- The ark (`src/illustrated/Ark.tsx`): built to the text's numbers, then a hand-off button to the globe at 7:11.
+  On the globe the ark is one marker (`ark` on each flood beat in `src/story/beats.ts`, drawn by `GlobeStage`) that
+  glides to its place for each beat and rests at the Ararat region's centre from 8:4 on. Feature `ark-afloat`
+  carries the note. The globe half is written but NOT seen running: no Mapbox here. Tyler to check on his Mac.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

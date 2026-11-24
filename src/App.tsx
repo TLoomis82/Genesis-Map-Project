@@ -3,6 +3,7 @@ import StoryBoard from "./board/StoryBoard.tsx";
 import StoryPlayer from "./story/StoryPlayer.tsx";
 import EdenMan from "./illustrated/EdenMan.tsx";
 import Waters, { type WatersChapter } from "./illustrated/Waters.tsx";
+import Ark from "./illustrated/Ark.tsx";
 import Creatures, { type CreatureChapter } from "./illustrated/Creatures.tsx";
 import Eden, { type EdenChapter } from "./illustrated/Eden.tsx";
 import Generations from "./illustrated/Generations.tsx";
@@ -47,6 +48,14 @@ export default function App() {
   if (view === "scene") {
     const home = () => setView("board");
     if (scene === "eden-man") return <EdenMan onHome={home} />;
+    if (scene === "ark") {
+      // The ark scene ends by handing over to the globe at the first verse of the flood.
+      const toFlood = () => {
+        setStartBeat(Math.max(0, beats.findIndex((b) => b.sceneId === "flood")));
+        setView("story");
+      };
+      return <Ark key={scene} onHome={home} onNext={toFlood} />;
+    }
     if (scene === "generations") return <Generations key={scene} onHome={home} />;
     if (["day-7", "eden-garden", "eden-river", "eden-naming", "eden-woman", "eden-fall", "exile"].includes(scene)) return <Eden key={scene} chapter={scene as EdenChapter} onHome={home} />;
     if (scene === "day-5" || scene === "day-6") return <Creatures key={scene} chapter={scene as CreatureChapter} onHome={home} />;

@@ -227,6 +227,18 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Labels:** Text. The data is already in `src/data/chronology.ts`.
 - **Status (2026-11-24): built, hand-drawn and live.** ten drawn lines on ruled paper, the flood line by Noah's age. Labels: "Drag along the years to see who lived together", "Tap a count" (Hebrew or Greek).
 
+### The ark (Gen 6:14-7:10)
+- **Status (2026-11-24): built, hand-drawn and live** (`src/illustrated/Ark.tsx`). Frame, planks and pitch; then the
+  measures drawn on as an artist would dimension a plan: side view 300 by 30 cubits and end view 50 by 30, both at
+  one scale; then the window (one cubit), the door in the side, three stories; two and two; the rain begins.
+- **Touch:** "Tap a number or a part of the ark" (name and verse); "Drag left or right to build or unbuild it".
+- **Hand-off:** a button, "Follow the ark across the waters", opens the globe at Genesis 7:11. There the ark is a
+  small drawn marker that is carried east over the water beat by beat and comes to rest in the mountains of Ararat
+  (8:4), where it stays as the waters fall and the camera returns to the mountain.
+- **Labels:** Text for every number and part. Illustration: the box shape, the door's place and size, the ramp, the
+  animals (not to scale), and on the globe where the ark starts and the track it is carried along. No cubit is
+  converted to feet or metres: that needs a source read first-hand.
+
 ### The flood (Gen 6:14-8:14)
 - **Watch:** on the hub, the fountains of the deep break open and the windows of heaven open: the water that was
   parted on day 2 comes back together. The ark, to scale, floats on it. Then the water falls and a mountain region

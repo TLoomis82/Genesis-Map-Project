@@ -213,6 +213,7 @@ export default function StoryPlayer({ startBeat = 0, onHome }: Props) {
           pins={onGlobe ? sceneFeatures : noPins}
           selectedId={selectedId}
           onSelect={setSelectedId}
+          ark={onGlobe ? (beat.ark ?? null) : null}
         />
       )}
       <canvas ref={canvas} className={`opening-canvas ${faded ? "is-faded" : ""}`} />

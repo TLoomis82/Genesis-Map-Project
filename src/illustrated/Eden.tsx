@@ -92,7 +92,7 @@ function mixColour(a: string, b: string, t: number): string {
 }
 
 /** A person, as a figure of light. light 1 = shining, 0 = dimmed. */
-function Figure({ x, y, s = 1, on = 1, light = 1, apron = 0, coat = 0, lying = 0, time, k = 0 }: { x: number; y: number; s?: number; on?: number; light?: number; apron?: number; coat?: number; lying?: number; time: number; k?: number }) {
+export function Figure({ x, y, s = 1, on = 1, light = 1, apron = 0, coat = 0, lying = 0, time, k = 0 }: { x: number; y: number; s?: number; on?: number; light?: number; apron?: number; coat?: number; lying?: number; time: number; k?: number }) {
   if (on < 0.01) return null;
   const body = "M -15 -84 Q 0 -96 15 -84 L 19 0 L -19 0 Z";
   const fill = mixColour("#cdbf9c", "#fff6d8", light);
