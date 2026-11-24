@@ -398,5 +398,18 @@ Not done, in order:
   and pushes each one off its place by a different amount; and the ring was laid out once, while the camera was
   still on its way from the last verse, so it came out the wrong size. Also: the name is now part of the button,
   and the ring sits lower, clear of the chips at the top. NOT seen on Mapbox.
+- Evening of 2026-11-24, while Tyler was away:
+  - `?view=sky`: a check page that drives the globe's sky layer with a plain camera, no Mapbox. On it the shader
+    compiles and runs; the bare land lines up with the land picture; green spreads from its seeds; the flood covers
+    by height; the night side is dark; the measured outline matches the drawn globe; the sun and the moon land just
+    outside the earth's edge with the right one hidden behind the viewer, and the moon reads as full.
+  - Day 4 framing no longer assumes a screen shape: the hour is worked out from the globe's measured width so the
+    sun (1:14) and the moon (1:16) stand just clear of the edge (`skyFramed`).
+  - Genesis 5: slider "Year N from Adam" on 5:1; the ten are named lights, alive for the text's years; Enoch's
+    light lifts away (5:24). Hebrew count.
+  - The deep: press and hold for a wind over the waters.
+  - Phone: the three kind buttons of day 6 moved into the hand panel, where they no longer cover the chips.
+  - What is still unseen on Mapbox: everything that needs the real globe under it. See the table at the top of
+    STORYBOARD.md.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

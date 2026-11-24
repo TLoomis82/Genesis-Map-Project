@@ -27,6 +27,29 @@ What that means, and what is built:
 - The hand-drawn scenes are unchanged; they are now the "drill in" layer. The storyboard is at `?view=board` or
   the "Storyboard" button.
 
+**The main line as built (48 verses), with what the hand can do at each part.** Every interaction has a label on
+screen. "Globe" parts need Mapbox to be seen.
+
+| Part | Verses | Shown | Hand |
+|---|---|---|---|
+| The deep | 1:1-2 | Space; then a dark body of water where the earth will be | Swipe for rings; press and hold for a wind |
+| Day 1 | 1:3-5 | Light on the water, then a lit side and a dark side | Drag sideways to carry the light round |
+| Day 2 | 1:6-8 | Mist lifts, the edge sharpens, a sky forms | Drag up to lift the sky off the waters |
+| Day 3 (globe) | 1:9-12 | Water falls, bare land appears, then green spreads | Slider: draw the waters back. Touch the land and green spreads |
+| Day 4 (globe) | 1:14-18 | Sun and moon in their true places and sizes; stars | Sliders: turn the earth under the sun; move the moon through its month |
+| Day 5 (globe) | 1:20-22 | Flocks, shoals, whales; more at "be fruitful" | Tap the sea for a shoal, the land for a flock |
+| Day 6 (globe) | 1:24, 1:27 | Herds of three kinds; humankind as two lights | Choose a kind, tap the land for a herd |
+| Day 7 (globe) | 2:1-2 | All of it, slowed | None, and the label says so |
+| Eden (globe) | 2:8, 2:10, 2:22 | Garden glow, river in four heads, one light then two | Six dots into the drawn scenes; "Where is this today?" |
+| Exile, Cain (globe) | 3:6, 3:23-24, 4:16-17 | Lights dim, move east; flame; one goes on; a city | Dot into the drawn scene; "Where is this today?" |
+| Generations (globe) | 5:1, 6:1 | The ten as lights; then many lights spread | Slider: drag through the years from Adam |
+| Before the flood (globe) | 6:4-5, 6:8 | The lights dull; one stays bright | |
+| The ark (globe) | 6:14-15 | The ark on the land | Dot into the drawn build scene |
+| The flood to Ararat (globe) | 7:11-8:14 | Water, the ark carried and at rest, the land of today | Slider: day 1 to 371 of the flood |
+
+Check pages that need no Mapbox: `?view=life&life=5|6|7|eden|east|years|noah` (creatures and lights on a plain
+globe) and `?view=sky&sky=bare|grow|flood|night|moon` (the sky layer: bare land, greening, flood, sun and moon).
+
 ## Direction update (Tyler, 2026-11-23, late): two looks, on purpose
 
 - **The earth stays detailed.** The globe as built (land with relief, sea depths, clouds, day and night) is the world

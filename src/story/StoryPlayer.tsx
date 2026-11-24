@@ -367,18 +367,19 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           {tapHint}
         </p>
       )}
-      {hasHerds && (
-        <div className="kind-tabs" role="group" aria-label="Which kind a tap sets running">
-          {KINDS.map((kind, k) => (
-            <button key={kind} className={herdKind === k ? "is-on" : ""} onClick={() => setHerdKind(k)}>
-              {kind}
-            </button>
-          ))}
-        </div>
-      )}
       {/* What the hand can do on the globe at this verse. Always labelled. */}
-      {(onDayThree || (onGlobe && beat.sky) || inFlood || beat.years) && (
+      {(onDayThree || (onGlobe && beat.sky) || inFlood || beat.years || hasHerds) && (
         <div className="hand-panel">
+          {hasHerds && (
+            <div className="kind-tabs" role="group" aria-label="Which kind a tap on the land sets running">
+              <span>A tap on the land sets running:</span>
+              {KINDS.map((kind, k) => (
+                <button key={kind} className={herdKind === k ? "is-on" : ""} onClick={() => setHerdKind(k)}>
+                  {kind}
+                </button>
+              ))}
+            </div>
+          )}
           {beat.years && (
             <label>
               <span>
@@ -430,7 +431,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         </div>
       )}
 
-      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood || beat.years ? "has-hand" : ""}`} key={index}>
+      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood || beat.years || hasHerds ? "has-hand" : ""}`} key={index}>
         <p className="verse-text">{beat.text}</p>
         <p className="verse-ref">
           <span className="tier-badge">Text</span>

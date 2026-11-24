@@ -1766,15 +1766,16 @@ body,
   pointer-events: none;
   z-index: 1;
 }
-/* Day 6: which kind of creature a tap sets running. */
+/* Day 6: which kind of creature a tap sets running. Sits in the hand panel. */
 .kind-tabs {
-  position: fixed;
-  left: 50%;
-  top: calc(112px + env(safe-area-inset-top));
-  transform: translateX(-50%);
-  z-index: 4;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 100%;
+  color: #fbeecb;
+  font: italic 13.5px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 }
 .kind-tabs button {
   padding: 6px 12px;
@@ -1790,4 +1791,20 @@ body,
   background: #eeb04a;
   border-color: #eeb04a;
   color: #1d1a33;
+}
+
+/* Narrow screens: the top bar stays on one line; a long title is cut short before a button is pushed down. */
+@media (max-width: 700px) {
+  .story-top {
+    flex-wrap: nowrap;
+  }
+  .story-top .story-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .story-top .story-button {
+    flex-shrink: 0;
+  }
 }
