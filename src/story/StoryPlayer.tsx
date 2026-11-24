@@ -58,6 +58,8 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const scene = useRef<SpaceOpening | null>(null);
   const [swiped, setSwiped] = useState(false);
+  // For the parts with places people point to today: false = the land before the flood, true = today's map.
+  const [todayMap, setTodayMap] = useState(false);
   const previous = useRef(0);
   const [index, setIndex] = useState(startBeat);
   const [playing, setPlaying] = useState(false);
@@ -71,6 +73,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const current = scenes.find((s) => s.id === beat.sceneId);
   const onGlobe = beat.camera !== undefined;
   const isLast = index === beats.length - 1;
+  const onToday = todayMap && beat.today !== undefined;
 
   // What this scene may show: its features, less anything above tier "text" when the switch is on.
   const sceneFeatures = useMemo(() => {
@@ -191,6 +194,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   useEffect(() => {
     setSelectedId(null);
     setExploring(false);
+    setTodayMap(false);
   }, [beat.sceneId]);
 
   // Arrow keys, space and escape.
@@ -224,20 +228,20 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
       {/* The globe is there from the start, out of sight under the opening, so the waters can sit exactly on it. */}
       {(
         <GlobeStage
-          camera={beat.camera ?? WAITING_CAMERA}
+          camera={onToday ? beat.today! : (beat.camera ?? WAITING_CAMERA)}
           quiet={!onGlobe}
           bare={onGlobe ? beat.bare : true}
           onDisc={setDisc}
           hold={beat.hold}
-          land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
+          land={onToday ? null : ((beat.camera ? beat.land : firstGlobe.land) ?? null)}
           flood={onGlobe ? floodShown : WAITING}
           stars={onGlobe ? beat.stars : 0}
           sky={onGlobe ? skyNow : null}
-          drills={onGlobe ? beat.drills : NO_DRILLS}
+          drills={onGlobe && !onToday ? beat.drills : NO_DRILLS}
           onDrill={drillFromHere}
           relief={beat.relief ?? null}
           startCenter={firstGlobe.camera?.center ?? [0, 0]}
-          pins={onGlobe ? sceneFeatures : noPins}
+          pins={onGlobe && (onToday || !beat.today) ? sceneFeatures : noPins}
           selectedId={selectedId}
           onSelect={setSelectedId}
           ark={onGlobe ? (floodNow?.ark ?? beat.ark ?? null) : null}
@@ -278,6 +282,11 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         >
           Text only: {textOnly ? "on" : "off"}
         </button>
+        {beat.today && (
+          <button className={`story-button ${onToday ? "is-on" : ""}`} onClick={() => setTodayMap((t) => !t)} aria-pressed={onToday}>
+            {onToday ? "Back to the land before the flood" : "Where is this today?"}
+          </button>
+        )}
         {Explore && (
           <button className="story-button" onClick={() => setExploring(true)}>
             Explore

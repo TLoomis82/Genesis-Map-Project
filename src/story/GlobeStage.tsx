@@ -444,18 +444,19 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
   // story moves on.
   const drillLng = camera?.center[0];
   const drillLat = camera?.center[1];
-  const drillZoom = camera?.zoom;
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || !drills?.length || drillLng === undefined || drillLat === undefined || drillZoom === undefined) return;
-    const degreesPerPixel = 360 / (512 * 2 ** Math.max(drillZoom, 1.6));
-    const reach = (drills.length > 1 ? 120 : 96) * degreesPerPixel;
+    if (!m || !ready || !drills?.length || drillLng === undefined || drillLat === undefined) return;
+    // Laid out on the screen, then pinned to the globe: a ring round the middle of the view, names on the
+    // outside so they never cover each other. Done once the camera has come to rest.
+    const many = drills.length > 1;
+    const spots = drills.map((_, i) => {
+      const angle = many ? -Math.PI / 3 + (i / drills.length) * Math.PI * 2 : Math.PI * 0.2;
+      return { x: Math.cos(angle) * (many ? 130 : 96), y: Math.sin(angle) * (many ? 120 : 96), left: Math.cos(angle) < -0.1 };
+    });
     const markers = drills.map((drill, i) => {
-      const angle = drills.length > 1 ? -Math.PI / 2 + (i / drills.length) * Math.PI * 2 : Math.PI * 0.2;
-      const lat = Math.max(-80, Math.min(80, drillLat - Math.sin(angle) * reach));
-      const lng = drillLng + (Math.cos(angle) * reach) / Math.max(0.3, Math.cos((lat * Math.PI) / 180));
       const el = document.createElement("button");
-      el.className = `door drill door-${Math.cos(angle) < -0.3 ? "left" : "right"}`;
+      el.className = `door drill door-${spots[i].left ? "left" : "right"}`;
       el.setAttribute("aria-label", drill.label);
       el.innerHTML = '<span class="door-pulse"></span><span class="door-ring"></span><span class="door-label"></span>';
       el.querySelector(".door-label")!.textContent = drill.label;
@@ -463,10 +464,19 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
         e.stopPropagation();
         onDrill?.(drill.scene);
       });
-      return new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat([lng, lat]).addTo(m);
+      return new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat([drillLng, drillLat]).addTo(m);
     });
-    return () => markers.forEach((marker) => marker.remove());
-  }, [drills, onDrill, drillLng, drillLat, drillZoom, ready]);
+    const place = () => {
+      const middle = m.project([drillLng, drillLat]);
+      markers.forEach((marker, i) => marker.setLngLat(m.unproject([middle.x + spots[i].x, middle.y + spots[i].y])));
+    };
+    place();
+    m.once("moveend", place);
+    return () => {
+      m.off("moveend", place);
+      markers.forEach((marker) => marker.remove());
+    };
+  }, [drills, onDrill, drillLng, drillLat, ready]);
 
   // The front door's rings.
   useEffect(() => {

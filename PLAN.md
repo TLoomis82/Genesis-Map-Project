@@ -361,5 +361,11 @@ Not done, in order:
   block per part, each filling as its verses play; tap a block to go there. It replaces the thin progress bar and
   the Chapters menu. The globe and the opening now stop above the strip, so the Mapbox logo and credits stay in
   view. The globe also loads from the first verse now, so the opening can sit on its measured outline throughout.
+- Eden to the ark now stays on the land before the flood (Tyler: "isn't this the new earth"). Today's map came back
+  too early. The pins for the proposed sites of Eden and the way east are present-day places, so they show only on
+  today's map, behind a switch on those verses: "Where is this today?" / "Back to the land before the flood". The
+  world changes to today's arrangement only at 7:24, in the flood, as before.
+- Drill-in dots are laid out on the screen as a ring round the middle of the view and then pinned to the globe once
+  the camera rests, names on the outside, so six dots (Eden) do not cover each other or the pins.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

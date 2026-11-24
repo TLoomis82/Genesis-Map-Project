@@ -54,6 +54,12 @@ export interface Beat {
   sky?: Sky;
   /** True while the land has nothing growing on it yet: the dry land of 1:9-10, before the grass of 1:11. */
   bare?: boolean;
+  /**
+   * The same verse seen on today's map, for the parts of the story that have places people point to today
+   * (the proposed sites of Eden, the way east). The story itself stays on the land before the flood; the
+   * viewer can switch to this view and back.
+   */
+  today?: GlobeCamera;
   /** Hand-drawn scenes that can be opened from this beat: the dots that say there is more to see here. */
   drills: Drill[];
 }
@@ -130,7 +136,6 @@ function centerOf(id: string): LngLat {
 const midpoint = (a: LngLat, b: LngLat): LngLat => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 
 // Framing only. These are views of the globe, not claims about where anything happened.
-const WHOLE_GLOBE: LngLat = [43.5, 28.0]; // the view of today's globe
 const PRE_FLOOD_VIEW: LngLat = [-5, 5]; // faces the middle of the model land (a framing choice only)
 const edenFrame = midpoint(centerOf("eden-north"), centerOf("eden-south")); // both proposed sites in view
 const ararat = centerOf("ararat-region");
@@ -161,7 +166,19 @@ interface PlanBeat {
   stars?: number;
   sky?: Sky;
   bare?: boolean;
+  today?: GlobeCamera;
 }
+
+// From Eden to the ark the story is still before the flood, so it stays on the land before the flood. No
+// place on that land can be pinned: the pins are present-day positions and are shown only on today's map.
+const beforeFlood: Depiction = {
+  badge: "Model",
+  note: "Shown on a model of the land before the flood, where no place can be pinned. \"Where is this today?\" switches to today's map and the places people have proposed.",
+};
+const stillBeforeFlood: Depiction = {
+  badge: "Model",
+  note: "Still before the flood, so still on the model of that land. The land is a model, not from the text.",
+};
 
 // Day 4. One arrangement the sun and moon can really take (see src/data/astronomy.ts); the text gives no
 // date, so which arrangement is illustration. The sun is at the March equinox and the moon is a little
@@ -201,12 +218,12 @@ const globePlan: PlanBeat[] = [
   { sceneId: "day-5", verse: "1:20", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 4 }, land: PRE_FLOOD },
   { sceneId: "day-6", verse: "1:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.4, pitch: 35, seconds: 8 }, land: PRE_FLOOD },
   { sceneId: "day-7", verse: "2:2", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30, land: PRE_FLOOD },
-  { sceneId: "eden", verse: "2:10", camera: { center: edenFrame, zoom: 4.3, seconds: 9 }, hold: 20 },
-  { sceneId: "exile", verse: "3:24", camera: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 } },
-  { sceneId: "cain", verse: "4:16", camera: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 9 } },
-  { sceneId: "seth-to-noah", verse: "5:1", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 9 } },
-  { sceneId: "nephilim", verse: "6:4", camera: { center: WHOLE_GLOBE, zoom: 1.8, bearing: 6, seconds: 6 } },
-  { sceneId: "ark", verse: "6:15", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 6 } },
+  { sceneId: "eden", verse: "2:10", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 9 }, hold: 20, land: PRE_FLOOD, depiction: beforeFlood, today: { center: edenFrame, zoom: 4.3, seconds: 6 } },
+  { sceneId: "exile", verse: "3:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, bearing: -8, seconds: 6 }, land: PRE_FLOOD, depiction: beforeFlood, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 } },
+  { sceneId: "cain", verse: "4:16", camera: { center: [PRE_FLOOD_VIEW[0] + 14, PRE_FLOOD_VIEW[1]], zoom: 2.4, seconds: 9 }, land: PRE_FLOOD, depiction: beforeFlood, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 } },
+  { sceneId: "seth-to-noah", verse: "5:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 9, driftDegrees: 40 }, land: PRE_FLOOD, depiction: stillBeforeFlood },
+  { sceneId: "nephilim", verse: "6:4", camera: { center: PRE_FLOOD_VIEW, zoom: 1.8, bearing: 6, seconds: 6 }, land: PRE_FLOOD, depiction: stillBeforeFlood },
+  { sceneId: "ark", verse: "6:15", camera: { center: PRE_FLOOD_VIEW, zoom: 1.8, seconds: 6 }, land: PRE_FLOOD, depiction: stillBeforeFlood },
   // The flood, seen from space. The land stands lower than usual here so nothing pokes through the water.
   { sceneId: "flood", verse: "7:11", camera: { center: AFLOAT, zoom: 1.4, seconds: 5 }, hold: 10, land: PRE_FLOOD, flood: { level: 250, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0], AFLOAT[1], false) },
   { sceneId: "flood", verse: "7:17", camera: { center: [AFLOAT[0] + 14, AFLOAT[1]], zoom: 1.4, seconds: 7 }, hold: 8, land: PRE_FLOOD, flood: { level: 1100, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 10, AFLOAT[1] + 2) },
@@ -246,6 +263,7 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   stars: g.stars,
   sky: g.sky,
   bare: g.bare,
+  today: g.today,
   drills: DRILLS[g.sceneId] ?? [],
 }));
 
