@@ -5,7 +5,7 @@ import { features } from "../data/features.ts";
 import { scenes } from "../data/scenes.ts";
 import type { MapFeature } from "../data/types.ts";
 import { useFps } from "../useFps.ts";
-import { beats, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, MOON_ROUND, skyFramed, skyWith, UNDER_WATER } from "./beats.ts";
+import { beats, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, LAST_YEAR, livesIn, RESTING_YEAR, MOON_ROUND, skyFramed, skyWith, UNDER_WATER } from "./beats.ts";
 import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
@@ -111,9 +111,11 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const [hour, setHour] = useState<number | null>(null); // day 4: how far the earth has been turned, in degrees
   const [month, setMonth] = useState<number | null>(null); // day 4: how far round from the sun the moon is
   const [floodDayByHand, setFloodDayByHand] = useState<number | null>(null);
+  const [year, setYear] = useState<number | null>(null); // Genesis 5: the year from Adam
   const sliding = useRef(false);
   useEffect(() => {
     setDrawn(null);
+    setYear(null);
     setHour(null);
     setMonth(null);
     if (sliding.current) sliding.current = false;
@@ -126,6 +128,14 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
     setSwiped(false);
   }, [hand]);
 
+  // Genesis 5: the ten as lights for the chosen year.
+  const yearShown = year ?? RESTING_YEAR;
+  const lifeNow = useMemo(() => {
+    if (!beat.life) return null;
+    if (!beat.years || !beat.life.marks) return beat.life;
+    return { ...beat.life, marks: { ...beat.life.marks, lives: livesIn(yearShown) } };
+  }, [beat, yearShown]);
+  const aliveNow = beat.years ? livesIn(yearShown).filter((l) => l.state === "alive").length : 0;
   const inFlood = index >= FIRST_FLOOD_BEAT && index <= LAST_FLOOD_BEAT;
   const floodNow = floodDayByHand === null ? null : floodOn(floodDayByHand);
   const floodDayShown = floodDayByHand ?? floodKeys.reduce((day, k) => (k.beat <= index ? k.day : day), floodKeys[0].day);
@@ -263,7 +273,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           camera={onToday ? beat.today! : (beat.camera ?? WAITING_CAMERA)}
           quiet={!onGlobe}
           growth={onGlobe ? (beat.growth ?? "green") : "bare"}
-          lifeWant={onGlobe ? (beat.life ?? null) : null}
+          lifeWant={onGlobe ? lifeNow : null}
           herdKind={hasHerds ? herdKind : null}
           calm={beat.life?.calm ?? false}
           onTouch={touched}
@@ -367,8 +377,16 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         </div>
       )}
       {/* What the hand can do on the globe at this verse. Always labelled. */}
-      {(onDayThree || (onGlobe && beat.sky) || inFlood) && (
+      {(onDayThree || (onGlobe && beat.sky) || inFlood || beat.years) && (
         <div className="hand-panel">
+          {beat.years && (
+            <label>
+              <span>
+                Year {Math.round(yearShown)} from Adam, {aliveNow} of the ten alive: drag through the generations
+              </span>
+              <input type="range" min={0} max={LAST_YEAR} step={1} value={yearShown} onChange={(e) => (setPlaying(false), setYear(Number(e.target.value)))} />
+            </label>
+          )}
           {onDayThree && (
             <label>
               <span>Draw the waters back</span>
@@ -412,7 +430,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         </div>
       )}
 
-      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood ? "has-hand" : ""}`} key={index}>
+      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood || beat.years ? "has-hand" : ""}`} key={index}>
         <p className="verse-text">{beat.text}</p>
         <p className="verse-ref">
           <span className="tier-badge">Text</span>

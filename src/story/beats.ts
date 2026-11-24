@@ -1,7 +1,7 @@
 import { spaceSteps } from "../opening/spaceSteps.ts";
 import { arrange, type Sky } from "../data/astronomy.ts";
 import { NO_LIFE, NO_MARKS, type LifeWant, type Marks } from "./lifeLayer.ts";
-import { floodDay, floodEvents } from "../data/chronology.ts";
+import { floodDay, floodEvents, floodYearAM, patriarchYears } from "../data/chronology.ts";
 import type { Depiction } from "../opening/steps.ts";
 import { kjv } from "../data/kjv.ts";
 import { scenes } from "../data/scenes.ts";
@@ -53,6 +53,8 @@ export interface Beat {
   stars?: number;
   /** The sun and moon drawn in their true places for this beat. Left out: neither is drawn. */
   sky?: Sky;
+  /** True on the verse where the generations of Genesis 5 can be dragged through by year. */
+  years?: boolean;
   /** Which of the two this verse is framed on: it is set just clear of the earth's edge, whatever the screen. */
   framed?: "sun" | "moon";
   /** The land's cover: bare for the dry land of 1:9-10, growing at the grass and trees of 1:11. Left out: green. */
@@ -174,6 +176,7 @@ interface PlanBeat {
   growth?: "bare" | "growing";
   life?: LifeWant;
   today?: GlobeCamera;
+  years?: boolean;
 }
 
 // Life on the globe, by verse. The numbers only set how full the picture is.
@@ -273,7 +276,7 @@ const globePlan: PlanBeat[] = [
   { sceneId: "exile", verse: "3:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 }, life: marked({ garden: 0.7, pair: 2, rivers: true, pairLight: 0.25, pairEast: true, flame: true }) },
   { sceneId: "cain", verse: "4:16", camera: { center: [PRE_FLOOD_VIEW[0] + 8, PRE_FLOOD_VIEW[1]], zoom: 2.5, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: garden, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 }, life: marked({ garden: 0.6, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true }) },
   { sceneId: "cain", verse: "4:17", camera: { center: [PRE_FLOOD_VIEW[0] + 8, PRE_FLOOD_VIEW[1]], zoom: 2.5, seconds: 5 }, hold: 13, land: PRE_FLOOD, depiction: garden, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 }, life: marked({ garden: 0.6, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true, city: true }) },
-  { sceneId: "seth-to-noah", verse: "5:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.9, seconds: 9 }, hold: 14, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.5, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true, city: true, peoples: 14 }) },
+  { sceneId: "seth-to-noah", verse: "5:1", camera: { center: [PRE_FLOOD_VIEW[0] + 6, PRE_FLOOD_VIEW[1] - 6], zoom: 2.6, seconds: 9 }, hold: 14, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.5, flame: true, city: true }), years: true },
   { sceneId: "seth-to-noah", verse: "6:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.5, seconds: 9, driftDegrees: 30 }, hold: 15, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80 }) },
   { sceneId: "nephilim", verse: "6:4", camera: { center: PRE_FLOOD_VIEW, zoom: 1.8, bearing: 6, seconds: 6 }, hold: 13, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80, dulled: 0.3 }) },
   { sceneId: "nephilim", verse: "6:5", camera: { center: PRE_FLOOD_VIEW, zoom: 1.6, seconds: 6 }, hold: 14, land: PRE_FLOOD, depiction: stillBeforeFlood, life: marked({ garden: 0.4, flame: true, city: true, peoples: 80, dulled: 1 }) },
@@ -318,6 +321,7 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   stars: g.stars,
   sky: g.sky,
   framed: g.framed,
+  years: g.years,
   growth: g.growth,
   life: g.life,
   today: g.today,
@@ -374,4 +378,20 @@ export function floodOn(day: number): { beat: number; flood: { level: number; st
     flood: { level: f0.level + (f1.level - f0.level) * k, storm: f0.storm + (f1.storm - f0.storm) * k },
     ark: { at: [p0.at[0] + (p1.at[0] - p0.at[0]) * k, p0.at[1] + (p1.at[1] - p0.at[1]) * k], afloat: k < 1 ? p0.afloat || p1.afloat : p1.afloat },
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Genesis 5 by year, for the slider. Years are counted from Adam by the Hebrew (Masoretic) ages.
+
+export const LAST_YEAR = floodYearAM("masoretic");
+/** The year the slider rests on until it is touched: Noah's birth, the last of the ten. */
+export const RESTING_YEAR = patriarchYears("masoretic")[9].bornAM;
+
+/** Who of the ten is alive in a given year, with his age. Enoch does not die: "God took him" (5:24). */
+export function livesIn(year: number) {
+  return patriarchYears("masoretic").map((p) => ({
+    name: p.name,
+    age: Math.round(year - p.bornAM),
+    state: year < p.bornAM ? ("unborn" as const) : year <= p.diedAM ? ("alive" as const) : p.name === "Enoch" ? ("taken" as const) : ("dead" as const),
+  }));
 }

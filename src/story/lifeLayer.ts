@@ -57,6 +57,8 @@ export interface Marks {
   dulled: number;
   /** One light that stays bright (6:8). */
   noah: boolean;
+  /** Genesis 5, for a chosen year: each of the ten, and whether he is not yet born, alive (with his age), dead, or taken (Enoch, 5:24). */
+  lives?: { name: string; state: "unborn" | "alive" | "dead" | "taken"; age: number }[];
 }
 export const NO_MARKS: Marks = { anchor: [0, 0], garden: 0, rivers: false, flame: false, pair: 0, pairEast: false, pairLight: 1, cain: false, city: false, peoples: 0, dulled: 0, noah: false };
 
@@ -414,7 +416,7 @@ export class Life {
   /** The garden, its river, the flame, and people as lights. Positions are layout only. */
   private drawMarks(t: number) {
     const { ctx, m } = this;
-    if (m.garden + m.pair + m.cain + m.peoples + m.noah < 0.02) return;
+    if (m.garden + m.pair + m.cain + m.peoples + m.noah < 0.02 && !this.want.marks?.lives) return;
     const anchor = this.want.marks?.anchor ?? this.anchor;
     this.anchor = anchor; // kept, so the marks fade out where they were
     const garden: [number, number] = [anchor[0] - 12, anchor[1] + 8];
@@ -517,6 +519,28 @@ export class Life {
         const twinkle = 0.75 + 0.25 * Math.sin(t * 1.3 + i * 2.1);
         this.light(p.x, p.y, 1.7, Math.min(1, m.peoples - i) * twinkle * (0.8 - 0.35 * m.dulled), 1 - m.dulled);
       }
+    }
+    // The ten of Genesis 5, in a row east of the garden: bright while alive, an ember after, Enoch's lifted away.
+    const lives = this.want.marks?.lives;
+    if (lives) {
+      lives.forEach((life, i) => {
+        if (life.state === "unborn") return;
+        const p = this.projector.project(east[0] - 16 + Math.floor(i / 2) * 8.5 + (i % 2) * 4.2, east[1] - 9 - (i % 2) * 7);
+        if (!p.visible) return;
+        if (life.state === "alive") this.light(p.x, p.y, 2.5, 1, 1);
+        else if (life.state === "dead") this.light(p.x, p.y, 1.6, 0.4, 0);
+        else {
+          ctx.globalAlpha = 0.8;
+          ctx.strokeStyle = "#fbeecb";
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.quadraticCurveTo(p.x + 5, p.y - 8, p.x + 2, p.y - 20);
+          ctx.stroke();
+        }
+        this.label(p.x, p.y + 18, life.name, life.state === "alive" ? 1 : 0.55);
+        if (life.state === "alive") this.label(p.x, p.y + 31, `${life.age}`, 0.8);
+      });
     }
     if (m.noah > 0.02) {
       const p = this.projector.project(anchor[0] + 6, anchor[1] - 9);

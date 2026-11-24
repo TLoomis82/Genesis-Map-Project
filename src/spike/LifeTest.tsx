@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { livesIn } from "../story/beats.ts";
 import { Life, NO_LIFE, NO_MARKS, type LifeWant } from "../story/lifeLayer.ts";
 
 // A check page for the life layer, without Mapbox: ?view=life. The globe is a plain disc seen straight
@@ -44,6 +45,7 @@ export default function LifeTest() {
       "7": { flocks: 12, shoals: 16, whales: 3, herds: [7, 7, 7], people: true, calm: true },
       eden: { ...NO_LIFE, marks: { ...NO_MARKS, anchor: CENTRE, garden: 1, pair: 2, rivers: true } },
       east: { ...NO_LIFE, marks: { ...NO_MARKS, anchor: CENTRE, garden: 0.6, pair: 2, pairLight: 0.25, pairEast: true, flame: true, cain: true, city: true, peoples: 14 } },
+      years: { ...NO_LIFE, marks: { ...NO_MARKS, anchor: CENTRE, garden: 0.5, flame: true, city: true, lives: livesIn(Number(new URLSearchParams(window.location.search).get("year") ?? 1056)) } },
       noah: { ...NO_LIFE, marks: { ...NO_MARKS, anchor: CENTRE, garden: 0.4, flame: true, city: true, peoples: 80, dulled: 1, noah: true } },
     };
     life.set(wants[which] ?? wants["5"]);
