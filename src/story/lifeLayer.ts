@@ -536,6 +536,18 @@ export class Life {
     this.raf = requestAnimationFrame(this.frame);
   };
 
+  /** After a skip to another part of the story: show what this verse asks for at once, and nothing left over from the last one. */
+  snap() {
+    this.groups = this.groups.filter((g) => g.wanted);
+    for (let i = 0; i < 120; i++) this.settle();
+    this.groups = this.groups.filter((g) => g.wanted);
+    this.groups.forEach((g) => (g.shown = 1));
+    const w = this.want.marks ?? NO_MARKS;
+    this.m = { garden: w.garden, rivers: w.rivers ? 1 : 0, flame: w.flame ? 1 : 0, pair: w.pair, east: w.pairEast ? 1 : 0, light: w.pairLight, cain: w.cain ? 1 : 0, city: w.city ? 1 : 0, peoples: w.peoples, dulled: w.dulled, noah: w.noah ? 1 : 0 };
+    this.people = this.want.people ? 1 : 0;
+    this.pace = this.want.calm ? 0.28 : 1;
+  }
+
   /** For checks only: run the life forward without waiting. */
   debugAdvance(seconds: number) {
     for (let i = 0; i < seconds * 20; i++) this.step(0.05);

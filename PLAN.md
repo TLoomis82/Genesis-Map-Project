@@ -385,5 +385,12 @@ Not done, in order:
   dull at 6:5, and one stays bright at 6:8 (Noah); the ark stands on the land from 6:14. Every position is layout
   only and labelled so; the verse note says so too. Fifteen verses where there were six. Checked on the plain test
   globe (`?view=life&life=eden`, `east`, `noah`); NOT seen on Mapbox.
+- Bug fixed: the label "Tap the sea for a shoal, the land for a flock" showed on every verse from Eden to the ark,
+  because it was tied to "anything drawn by the life layer" and the garden and lights are drawn by it too. It now
+  shows only where there are flocks or shoals to tap for.
+- Skips cut cleanly: stepping to the next verse glides as before, but a skip to another part (the timeline, or more
+  than one verse at once) puts the water, the land's cover, the light, the creatures and the lights where the new
+  verse wants them at once (`snap` on the sky layer and the life layer), so nothing from the part just left
+  drains, fades or drifts across the new one.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

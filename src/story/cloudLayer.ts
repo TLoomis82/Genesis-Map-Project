@@ -193,6 +193,8 @@ export interface SkyLayer {
   layer: CustomLayerInterface;
   /** Where the sun and moon are (the points on earth beneath them), or null for the usual light and no sun or moon drawn. */
   setSky(sky: { sun: [number, number]; moon: [number, number] } | null): void;
+  /** After a skip to another part of the story: put the water, the land's cover and the light where they belong at once, with no glide from where they were. */
+  snap(): void;
   /** Day 7: the clouds slow almost to stillness. */
   setCalm(calm: boolean): void;
   /** The land's cover: bare, growing from seeds, or green. The bare picture's address is needed for the first two. */
@@ -406,6 +408,15 @@ export function createCloudLayer(): SkyLayer {
     layer: layer as unknown as CustomLayerInterface,
     onLights: null,
     onDisc: null,
+    snap() {
+      uniforms.uLevel.value = want.level;
+      uniforms.uStorm.value = want.storm;
+      uniforms.uBareOn.value = wantBare;
+      uniforms.uSun.value.copy(wantSun);
+      moonDir.copy(wantMoon);
+      pace = wantPace;
+      map?.triggerRepaint();
+    },
     setCalm(calm) {
       wantPace = calm ? 0.2 : 1;
     },

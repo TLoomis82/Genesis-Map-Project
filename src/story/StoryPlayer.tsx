@@ -87,7 +87,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         ? "Nothing to do here. Turn it if you like."
         : hasHerds
           ? "Tap the land to set a herd running"
-          : beat.life
+          : beat.life && beat.life.flocks + beat.life.shoals > 0
             ? "Tap the sea for a shoal, the land for a flock"
             : null;
   useEffect(() => setTapped(false), [tapHint]);
@@ -132,7 +132,15 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const skyNow = beat.sky && (hour !== null || month !== null) ? skyWith(beat.sky.sun[0] - (hour ?? 0), month ?? MOON_ROUND) : (beat.sky ?? null);
   const floodShown = floodNow ? floodNow.flood : drawn !== null ? { level: UNDER_WATER * (1 - drawn) ** 2, storm: 0 } : (beat.flood ?? null);
 
-  const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, beats.length - 1))), []);
+  // Stepping glides; skipping to another part cuts, so nothing from the part just left drifts across the new one.
+  const [skips, setSkips] = useState(0);
+  const at = useRef(index);
+  at.current = index;
+  const go = useCallback((to: number) => {
+    const next = Math.max(0, Math.min(to, beats.length - 1));
+    if (Math.abs(next - at.current) > 1) setSkips((n) => n + 1);
+    setIndex(next);
+  }, []);
   const setDisc = useCallback((disc: { x: number; y: number; r: number }) => scene.current?.setDisc(disc), []);
   const drillFromHere = useCallback((sceneId: string) => onDrill?.(sceneId, index), [onDrill, index]);
 
@@ -253,6 +261,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           herdKind={hasHerds ? herdKind : null}
           calm={beat.life?.calm ?? false}
           onTouch={touched}
+          skips={skips}
           onDisc={setDisc}
           hold={beat.hold}
           land={onToday ? null : ((beat.camera ? beat.land : firstGlobe.land) ?? null)}

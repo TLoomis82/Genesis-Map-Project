@@ -187,6 +187,8 @@ interface Props {
   herdKind?: number | null;
   /** Called when a tap on the globe did something. */
   onTouch?: () => void;
+  /** Goes up by one each time the story skips to another part, so nothing glides in from the part just left. */
+  skips?: number;
   /** True while the globe waits out of sight under the opening: no notes or credits are shown. */
   quiet?: boolean;
   /** Told, every frame, where the globe's disc is on the screen: its centre and radius in CSS pixels. */
@@ -218,7 +220,7 @@ export interface Door {
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, growth = "green", calm = false, lifeWant = null, herdKind = null, onTouch, quiet = false, onDisc, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, growth = "green", calm = false, lifeWant = null, herdKind = null, onTouch, skips = 0, quiet = false, onDisc, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -606,6 +608,14 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [arkLng, arkLat, arkAfloat, arkSeconds, ready]);
+
+  // A skip to another part of the story. This runs after the effects above have set what the new verse
+  // wants, and puts everything there at once: no flood draining away, no creatures or lights left over.
+  useEffect(() => {
+    if (!ready || skips === 0) return;
+    sky.current?.snap();
+    life.current?.snap();
+  }, [skips, ready]);
 
   if (!TOKEN) {
     return camera && !quiet ? <div className="notice globe-notice">The globe needs a Mapbox token in VITE_MAPBOX_TOKEN (.env.local).</div> : null;
