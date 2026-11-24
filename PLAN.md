@@ -312,5 +312,11 @@ Not done, in order:
   camera eases in and the scene card opens; "Whole world" eases back out. No token, or `?hub=flat`: the flat
   picture as before. Rings for the days of creation and the flood are placed for layout only and the header says
   so. NOT seen running (no Mapbox here): ring spacing, label overlap and phone layout need Tyler's check.
+- Timeline under the hub (`src/board/Timeline.tsx`), after the one on tylerloomis.com: four eras, a block per part of
+  the story, a cell per scene; tap a block and the globe goes to its ring, tap a ring and its block lights; "Play
+  the story" walks the scenes; a slider scrubs. Blocks are sized by scene, not time; real spans are labels and only
+  where the text gives them (Eden: "Length not given"; Adam to the flood from the Genesis 5 data, Hebrew or Greek).
+  With the flood open, a second track true to scale by day; tapping a day opens the globe story at that verse.
+  On a phone the scene list is hidden and the timeline takes its place.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

@@ -5,6 +5,7 @@ import type { MapFeature } from "../data/types.ts";
 import hubPicture from "./hub.svg?raw";
 import { moments, storyOrder, targets, type BoardScene } from "./board.ts";
 import { kjv } from "../data/kjv.ts";
+import Timeline from "./Timeline.tsx";
 
 // The interactive storyboard. You see the world as Genesis pictures it; tap a ring (or a line in the
 // list) and the view moves in to that part and opens its scene card: the verse, a line of narration,
@@ -76,6 +77,7 @@ export default function StoryBoard({ onPlay }: Props) {
         </p>
       </header>
 
+      <div className="board-left">
       <div className={`board-stage ${ON_GLOBE ? "is-globe" : ""}`}>
         {ON_GLOBE && <GlobeStage camera={camera} hold={20} land={null} flood={null} relief={null} startCenter={HOME} pins={NO_PINS} selectedId={null} onSelect={nothing} doors={DOORS} openDoor={targetId} onDoor={openTarget} lift={0} />}
         <div className="board-picture" style={{ transform: move, display: ON_GLOBE ? "none" : undefined }}>
@@ -110,6 +112,8 @@ export default function StoryBoard({ onPlay }: Props) {
             Whole world
           </button>
         )}
+      </div>
+      <Timeline at={at} onAt={setAt} onVerse={(verse) => onPlay(`verse:${verse}`)} />
       </div>
 
       {current ? (

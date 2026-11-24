@@ -39,7 +39,9 @@ export default function App() {
             setScene(sceneId.slice("illustrated:".length));
             return setView("scene");
           }
-          setStartBeat(Math.max(0, beats.findIndex((b) => b.sceneId === sceneId)));
+          // The timeline's flood days open the globe story at their verse.
+          const at = sceneId.startsWith("verse:") ? beats.findIndex((b) => b.reference === `Genesis ${sceneId.slice("verse:".length)}`) : beats.findIndex((b) => b.sceneId === sceneId);
+          setStartBeat(Math.max(0, at));
           setView("story");
         }}
       />
