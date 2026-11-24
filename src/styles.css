@@ -222,8 +222,8 @@ body,
 
 .view-switch {
   position: fixed;
-  bottom: calc(22px + env(safe-area-inset-bottom));
-  left: 12px;
+  top: calc(52px + env(safe-area-inset-top));
+  right: 12px;
   z-index: 20;
   font-size: 12px;
   background: rgba(0, 0, 0, 0.45);

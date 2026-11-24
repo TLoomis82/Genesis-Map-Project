@@ -105,7 +105,9 @@ export function createCloudLayer(): CustomLayerInterface {
     transparent: true,
     depthTest: false,
     depthWrite: false,
-    side: THREE.FrontSide,
+    // Both sides: Mapbox's globe coordinates have y pointing south, which mirrors the sphere, so the faces
+    // toward the camera count as "back" faces. The horizon test in the shader removes the far half.
+    side: THREE.DoubleSide,
   });
   scene.add(new THREE.Mesh(geometry, material));
 
