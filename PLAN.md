@@ -113,7 +113,7 @@ Working method from here: the workspace can now install packages, type check, bu
 - Written permission from Christopher Scotese (PALEOMAP) and from ICR (Clarey and Werner map) before M2.
 - Read and cite by page every source marked `to-read` in `src/data/sources.ts`.
 - Check approximate coordinates in `src/data/features.ts` against a gazetteer.
-- KJV or World English Bible for on-screen verses.
+- KJV or World English Bible for on-screen verses. (KJV for now, read from `src/data/kjv.ts`; spot-check against a printed KJV.)
 - Find out whether and how BibleProject accepts outside pitches.
 - Find a seminary-trained reader to review the verse table.
 
@@ -130,3 +130,26 @@ land changing colour.
   translated "festivals"). No snow or bare trees are shown: the text does not describe them.
 - Mapbox cannot tilt its camera above the horizon, so the sky scenes stay in the three.js engine. From M3, day 3's
   valley moves onto the Mapbox globe as a custom layer so everything from day 3 on is one world.
+
+## M3 status (2026-11-23)
+
+Built, first pass (`src/story/`):
+
+- **One story, one list of beats** (`beats.ts`): the 19 opening verses, then one beat per globe scene (33 in all).
+  Play, Back/Next, arrow keys, the chapter list and the progress bar work the same across both.
+- **One globe** (`GlobeStage.tsx`) under the opening canvas, kept for the rest of the story. Each globe beat is a
+  single eased camera move. Camera centres come from `approxCenter` in `features.ts`, never typed in.
+- **Tier styling**: solid = text, dashed = scholarly reading, dotted = model, on badges, chips and pins.
+- **Info cards** (`InfoCard.tsx`): tier, verses, note, confidence line, reasons for and against, other readings,
+  sources with "not yet read first-hand" or "permission not yet given" where that is the case.
+- **"Text only" switch**: hides every feature above tier `text`.
+- **Explore slot** (`explore.ts`): add a component under a scene id and the scene gets an Explore button.
+- **Verses** now come from a KJV file (`src/data/kjv.ts`) instead of being typed in.
+
+Still to do in M3:
+
+- Check the globe half on a real device (the build machine has no Mapbox access): camera moves, pins, the fade.
+- Move day 3's valley onto the globe as a custom layer. Needs a test on a real device, like M0, and a decision:
+  any spot on today's globe is an `illustration` placement until the pre-flood land (M2) exists.
+- Scrolling as a way to move through the story (now: buttons, keys, chapter list).
+- More than one beat per globe scene.

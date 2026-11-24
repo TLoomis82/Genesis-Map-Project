@@ -1,22 +1,26 @@
 import { useState } from "react";
-import OpeningPlayer from "./opening/OpeningPlayer.tsx";
+import StoryPlayer from "./story/StoryPlayer.tsx";
 import GlobeTest from "./spike/GlobeTest.tsx";
 
-// Two views for now: the opening (Gen 1:1-8, in progress for M1) and the M0 globe test.
-// Add ?view=globe to the address to start on the globe test.
+// The story is the app. The M0 globe test is kept for checks: add ?view=globe to the address
+// to open it, or ?debug to get a button that switches between the two.
 
-type View = "opening" | "globe";
+type View = "story" | "globe";
 
-const initial: View = new URLSearchParams(window.location.search).get("view") === "globe" ? "globe" : "opening";
+const params = new URLSearchParams(window.location.search);
+const initial: View = params.get("view") === "globe" ? "globe" : "story";
+const showSwitch = initial === "globe" || params.has("debug");
 
 export default function App() {
   const [view, setView] = useState<View>(initial);
   return (
     <>
-      {view === "opening" ? <OpeningPlayer /> : <GlobeTest />}
-      <button className="view-switch" onClick={() => setView(view === "opening" ? "globe" : "opening")}>
-        {view === "opening" ? "Globe test" : "Opening"}
-      </button>
+      {view === "story" ? <StoryPlayer /> : <GlobeTest />}
+      {showSwitch && (
+        <button className="view-switch" onClick={() => setView(view === "story" ? "globe" : "story")}>
+          {view === "story" ? "Globe test" : "Story"}
+        </button>
+      )}
     </>
   );
 }
