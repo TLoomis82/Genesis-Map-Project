@@ -1122,7 +1122,7 @@ body,
 .season-tabs {
   position: absolute;
   left: 50%;
-  bottom: calc(118px + env(safe-area-inset-bottom));
+  bottom: calc(166px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   gap: 6px;

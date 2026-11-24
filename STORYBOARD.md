@@ -155,6 +155,7 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Touch:** spin it freely. Nothing else responds. The stillness is the point.
 - **Labels:** Text. BibleProject reads the seven days as a temple's dedication, with God's presence filling it on the
   seventh (`bibleproject-eden-priests`): offered as a Scholarly reading on the card.
+- **Status (2026-11-24): built, hand-drawn and live.** a small round world with the lights of day 4 on their round; it stills at "rest" and a gold light fills the page at "blessed". Label: "Drag to turn the heavens".
 
 ### Eden 1: the man from the dust (Gen 2:7)
 - **Status: built, first cut, hand-drawn** (`src/illustrated/EdenMan.tsx`). Four moments (dust lifts, it gathers, breath
@@ -176,17 +177,20 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
   height, and "dress and keep" as priestly work (`bibleproject-eden-priests`). Illustration: everything about how the
   two trees look. No walls, buildings or invented landmarks.
 - **Build:** the day-3 valley, richer, re-used.
+- **Status (2026-11-24): built, hand-drawn and live.** trees are drawn on in two passes, then the two trees in the midst; the man walks. Labels: "Tap either tree in the midst" (name and verse), "Drag along the garden and the man walks with you".
 
 ### Eden 3: the river (Gen 2:10-14)
 - **Watch:** a river rises in Eden, waters the garden, and below it parts into four.
 - **Touch:** follow any of the four. Each ends at its card: Pishon, Gihon, Hiddekel, Euphrates.
 - **Labels:** Text for the one river, the four heads and the lands named. Where they ran is not shown here; that is
   the "Where on earth?" layer, with the four readings side by side.
+- **Status (2026-11-24): built, hand-drawn and live.** a spring on the height, the river down through the garden, four heads. Label: "Tap one of the four rivers" (name and its verse).
 
 ### Eden 4: the naming (Gen 2:18-20)
 - **Watch:** animals and birds are brought to the man one after another; none is a match for him.
 - **Touch:** tap a creature and it is named (its name appears).
 - **Labels:** Text: formed out of the ground, brought to the man, named by him, no helper found.
+- **Status (2026-11-24): built, hand-drawn and live.** creatures come in pairs; names are lettered over them; they leave and the man stands alone. Label: "Tap a creature and the man names it". The names shown are illustration and the card says so.
 
 ### Eden 5: the woman (Gen 2:21-23)
 - **Watch:** the figure sleeps. One line of light lifts from his side and grows into a second figure. He wakes and
@@ -194,6 +198,7 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Touch:** none. This one is only watched.
 - **Labels:** Text: a deep sleep; one of his ribs taken; the flesh closed; a woman made and brought to the man.
   Illustration: how it looked. The scene adds nothing more.
+- **Status (2026-11-24): built, hand-drawn and live.** night, the sleep, one line of light from his side, the second figure, dawn. Changed from "only watched": label "Drag left or right to move through the scene".
 
 ### Eden 6: the fall (Gen 3:1-21)
 - **Watch:** among the trees, a serpent at the tree in the middle. The woman takes the fruit and eats, and gives to
@@ -206,6 +211,7 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
   the dimming of the figures' light.
 - **Care:** God's voice is shown as moving light and sound through the trees, never a figure. The words spoken in
   3:9-19 appear as verse text only.
+- **Status (2026-11-24): built, hand-drawn and live.** serpent, fruit passed, light dims and aprons, hiding while a light moves through the trees, coats. Changed from "only watched": label "Drag left or right to move through the scene".
 
 ### East of Eden (Gen 3:23-24; 4:16-17)
 - **Watch:** two figures walk out to the east. Behind them the way in is guarded, shown as a turning flame.
@@ -213,11 +219,13 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Touch:** look back toward the garden from outside.
 - **Labels:** Text: sent out; cherubim and a flaming sword that turned every way, to keep the way of the tree of life;
   Cain east of Eden in Nod; a city. Illustration: the look of the guard and the city.
+- **Status (2026-11-24): built, hand-drawn and live.** the two walk east off the height; two winged forms of light and a turning flame; one goes further; a city. Labels: "Swipe the flaming sword to turn it", and on a phone "Drag to look back toward the garden".
 
 ### The generations (Gen 5)
 - **Watch:** ten names, each a bar of light for a lifespan, overlapping.
 - **Touch:** drag along the bars to see who was alive together; switch between the Hebrew and Greek numbers.
 - **Labels:** Text. The data is already in `src/data/chronology.ts`.
+- **Status (2026-11-24): built, hand-drawn and live.** ten drawn lines on ruled paper, the flood line by Noah's age. Labels: "Drag along the years to see who lived together", "Tap a count" (Hebrew or Greek).
 
 ### The flood (Gen 6:14-8:14)
 - **Watch:** on the hub, the fountains of the deep break open and the windows of heaven open: the water that was

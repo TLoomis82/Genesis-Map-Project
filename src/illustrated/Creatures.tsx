@@ -56,7 +56,7 @@ interface Shape {
   speed: number;
 }
 
-const SHAPES: Record<string, Shape> = {
+export const SHAPES: Record<string, Shape> = {
   cow: {
     fill: "#f1e3c4",
     body: "M -50 -34 Q -54 -66 -20 -66 L 30 -66 Q 52 -66 52 -44 L 52 -36 Q 30 -26 0 -28 Q -30 -26 -50 -34 Z",
@@ -127,7 +127,7 @@ const SHAPES: Record<string, Shape> = {
   },
 };
 
-interface Animal {
+export interface Animal {
   type: string;
   kind: 0 | 1 | 2;
   home: number;
@@ -156,7 +156,7 @@ const HERD: [string, 0 | 1 | 2, number, number][] = [
   ["deer", 2, 1010, 0.85],
 ];
 
-function AnimalDrawing({ a, y, grown, boil }: { a: Animal; y: number; grown: number; boil: number }) {
+export function AnimalDrawing({ a, y, grown, boil }: { a: Animal; y: number; grown: number; boil: number }) {
   if (grown < 0.02) return null;
   const shape = SHAPES[a.type];
   const phase = a.x / 13;

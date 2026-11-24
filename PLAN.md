@@ -299,5 +299,9 @@ Not done, in order:
   strip and the season tabs carry standing labels. Rule for new scenes: no interaction without a label.
 - Day 5 and day 6 built hand-drawn and live (`src/illustrated/Creatures.tsx`). Checked as stills and with scripted
   drags and taps in headless Chromium, desktop and phone size. Not yet checked: frame rate on a real iPhone.
-- Next: the rest of Eden (garden and river, naming, the woman, the fall and the flaming sword); then the front door
-  on the detailed globe and the handoff to it.
+- Day 7, Eden 2 to 6, east of Eden (`src/illustrated/Eden.tsx`) and the generations
+  (`src/illustrated/Generations.tsx`) built hand-drawn and live, each with labelled interactions. Every chapter
+  before the flood now opens as a hand-drawn scene from the hub. Checked as stills and with scripted taps and
+  drags, desktop and phone size; not yet on a real iPhone.
+- Still on the detailed globe, by design: the flood and the ark at rest.
+- Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.
