@@ -232,6 +232,16 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
     return () => window.clearTimeout(timer);
   }, [faded]);
 
+  // Keep the address in step with the verse, so the page can be shared or reloaded where it is.
+  useEffect(() => {
+    const address = new URL(window.location.href);
+    address.searchParams.delete("view");
+    address.searchParams.delete("scene");
+    if (index === 0) address.searchParams.delete("verse");
+    else address.searchParams.set("verse", beats[index].reference.replace("Genesis ", ""));
+    window.history.replaceState(null, "", address);
+  }, [index]);
+
   // Auto-advance while playing; stop at the end.
   useEffect(() => {
     if (!playing) return;

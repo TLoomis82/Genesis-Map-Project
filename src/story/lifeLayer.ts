@@ -109,11 +109,12 @@ export class Life {
   /** Around where new creatures appear: the middle of the view. */
   home: [number, number] = [0, 0];
 
-  constructor(
-    private canvas: HTMLCanvasElement,
-    private projector: Projector,
-    heightsUrl: string,
-  ) {
+  private canvas: HTMLCanvasElement;
+  private projector: Projector;
+
+  constructor(canvas: HTMLCanvasElement, projector: Projector, heightsUrl: string) {
+    this.canvas = canvas;
+    this.projector = projector;
     this.ctx = canvas.getContext("2d")!;
     // The land, read once from the picture of its heights: where shoals may not go and herds may.
     const picture = new Image();

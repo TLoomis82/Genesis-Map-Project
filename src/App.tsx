@@ -32,7 +32,8 @@ export default function App() {
   if (asked === "life") return <LifeTest />;
   if (asked === "sky") return <SkyTest />;
   const [view, setView] = useState<View>(initial);
-  const [startBeat, setStartBeat] = useState(0);
+  // A link can open the story at a verse: ?verse=7:11
+  const [startBeat, setStartBeat] = useState(() => Math.max(0, beats.findIndex((b) => b.reference === `Genesis ${params.get("verse")}`)));
   // The handoff from the sketched creation to the detailed globe: the drawing swells and fades, the world fades in.
   // Where a hand-drawn scene was opened from, so leaving it goes back there.
   const [from, setFrom] = useState<"story" | "board">("board");

@@ -4,6 +4,7 @@
 import { features, featureById } from '../src/data/features.ts';
 import { sources, sourceById } from '../src/data/sources.ts';
 import { scenes } from '../src/data/scenes.ts';
+import { beats, floodKeys } from '../src/story/beats.ts';
 import { floodYearAM, patriarchYears, floodEvents, floodDay } from '../src/data/chronology.ts';
 
 const errors: string[] = [];
@@ -50,6 +51,20 @@ for (const e of floodEvents) {
 console.log(`\n${features.length} features, ${scenes.length} scenes, ${sources.length} sources`);
 console.log(`${warnings.length} citations rest on sources not yet read or cleared:`);
 for (const w of warnings) console.log('  -', w);
+
+// The story on the globe: every verse must be ready to show.
+const drawn = ['beginning', 'day-1', 'day-2', 'day-3', 'day-4', 'day-5', 'day-6', 'day-7', 'eden-man', 'eden-garden', 'eden-river', 'eden-naming', 'eden-woman', 'eden-fall', 'exile', 'generations', 'ark'];
+const sceneIds = new Set(scenes.map((s) => s.id));
+beats.forEach((b, i) => {
+  const where = `story verse ${i + 1} (${b.reference})`;
+  if (!sceneIds.has(b.sceneId)) errors.push(`${where}: unknown scene ${b.sceneId}`);
+  if (!b.depiction) errors.push(`${where}: nothing says how it is pictured`);
+  if (b.depiction?.badge === 'Placeholder') errors.push(`${where}: still carries a placeholder note`);
+  if (b.depiction?.source && sourceById.get(b.depiction.source)?.status !== 'opened') errors.push(`${where}: its note cites ${b.depiction.source}, which has not been read`);
+  for (const d of b.drills) if (!drawn.includes(d.scene)) errors.push(`${where}: a dot leads to ${d.scene}, which is not a drawn scene`);
+});
+if (floodKeys.length !== 9) errors.push(`the flood slider should have 9 dated verses, found ${floodKeys.length}`);
+console.log(`${beats.length} story verses, ${floodKeys.length} flood days`);
 
 if (floodYearAM('masoretic') !== 1656) errors.push('Masoretic flood year should be 1656');
 if (errors.length) {

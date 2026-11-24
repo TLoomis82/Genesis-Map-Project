@@ -416,5 +416,9 @@ Not done, in order:
   order of authority, what each label means, the sources read (from `sources.ts`, only those marked opened), the
   ones not yet read, and credits and licences. A drawn scene's way out now says where it goes ("Back to the story"
   or "Storyboard"). The last two verses had a "not built yet" note; they now say what is shown.
+- Links to a verse: the address follows the verse (`?verse=7:11`) and opens there, so a part of the story can be
+  shared or reloaded. `npm run check:data` now also checks the story: every verse has a scene, a note on how it is
+  pictured (none a placeholder), notes cite only sources that have been read, every dot leads to a drawn scene,
+  and the flood slider has its nine dated verses.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.
