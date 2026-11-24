@@ -187,6 +187,7 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
           flood={onGlobe ? (beat.flood ?? null) : WAITING}
           stars={onGlobe ? beat.stars : 0}
+          sky={onGlobe ? (beat.sky ?? null) : null}
           drills={onGlobe ? beat.drills : NO_DRILLS}
           onDrill={drillFromHere}
           relief={beat.relief ?? null}

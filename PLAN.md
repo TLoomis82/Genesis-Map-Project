@@ -332,5 +332,13 @@ Not done, in order:
   (`src/opening/openingScene.ts`, `landscape/`, the steps in `steps.ts`) is no longer used by the story; kept for
   now, to delete once Tyler has seen the new one. Opening seen running here (software rendering, so no real frame
   rate); the globe half (land coming up, stars, dots on the globe) NOT seen.
+- Day 4 on the globe: the sun and moon in their true places (`src/data/astronomy.ts`, numbers from the NASA NSSDC
+  fact sheets, source `nasa-factsheets`). The sky layer projects them at true distance and size and reports where
+  they fall on screen; `GlobeStage` draws them there (sun disc, moon disc with its phase; the glare and name tags
+  are added). The light on the globe comes from the same sun. Three beats, one real arrangement (sun at the March
+  equinox, moon a little short of full) at three hours: 1:14 sun at the earth's edge, 1:16 moon at the edge, 1:18
+  half day and half night. The text gives no date, so the arrangement is labelled illustration. At true size both
+  are about half a degree across, so they are small. Maths checked against a known camera; NOT seen on Mapbox.
+  Sun and moon are drawn only on the day 4 beats for now.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

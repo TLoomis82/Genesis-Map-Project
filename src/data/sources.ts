@@ -35,6 +35,7 @@ export const sources: Source[] = [
   { id: 'cosner-carter-2016', author: 'Lita Cosner and Robert Carter', title: 'Pre-flood geography is largely unknown (primary publication to be located)', year: 2016, status: 'to-read' },
 
   // --- Data ---
+  { id: 'nasa-factsheets', author: 'NASA Space Science Data Coordinated Archive (D. R. Williams)', title: 'Planetary Fact Sheets: Sun, Earth, Moon', year: 2024, url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html', status: 'opened' }, // Radii, distances, obliquity and the moon's orbital inclination read 2026-11-24.
   { id: 'paleomap-dem', author: 'Christopher Scotese and Nicky Wright', title: 'PALEOMAP Paleodigital Elevation Models (PaleoDEMs) for the Phanerozoic', year: 2018, url: 'https://zenodo.org/records/5460860', status: 'opened' }, // Licence read on Zenodo 2026-11-23: CC BY 4.0. Credit required; no permission needed.,
 ];
 

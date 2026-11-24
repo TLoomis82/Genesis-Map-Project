@@ -182,6 +182,8 @@ interface Props {
   lift?: number;
   /** How bright the stars are behind the globe, 0 to 1. */
   stars?: number;
+  /** The sun and moon in their true places (the points on earth beneath them), or null to draw neither. */
+  sky?: { sun: [number, number]; moon: [number, number] } | null;
   /** Hand-drawn scenes that can be opened from this beat. Each is a dot near the middle of the view. */
   drills?: { scene: string; label: string }[];
   onDrill?: (scene: string) => void;
@@ -197,7 +199,7 @@ export interface Door {
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -333,6 +335,57 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       });
     return () => markers.forEach((marker) => marker.remove());
   }, [pins, selectedId, onSelect, ready]);
+
+  // The sun and the moon. The sky layer works out where they fall on the screen at their true distance
+  // and size; here they are drawn there. The sun's glare and the two name tags are added; its disc and
+  // the moon's disc and phase are to scale for the view.
+  const sunLng = lights?.sun[0];
+  const sunLat = lights?.sun[1];
+  const moonLng = lights?.moon[0];
+  const moonLat = lights?.moon[1];
+  useEffect(() => {
+    const m = map.current;
+    const layer = sky.current;
+    if (!m || !ready || !layer) return;
+    if (sunLng === undefined || sunLat === undefined || moonLng === undefined || moonLat === undefined) {
+      layer.setSky(null);
+      return;
+    }
+    const box = m.getContainer();
+    const sun = document.createElement("div");
+    sun.className = "sky-light sky-sun";
+    sun.innerHTML = '<i class="sky-glare"></i><i class="sky-disc"></i><span>Sun</span>';
+    const moon = document.createElement("div");
+    moon.className = "sky-light sky-moon";
+    moon.innerHTML = '<svg viewBox="-1.1 -1.1 2.2 2.2"><circle r="1" fill="#2a2f3d"/><path fill="#f3efe2"/></svg><span>Moon</span>';
+    box.append(sun, moon);
+    const disc = sun.querySelector<HTMLElement>(".sky-disc")!;
+    const picture = moon.querySelector("svg")!;
+    const face = moon.querySelector("path")!;
+    layer.onLights = (l) => {
+      if (!l) return;
+      sun.style.opacity = String(l.sun.show);
+      sun.style.transform = `translate(${l.sun.x}px, ${l.sun.y}px)`;
+      const sunSize = Math.max(l.sun.r * 2, 3);
+      disc.style.width = disc.style.height = `${sunSize}px`;
+      moon.style.opacity = String(l.moon.show);
+      moon.style.transform = `translate(${l.moon.x}px, ${l.moon.y}px)`;
+      const moonSize = Math.max(l.moon.r * 2, 5);
+      picture.style.width = picture.style.height = `${moonSize * 1.1}px`;
+      // The lit part: half a disc on the sunward side, out to an ellipse that is the edge of the light.
+      const k = Math.min(Math.max(l.moon.lit, 0), 1);
+      const bulge = Math.abs(1 - 2 * k);
+      face.setAttribute("d", `M 0 -1 A 1 1 0 0 1 0 1 A ${bulge} 1 0 0 ${k < 0.5 ? 0 : 1} 0 -1 Z`);
+      face.setAttribute("transform", `rotate(${(l.moon.angle * 180) / Math.PI})`);
+    };
+    layer.setSky({ sun: [sunLng, sunLat], moon: [moonLng, moonLat] });
+    m.triggerRepaint();
+    return () => {
+      layer.onLights = null;
+      sun.remove();
+      moon.remove();
+    };
+  }, [sunLng, sunLat, moonLng, moonLat, ready]);
 
   // The stars come out on day 4, not before.
   useEffect(() => {

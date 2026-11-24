@@ -16,6 +16,7 @@
 // coordinates, and the far side is hidden with the horizon plane Mapbox passes each frame.
 
 import * as THREE from "three";
+import { EARTH_RADIUS_KM, MOON_DISTANCE_KM, MOON_RADIUS_KM, SUN_DISTANCE_KM, SUN_RADIUS_KM } from "../data/astronomy.ts";
 import type { CustomLayerInterface, Map as MapboxMap } from "mapbox-gl";
 
 const GLOBE_RADIUS = 8192 / Math.PI / 2;
@@ -147,8 +148,27 @@ export interface FloodState {
   storm: number;
 }
 
+/** Where a light is on the screen, for the page to draw it there. */
+export interface LightOnScreen {
+  x: number;
+  y: number;
+  /** Radius in CSS pixels, at true size for this view. */
+  r: number;
+  /** 0 = hidden behind the earth or out of view, 1 = in full view. */
+  show: number;
+}
+export interface Lights {
+  sun: LightOnScreen;
+  /** lit: how much of the moon's face is lit as seen from here (0 to 1). angle: which way its lit side faces on screen, in radians. */
+  moon: LightOnScreen & { lit: number; angle: number };
+}
+
 export interface SkyLayer {
   layer: CustomLayerInterface;
+  /** Where the sun and moon are (the points on earth beneath them), or null for the usual light and no sun or moon drawn. */
+  setSky(sky: { sun: [number, number]; moon: [number, number] } | null): void;
+  /** Called every frame with where the sun and moon fall on the screen, while a sky is set. */
+  onLights: ((lights: Lights | null) => void) | null;
   /** Glide the water level and the weather toward new values, or jump straight to them. */
   setFlood(state: FloodState, jump?: boolean): void;
   /** The picture of land heights the flood is measured against, or null for none (water rises evenly). */
@@ -197,6 +217,46 @@ export function createCloudLayer(): SkyLayer {
   const loader = new THREE.TextureLoader();
   let heightsUrl: string | null = null;
 
+  // The sun and the moon, at their true distances and sizes, in the globe's own units.
+  const KM = GLOBE_RADIUS / EARTH_RADIUS_KM;
+  const usualSun = sunDirection(-12, 16);
+  const wantSun = usualSun.clone();
+  const moonDir = sunDirection(120, 10);
+  const wantMoon = moonDir.clone();
+  let skyOn = false;
+  const whole = new THREE.Matrix4();
+  const inverse = new THREE.Matrix4();
+  const eye4 = new THREE.Vector4();
+  const eye = new THREE.Vector3();
+  const sunAt = new THREE.Vector3();
+  const moonAt = new THREE.Vector3();
+  const v4 = new THREE.Vector4();
+  const a3 = new THREE.Vector3();
+  const b3 = new THREE.Vector3();
+  const onScreen = (p: THREE.Vector3, width: number, height: number): { x: number; y: number; ahead: boolean } => {
+    v4.set(p.x, p.y, p.z, 1).applyMatrix4(whole);
+    return { x: (v4.x / v4.w / 2 + 0.5) * width, y: (0.5 - v4.y / v4.w / 2) * height, ahead: v4.w > 0 };
+  };
+  /** How much of a far thing is clear of the earth's edge, seen from the eye: 0 behind it, 1 clear. */
+  const clearOfEarth = (p: THREE.Vector3): number => {
+    a3.copy(p).sub(eye);
+    const far = a3.length();
+    a3.divideScalar(far);
+    const along = -eye.dot(a3);
+    if (along <= 0 || along >= far) return 1;
+    const nearest = Math.sqrt(Math.max(eye.lengthSq() - along * along, 0));
+    return THREE.MathUtils.smoothstep(nearest, GLOBE_RADIUS * 0.985, GLOBE_RADIUS * 1.03);
+  };
+  const place = (p: THREE.Vector3, radius: number, width: number, height: number): LightOnScreen => {
+    const at = onScreen(p, width, height);
+    // Its size on screen: a point one radius to the side of it, sideways to the line of sight.
+    a3.copy(p).sub(eye).normalize();
+    b3.set(0.31, 0.74, 0.59).cross(a3).normalize().multiplyScalar(radius).add(p);
+    const edge = onScreen(b3, width, height);
+    const inView = at.ahead && at.x > -200 && at.x < width + 200 && at.y > -200 && at.y < height + 200;
+    return { x: at.x, y: at.y, r: Math.hypot(edge.x - at.x, edge.y - at.y), show: inView ? clearOfEarth(p) : 0 };
+  };
+
   const layer = {
     id: "story-clouds",
     type: "custom",
@@ -230,6 +290,31 @@ export function createCloudLayer(): SkyLayer {
       cloudStatus.frames += 1;
       cloudStatus.opacity = shown;
       cloudStatus.projection = projection?.name ?? "not passed";
+
+      // The light glides to where the story has put the sun; the moon likewise.
+      const glide = 1 - Math.exp(-dt * 0.55);
+      uniforms.uSun.value.lerp(wantSun, glide).normalize();
+      moonDir.lerp(wantMoon, glide).normalize();
+      if (skyOn && api.onLights && projection?.name === "globe" && globeToMercator) {
+        whole.fromArray(matrix).multiply(globeToMercatorMatrix.fromArray(globeToMercator));
+        inverse.copy(whole).invert();
+        eye4.set(0, 0, 1, 0).applyMatrix4(inverse); // the eye is the one point every line of sight passes through
+        eye.set(eye4.x / eye4.w, eye4.y / eye4.w, eye4.z / eye4.w);
+        const box = map.getContainer();
+        const width = box.clientWidth;
+        const height = box.clientHeight;
+        sunAt.copy(uniforms.uSun.value).multiplyScalar(SUN_DISTANCE_KM * KM);
+        moonAt.copy(moonDir).multiplyScalar(MOON_DISTANCE_KM * KM);
+        const sun = place(sunAt, SUN_RADIUS_KM * KM, width, height);
+        const moon = place(moonAt, MOON_RADIUS_KM * KM, width, height);
+        // The moon's phase from here: the angle at the moon between the sun and the eye.
+        const toSun = a3.copy(sunAt).sub(moonAt).normalize().clone();
+        const toEye = b3.copy(eye).sub(moonAt).normalize();
+        const lit = (1 + toSun.dot(toEye)) / 2;
+        const sunward = onScreen(toSun.multiplyScalar(MOON_RADIUS_KM * KM * 40).add(moonAt), width, height);
+        api.onLights({ sun, moon: { ...moon, lit, angle: Math.atan2(sunward.y - moon.y, sunward.x - moon.x) } });
+        map.triggerRepaint();
+      }
       if (shown <= 0) return;
 
       const params = arguments[7] as { globeClippingPlane?: readonly number[] | null } | undefined;
@@ -256,8 +341,15 @@ export function createCloudLayer(): SkyLayer {
       map = null;
     },
   };
-  return {
+  const api: SkyLayer = {
     layer: layer as unknown as CustomLayerInterface,
+    onLights: null,
+    setSky(sky) {
+      skyOn = sky !== null;
+      wantSun.copy(sky ? sunDirection(sky.sun[0], sky.sun[1]) : usualSun);
+      if (sky) wantMoon.copy(sunDirection(sky.moon[0], sky.moon[1]));
+      if (!sky) api.onLights?.(null);
+    },
     setFlood(state, jump = false) {
       want.level = state.level;
       want.storm = state.storm;
@@ -288,4 +380,5 @@ export function createCloudLayer(): SkyLayer {
       });
     },
   };
+  return api;
 }
