@@ -104,7 +104,7 @@ const PRE_FLOOD: LandId = "200";
 const COVERED = 7000;
 const TODAY: LandId = "000";
 const AFLOAT: LngLat = [-5, 5];
-const araratWide: GlobeCamera = { center: ararat, zoom: 2.6, seconds: 12 };
+const araratWide: GlobeCamera = { center: ararat, zoom: 2.6, seconds: 8 };
 
 interface PlanBeat {
   sceneId: string;
@@ -133,15 +133,15 @@ const globePlan: PlanBeat[] = [
   { sceneId: "nephilim", verse: "6:4", camera: { center: WHOLE_GLOBE, zoom: 1.8, bearing: 6, seconds: 6 } },
   { sceneId: "ark", verse: "6:15", camera: { center: WHOLE_GLOBE, zoom: 1.8, seconds: 6 } },
   // The flood, seen from space. The land stands lower than usual here so nothing pokes through the water.
-  { sceneId: "flood", verse: "7:11", camera: { center: AFLOAT, zoom: 1.4, seconds: 8 }, hold: 16, land: PRE_FLOOD, flood: { level: 250, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0], AFLOAT[1], false) },
-  { sceneId: "flood", verse: "7:17", camera: { center: [AFLOAT[0] + 14, AFLOAT[1]], zoom: 1.4, seconds: 12 }, hold: 14, land: PRE_FLOOD, flood: { level: 1100, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 10, AFLOAT[1] + 2) },
-  { sceneId: "flood", verse: "7:19", camera: { center: [AFLOAT[0] + 28, AFLOAT[1]], zoom: 1.4, seconds: 12 }, hold: 14, land: PRE_FLOOD, flood: { level: 2700, storm: 0.6 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 24, AFLOAT[1] + 6) },
-  { sceneId: "flood", verse: "7:20", camera: { center: [AFLOAT[0] + 42, AFLOAT[1]], zoom: 1.4, seconds: 12 }, hold: 14, land: PRE_FLOOD, flood: { level: COVERED, storm: 0.5 }, relief: 0, depiction: floodRising, ark: arkAt(AFLOAT[0] + 38, AFLOAT[1] + 12) },
-  { sceneId: "flood", verse: "7:24", camera: { center: [ararat[0] - 40, 20], zoom: 1.4, seconds: 14, driftDegrees: 30 }, hold: 22, land: TODAY, flood: { level: COVERED, storm: 0.35 }, relief: 0, depiction: floodOverAll, ark: arkAt(ararat[0] - 22, ararat[1] - 12) },
+  { sceneId: "flood", verse: "7:11", camera: { center: AFLOAT, zoom: 1.4, seconds: 5 }, hold: 10, land: PRE_FLOOD, flood: { level: 250, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0], AFLOAT[1], false) },
+  { sceneId: "flood", verse: "7:17", camera: { center: [AFLOAT[0] + 14, AFLOAT[1]], zoom: 1.4, seconds: 7 }, hold: 8, land: PRE_FLOOD, flood: { level: 1100, storm: 0.7 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 10, AFLOAT[1] + 2) },
+  { sceneId: "flood", verse: "7:19", camera: { center: [AFLOAT[0] + 28, AFLOAT[1]], zoom: 1.4, seconds: 7 }, hold: 8, land: PRE_FLOOD, flood: { level: 2700, storm: 0.6 }, relief: 8, depiction: floodRising, ark: arkAt(AFLOAT[0] + 24, AFLOAT[1] + 6) },
+  { sceneId: "flood", verse: "7:20", camera: { center: [AFLOAT[0] + 42, AFLOAT[1]], zoom: 1.4, seconds: 7 }, hold: 8, land: PRE_FLOOD, flood: { level: COVERED, storm: 0.5 }, relief: 0, depiction: floodRising, ark: arkAt(AFLOAT[0] + 38, AFLOAT[1] + 12) },
+  { sceneId: "flood", verse: "7:24", camera: { center: [ararat[0] - 40, 20], zoom: 1.4, seconds: 8, driftDegrees: 30 }, hold: 13, land: TODAY, flood: { level: COVERED, storm: 0.35 }, relief: 0, depiction: floodOverAll, ark: arkAt(ararat[0] - 22, ararat[1] - 12) },
   // The ark rests while the water still covers everything; then the mountains show; then the earth dries.
-  { sceneId: "end-grounding", verse: "8:1", camera: { center: [ararat[0] - 20, 28], zoom: 1.6, seconds: 12 }, hold: 14, land: TODAY, flood: { level: COVERED, storm: 0.15 }, relief: 0, depiction: floodRising, ark: arkAt(ararat[0] - 7, ararat[1] - 4) },
-  { sceneId: "end-grounding", verse: "8:4", camera: araratWide, hold: 16, land: TODAY, flood: { level: 5600, storm: 0.1 }, relief: 0, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
-  { sceneId: "end-receding", verse: "8:5", camera: { ...araratWide, zoom: 2.2, bearing: 8 }, hold: 18, land: TODAY, flood: { level: 3200, storm: 0.05 }, relief: 8, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
+  { sceneId: "end-grounding", verse: "8:1", camera: { center: [ararat[0] - 20, 28], zoom: 1.6, seconds: 7 }, hold: 8, land: TODAY, flood: { level: COVERED, storm: 0.15 }, relief: 0, depiction: floodRising, ark: arkAt(ararat[0] - 7, ararat[1] - 4) },
+  { sceneId: "end-grounding", verse: "8:4", camera: araratWide, hold: 10, land: TODAY, flood: { level: 5600, storm: 0.1 }, relief: 0, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
+  { sceneId: "end-receding", verse: "8:5", camera: { ...araratWide, zoom: 2.2, bearing: 8 }, hold: 11, land: TODAY, flood: { level: 3200, storm: 0.05 }, relief: 8, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
   { sceneId: "end-pullback", verse: "8:13", camera: { center: ararat, zoom: 1.5, seconds: 12 }, hold: 18, land: TODAY, flood: { level: 0, storm: 0 }, depiction: floodFalling, ark: arkAt(ararat[0], ararat[1], false) },
   { sceneId: "end-pullback", verse: "8:14", camera: { center: ararat, zoom: 1.5, seconds: 6, driftDegrees: 25 }, hold: 16, ark: arkAt(ararat[0], ararat[1], false) },
   { sceneId: "end-return", verse: "8:4", camera: { center: ararat, zoom: 9, pitch: 66, bearing: -15, seconds: 14 }, hold: 20, ark: arkAt(ararat[0], ararat[1], false) },

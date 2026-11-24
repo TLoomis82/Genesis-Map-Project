@@ -156,7 +156,7 @@ export interface SkyLayer {
 }
 
 /** Metres per second the water level may change at most, so a rise always reads as a rise. */
-const LEVEL_SPEED = 520;
+const LEVEL_SPEED = 884;
 
 export function createCloudLayer(): SkyLayer {
   const scene = new THREE.Scene();
@@ -223,7 +223,7 @@ export function createCloudLayer(): SkyLayer {
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
       const gap = want.level - uniforms.uLevel.value;
-      uniforms.uLevel.value += THREE.MathUtils.clamp(gap * 0.9, -LEVEL_SPEED, LEVEL_SPEED) * dt;
+      uniforms.uLevel.value += THREE.MathUtils.clamp(gap * 1.5, -LEVEL_SPEED, LEVEL_SPEED) * dt;
       uniforms.uStorm.value += (want.storm - uniforms.uStorm.value) * (1 - Math.exp(-dt * 0.5));
       cloudStatus.level = uniforms.uLevel.value;
       cloudStatus.storm = uniforms.uStorm.value;
