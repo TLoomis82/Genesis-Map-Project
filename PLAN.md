@@ -340,5 +340,14 @@ Not done, in order:
   half day and half night. The text gives no date, so the arrangement is labelled illustration. At true size both
   are about half a degree across, so they are small. Maths checked against a known camera; NOT seen on Mapbox.
   Sun and moon are drawn only on the day 4 beats for now.
+- Hands on the main line (every one labelled on screen):
+  - the deep: swipe the waters; day 1: drag sideways to carry the light round; day 2: drag up to lift the sky off
+    the waters (`mode` in `src/opening/spaceOpening.ts`). Seen working here.
+  - day 3: slider "Draw the waters back"; day 4: sliders "Turn the earth under the sun" and "Move the moon through
+    its month"; the flood: slider "Day N of the flood" from day 1 to 371, which sets the verse and moves the water
+    and the ark between verses (`floodOn` in `src/story/beats.ts`; days 77 and 113 for 7:19 and 7:20 are
+    illustration, the rest are the text's). The sliders are seen here; their effect on the globe is NOT.
+  - Still to do from the list: tap for life on days 5 and 6; drag the water down at Ararat (the flood slider
+    already covers it); hold for wind on the deep.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

@@ -174,6 +174,8 @@ interface Props {
   onSelect: (id: string) => void;
   /** Where the ark is for the current beat, or null when it is not shown. */
   ark?: { at: [number, number]; afloat: boolean } | null;
+  /** True while the ark is being moved by hand: it then follows closely instead of taking the whole beat. */
+  arkQuick?: boolean;
   /** Rings to tap, for the front door: each opens a part of the story. */
   doors?: Door[];
   openDoor?: string | null;
@@ -199,7 +201,7 @@ export interface Door {
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -447,7 +449,7 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
   const arkLng = ark?.at[0];
   const arkLat = ark?.at[1];
   const arkAfloat = ark?.afloat ?? false;
-  const arkSeconds = Math.max(camera?.seconds ?? 8, hold);
+  const arkSeconds = arkQuick ? 0.7 : Math.max(camera?.seconds ?? 8, hold);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;

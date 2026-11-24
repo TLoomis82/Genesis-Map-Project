@@ -1,5 +1,6 @@
 import { spaceSteps } from "../opening/spaceSteps.ts";
 import { arrange, type Sky } from "../data/astronomy.ts";
+import { floodDay, floodEvents } from "../data/chronology.ts";
 import type { Depiction } from "../opening/steps.ts";
 import { kjv } from "../data/kjv.ts";
 import { scenes } from "../data/scenes.ts";
@@ -166,7 +167,11 @@ interface PlanBeat {
 //   1:16  day over the land; the moon stands just clear of the earth's edge, nearly full
 //   1:18  the view closes in again on the land, half in day and half in night
 // The view pulls back for the first two so that there is room beside the earth on a phone as well.
-const skyAt = (subsolarLng: number): Sky => arrange({ sunLongitude: 0, elongation: 172, node: 208, subsolarLng });
+/** How far the moon is round from the sun in the story's arrangement, in degrees (180 would be full). */
+export const MOON_ROUND = 172;
+/** The story's sky at any hour (which longitude faces the sun) and any day of the moon's month. */
+export const skyWith = (subsolarLng: number, moonRound = MOON_ROUND): Sky => arrange({ sunLongitude: 0, elongation: moonRound, node: 208, subsolarLng });
+const skyAt = (subsolarLng: number): Sky => skyWith(subsolarLng);
 
 const landAppears: Depiction = {
   badge: "Model",
@@ -251,3 +256,43 @@ export const chapters = scenes
   .filter((c) => c.first >= 0);
 
 export const FIRST_GLOBE_BEAT = openingBeats.length;
+
+// ---------------------------------------------------------------------------------------------
+// The flood by day, for the slider. Each key is a verse of the flood with the day it falls on.
+// Days with a date in the text come from src/data/chronology.ts; 7:17 is day 40 and 7:24 day 150 by
+// the text's own counts. 7:19 and 7:20 have no day: they are set evenly between, which is illustration.
+
+const dayOf = (id: string) => floodDay(floodEvents.find((e) => e.id === id)!.date!);
+const FLOOD_DAYS: [string, number][] = [
+  ["7:11", dayOf("start")],
+  ["7:17", 40],
+  ["7:19", 77],
+  ["7:20", 113],
+  ["7:24", 150],
+  ["8:4", dayOf("rested")],
+  ["8:5", dayOf("tops-seen")],
+  ["8:13", dayOf("waters-dried")],
+  ["8:14", dayOf("earth-dry")],
+];
+export const floodKeys = FLOOD_DAYS.map(([verse, day]) => ({ day, beat: beats.findIndex((b) => b.reference === `Genesis ${verse}` && b.ark !== undefined) })).filter((k) => k.beat >= 0);
+export const LAST_FLOOD_DAY = floodKeys[floodKeys.length - 1].day;
+
+/** The flood on a given day: the verse it belongs to, and the water and the ark between that verse and the next. */
+export function floodOn(day: number): { beat: number; flood: { level: number; storm: number }; ark: ArkPlace } {
+  let i = 0;
+  while (i < floodKeys.length - 2 && day >= floodKeys[i + 1].day) i++;
+  const a = floodKeys[i];
+  const b = floodKeys[i + 1];
+  const k = Math.max(0, Math.min(1, (day - a.day) / Math.max(b.day - a.day, 1)));
+  const from = beats[a.beat];
+  const to = beats[b.beat];
+  const f0 = from.flood ?? { level: 0, storm: 0 };
+  const f1 = to.flood ?? { level: 0, storm: 0 };
+  const p0 = from.ark!;
+  const p1 = to.ark!;
+  return {
+    beat: k >= 1 ? b.beat : a.beat,
+    flood: { level: f0.level + (f1.level - f0.level) * k, storm: f0.storm + (f1.storm - f0.storm) * k },
+    ark: { at: [p0.at[0] + (p1.at[0] - p0.at[0]) * k, p0.at[1] + (p1.at[1] - p0.at[1]) * k], afloat: k < 1 ? p0.afloat || p1.afloat : p1.afloat },
+  };
+}

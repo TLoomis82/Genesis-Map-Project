@@ -1637,3 +1637,43 @@ body,
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
   white-space: nowrap;
 }
+
+/* What the hand can do on the globe at this verse: one or two labelled sliders, just above the controls. */
+.hand-panel {
+  position: fixed;
+  left: 50%;
+  bottom: calc(82px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  width: min(640px, calc(100% - 28px));
+  padding: 8px 16px 10px;
+  border: 1px solid rgba(251, 238, 203, 0.35);
+  border-radius: 16px;
+  background: rgba(8, 13, 28, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.hand-panel label {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #fbeecb;
+  font: italic 13.5px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+.hand-panel input {
+  width: 100%;
+  accent-color: #eeb04a;
+}
+.verse.has-hand {
+  bottom: calc(158px + env(safe-area-inset-bottom));
+}
+@media (max-width: 700px) {
+  .verse.has-hand {
+    bottom: calc(236px + env(safe-area-inset-bottom));
+  }
+}

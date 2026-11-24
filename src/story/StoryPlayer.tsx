@@ -5,7 +5,7 @@ import { features } from "../data/features.ts";
 import { scenes } from "../data/scenes.ts";
 import type { MapFeature } from "../data/types.ts";
 import { useFps } from "../useFps.ts";
-import { beats, chapters, FIRST_GLOBE_BEAT, UNDER_WATER } from "./beats.ts";
+import { beats, chapters, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, MOON_ROUND, skyWith, UNDER_WATER } from "./beats.ts";
 import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
@@ -35,6 +35,14 @@ const firstGlobe = beats[FIRST_GLOBE_BEAT];
 /** While the opening plays, the globe waits underneath it with all its land under water. */
 const WAITING = { level: UNDER_WATER, storm: 0 };
 const NO_DRILLS: { scene: string; label: string }[] = [];
+/** What the hand can do on the waters at each verse of the opening, and the label that says so. */
+const HAND: Record<string, { mode: "swipe" | "light" | "vault"; hint: string }> = {
+  swipe: { mode: "swipe", hint: "Swipe the waters" },
+  light: { mode: "light", hint: "Drag sideways to carry the light round" },
+  vault: { mode: "vault", hint: "Drag up to lift the sky off the waters" },
+};
+const FIRST_FLOOD_BEAT = floodKeys[0].beat;
+const LAST_FLOOD_BEAT = floodKeys[floodKeys.length - 1].beat;
 
 interface Props {
   /** The beat to open on. */
@@ -75,6 +83,34 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const noPins = useMemo<MapFeature[]>(() => [], []);
   const selected = sceneFeatures.find((f) => f.id === selectedId) ?? features.find((f) => f.id === selectedId && (!textOnly || f.tier === "text"));
   const Explore = exploreModes[beat.sceneId];
+
+  // What the viewer has set by hand on this verse. Each is null until touched, and is let go when the verse changes.
+  const [drawn, setDrawn] = useState<number | null>(null); // day 3: how far the waters are drawn back, 0 to 1
+  const [hour, setHour] = useState<number | null>(null); // day 4: how far the earth has been turned, in degrees
+  const [month, setMonth] = useState<number | null>(null); // day 4: how far round from the sun the moon is
+  const [floodDayByHand, setFloodDayByHand] = useState<number | null>(null);
+  const sliding = useRef(false);
+  useEffect(() => {
+    setDrawn(null);
+    setHour(null);
+    setMonth(null);
+    if (sliding.current) sliding.current = false;
+    else setFloodDayByHand(null);
+  }, [index]);
+
+  const hand = beat.openingStep === undefined ? null : beat.sceneId === "day-2" ? HAND.vault : beat.sceneId === "day-1" && spaceSteps[beat.openingStep].targets.divide > 0 ? HAND.light : index > 0 ? HAND.swipe : null;
+  useEffect(() => {
+    if (scene.current && hand) scene.current.mode = hand.mode;
+    setSwiped(false);
+  }, [hand]);
+
+  const inFlood = index >= FIRST_FLOOD_BEAT && index <= LAST_FLOOD_BEAT;
+  const floodNow = floodDayByHand === null ? null : floodOn(floodDayByHand);
+  const floodDayShown = floodDayByHand ?? floodKeys.reduce((day, k) => (k.beat <= index ? k.day : day), floodKeys[0].day);
+  const onDayThree = onGlobe && beat.sceneId === "day-3" && beat.flood !== undefined;
+  const drawnShown = drawn ?? (beat.flood ? 1 - Math.sqrt(beat.flood.level / UNDER_WATER) : 1);
+  const skyNow = beat.sky && (hour !== null || month !== null) ? skyWith(beat.sky.sun[0] - (hour ?? 0), month ?? MOON_ROUND) : (beat.sky ?? null);
+  const floodShown = floodNow ? floodNow.flood : drawn !== null ? { level: UNDER_WATER * (1 - drawn) ** 2, storm: 0 } : (beat.flood ?? null);
 
   const go = useCallback((to: number) => setIndex(Math.max(0, Math.min(to, beats.length - 1))), []);
   const drillFromHere = useCallback((sceneId: string) => onDrill?.(sceneId, index), [onDrill, index]);
@@ -185,9 +221,9 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           camera={beat.camera ?? null}
           hold={beat.hold}
           land={(beat.camera ? beat.land : firstGlobe.land) ?? null}
-          flood={onGlobe ? (beat.flood ?? null) : WAITING}
+          flood={onGlobe ? floodShown : WAITING}
           stars={onGlobe ? beat.stars : 0}
-          sky={onGlobe ? (beat.sky ?? null) : null}
+          sky={onGlobe ? skyNow : null}
           drills={onGlobe ? beat.drills : NO_DRILLS}
           onDrill={drillFromHere}
           relief={beat.relief ?? null}
@@ -195,7 +231,8 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           pins={onGlobe ? sceneFeatures : noPins}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          ark={onGlobe ? (beat.ark ?? null) : null}
+          ark={onGlobe ? (floodNow?.ark ?? beat.ark ?? null) : null}
+          arkQuick={floodNow !== null}
         />
       )}
       <canvas ref={canvas} className={`opening-canvas ${faded ? "is-faded" : ""}`} />
@@ -211,7 +248,11 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
           ))}
         </div>
       )}
-      {!onGlobe && index > 0 && !swiped && <p className="opening-hint">Swipe the waters</p>}
+      {!onGlobe && hand && !swiped && (
+        <p className="opening-hint" key={hand.mode}>
+          {hand.hint}
+        </p>
+      )}
 
       <div className="story-top">
         {onHome && (
@@ -277,7 +318,53 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
 
       {selected && <InfoCard feature={selected} textOnly={textOnly} onSelect={setSelectedId} onClose={() => setSelectedId(null)} />}
 
-      <div className={`verse ${selected ? "is-behind-card" : ""}`} key={index}>
+      {/* What the hand can do on the globe at this verse. Always labelled. */}
+      {(onDayThree || (onGlobe && beat.sky) || inFlood) && (
+        <div className="hand-panel">
+          {onDayThree && (
+            <label>
+              <span>Draw the waters back</span>
+              <input type="range" min={0} max={1} step={0.005} value={drawnShown} onChange={(e) => (setPlaying(false), setDrawn(Number(e.target.value)))} />
+            </label>
+          )}
+          {onGlobe && beat.sky && (
+            <>
+              <label>
+                <span>Turn the earth under the sun</span>
+                <input type="range" min={-180} max={180} step={1} value={hour ?? 0} onChange={(e) => (setPlaying(false), setHour(Number(e.target.value)))} />
+              </label>
+              <label>
+                <span>Move the moon through its month</span>
+                <input type="range" min={0} max={360} step={1} value={month ?? MOON_ROUND} onChange={(e) => (setPlaying(false), setMonth(Number(e.target.value)))} />
+              </label>
+            </>
+          )}
+          {inFlood && (
+            <label>
+              <span>
+                Day {Math.round(floodDayShown)} of the flood: drag through the year
+              </span>
+              <input
+                type="range"
+                min={1}
+                max={LAST_FLOOD_DAY}
+                step={1}
+                value={floodDayShown}
+                onChange={(e) => {
+                  const day = Number(e.target.value);
+                  const at = floodOn(day).beat;
+                  setPlaying(false);
+                  sliding.current = at !== index;
+                  setFloodDayByHand(day);
+                  if (at !== index) setIndex(at);
+                }}
+              />
+            </label>
+          )}
+        </div>
+      )}
+
+      <div className={`verse ${selected ? "is-behind-card" : ""} ${onDayThree || (onGlobe && beat.sky) || inFlood ? "has-hand" : ""}`} key={index}>
         <p className="verse-text">{beat.text}</p>
         <p className="verse-ref">
           <span className="tier-badge">Text</span>

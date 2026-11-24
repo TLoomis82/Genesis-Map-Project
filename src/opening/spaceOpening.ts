@@ -127,12 +127,23 @@ export class SpaceOpening {
   };
   private now: SpaceTargets = { water: 0, light: 0, divide: 0, vault: 0, turn: 0 };
   private want: SpaceTargets = { ...this.now };
+  /** True while the hand has moved the light or the sky: the picture then follows the hand more closely. */
+  private byHand = false;
   private raf = 0;
   private last = 0;
   private nextRipple = 0;
   private lastRipple = 0;
   private down = false;
-  /** Called when the viewer swipes the water. */
+  private lastX = 0;
+  private lastY = 0;
+  /**
+   * What a drag does besides setting rings going on the water:
+   *   swipe  nothing more
+   *   light  a sideways drag carries the light round (evening and morning, by hand)
+   *   vault  a drag up lifts the mist off the waters, and a drag down lets it settle again
+   */
+  mode: "swipe" | "light" | "vault" = "swipe";
+  /** Called when the viewer does what the current mode offers. */
   onTouch: (() => void) | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -163,6 +174,7 @@ export class SpaceOpening {
 
   setTargets(t: SpaceTargets) {
     this.want = { ...t };
+    this.byHand = false;
   }
 
   snapTo(t: SpaceTargets) {
@@ -172,13 +184,32 @@ export class SpaceOpening {
 
   private onDown = (e: PointerEvent) => {
     this.down = true;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+    this.canvas.setPointerCapture?.(e.pointerId);
     this.ripple(e);
   };
   private onUp = () => {
     this.down = false;
   };
   private onMove = (e: PointerEvent) => {
-    if (this.down) this.ripple(e);
+    if (!this.down) return;
+    const dx = e.clientX - this.lastX;
+    const dy = e.clientY - this.lastY;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+    const across = (this.uniforms.uRadius.value / this.renderer.getPixelRatio()) * 2; // the width of the waters on screen
+    if (this.mode === "light" && Math.abs(dx) > 0) {
+      this.want.turn -= dx / (across * 1.6);
+      this.byHand = true;
+      this.onTouch?.();
+    }
+    if (this.mode === "vault" && Math.abs(dy) > 0) {
+      this.want.vault = Math.max(0, Math.min(1, this.want.vault - dy / (across * 0.7)));
+      this.byHand = true;
+      this.onTouch?.();
+    }
+    this.ripple(e);
   };
 
   /** A swipe sets a ring going from the point on the water under the hand. */
@@ -194,7 +225,7 @@ export class SpaceOpening {
     this.lastRipple = time;
     this.uniforms.uRip.value[this.nextRipple].set(x, y, Math.sqrt(1 - r2), time);
     this.nextRipple = (this.nextRipple + 1) % RIPPLES;
-    this.onTouch?.();
+    if (this.mode === "swipe") this.onTouch?.();
   }
 
   private frame = (clock: number) => {
@@ -209,8 +240,8 @@ export class SpaceOpening {
     this.now.water += (this.want.water - this.now.water) * k;
     this.now.light += (this.want.light - this.now.light) * k;
     this.now.divide += (this.want.divide - this.now.divide) * k;
-    this.now.vault += (this.want.vault - this.now.vault) * (1 - Math.exp(-dt * 0.45));
-    this.now.turn += (this.want.turn - this.now.turn) * (1 - Math.exp(-dt * 0.38));
+    this.now.vault += (this.want.vault - this.now.vault) * (1 - Math.exp(-dt * (this.byHand ? 3.5 : 0.45)));
+    this.now.turn += (this.want.turn - this.now.turn) * (1 - Math.exp(-dt * (this.byHand ? 5 : 0.38)));
     const u = this.uniforms;
     u.uTime.value += dt;
     u.uWater.value = this.now.water;
