@@ -294,4 +294,10 @@ Not done, in order:
   in, with no pencil or brush pictured.
 - Days 3 and 4 are hand-drawn and live (`src/illustrated/Land.tsx`), with season tabs on day 4. Creation days 1 to 4 and
   the man from the dust now all exist in the hand-drawn style; the earlier realistic versions remain under `?view=story`.
-- Next: day 5 and day 6 hand-drawn; the rest of Eden; then the front door on the detailed globe and the handoff to it.
+- Interaction labels: every hand-drawn scene now says on the drawing what can be touched (`Hints` in
+  `src/illustrated/kit.tsx`). A tag clears once the viewer has done it; "Show tips" brings them back. The moment
+  strip and the season tabs carry standing labels. Rule for new scenes: no interaction without a label.
+- Day 5 and day 6 built hand-drawn and live (`src/illustrated/Creatures.tsx`). Checked as stills and with scripted
+  drags and taps in headless Chromium, desktop and phone size. Not yet checked: frame rate on a real iPhone.
+- Next: the rest of Eden (garden and river, naming, the woman, the fall and the flaming sword); then the front door
+  on the detailed globe and the handoff to it.

@@ -26,7 +26,7 @@ const X1 = 1750;
 const columnX = (i: number) => X0 + (i / (COLUMNS - 1)) * (X1 - X0);
 
 /** The top of the land at x, when it has risen by `rise` (0 = still under the sea, 1 = fully up). */
-function landY(x: number, rise: number): number {
+export function landY(x: number, rise: number): number {
   const k = (x - 800) / 590;
   const bump = Math.pow(Math.max(0, 1 - k * k), 1.15);
   return SEA + 34 - rise * bump * (158 + 22 * Math.sin(x / 83) + 12 * Math.sin(x / 31));

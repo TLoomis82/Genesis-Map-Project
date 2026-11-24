@@ -136,6 +136,9 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Touch:** swipe to scatter a shoal or turn a flock.
 - **Labels:** Text for sea creatures, great sea creatures and winged birds. Which animals are drawn is Illustration.
 - **Build:** shoals and flocks as many small moving shapes, not modelled animals. Cheap, and reads well.
+- **Status (2026-11-24): built, hand-drawn and live** (`src/illustrated/Creatures.tsx`). Moments: the waters swarm,
+  birds above, great whales, be fruitful (the shoals and the flock multiply). Labelled on the drawing: "Swipe the
+  water to scatter the shoal", "Drag the sky and the birds follow", "Tap the great creature" (it breaches and spouts).
 
 ### Day 6: land animals, then humankind (Gen 1:24-31)
 - **Watch:** herds spread through the day-3 valley, seen from the flight path. Then two figures of light stand on the
@@ -143,6 +146,9 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Touch:** tap a kind (cattle, creeping thing, beast of the earth: the three the verse names) to follow it.
 - **Labels:** Text for the three kinds and for male and female in God's image. The figures' look is Illustration.
 - **Note:** day 6 gives the wide view. The close view of Adam and Eve is in Eden, where Genesis 2 tells it.
+- **Status (2026-11-24): built, hand-drawn and live** (same file). Moments: cattle, creeping things, beasts of the
+  earth, humankind (two figures of light on the height). Labelled on the drawing: "Drag along the land and the
+  animals follow", "Tap an animal and it leaps", "Swipe the sea".
 
 ### Day 7: rest (Gen 2:1-3)
 - **Watch:** the whole hub, finished, one slow turn. No cuts, no new motion.

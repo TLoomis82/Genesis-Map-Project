@@ -3,6 +3,7 @@ import StoryBoard from "./board/StoryBoard.tsx";
 import StoryPlayer from "./story/StoryPlayer.tsx";
 import EdenMan from "./illustrated/EdenMan.tsx";
 import Waters, { type WatersChapter } from "./illustrated/Waters.tsx";
+import Creatures, { type CreatureChapter } from "./illustrated/Creatures.tsx";
 import Land, { type LandChapter } from "./illustrated/Land.tsx";
 import GlobeTest from "./spike/GlobeTest.tsx";
 import { beats } from "./story/beats.ts";
@@ -44,6 +45,7 @@ export default function App() {
   if (view === "scene") {
     const home = () => setView("board");
     if (scene === "eden-man") return <EdenMan onHome={home} />;
+    if (scene === "day-5" || scene === "day-6") return <Creatures key={scene} chapter={scene as CreatureChapter} onHome={home} />;
     if (scene === "day-3" || scene === "day-4") return <Land key={scene} chapter={scene as LandChapter} onHome={home} />;
     return <Waters key={scene} chapter={scene as WatersChapter} onHome={home} />;
   }
