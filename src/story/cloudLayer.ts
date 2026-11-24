@@ -1,8 +1,11 @@
 // A thin shell of slow-moving cloud around the Mapbox globe, drawn as a three.js custom layer.
 //
-// The clouds are decoration: they make the globe read as a living world from space. They are not
-// a claim about weather at any point in the story. They fade out as the camera comes down
-// (above zoom 3.5 to 4.5), so close views of the land are clear.
+// It draws three things, all decoration, none of them a claim about the story:
+//   - clouds that drift slowly,
+//   - the soft shadows those clouds cast on the surface,
+//   - a day side and a night side, with a soft edge between them.
+// They make the globe read as a living, sunlit world from space. All of it fades out as the camera
+// comes down (above zoom 3.5 to 4.5), so close views of the land are clear and evenly lit.
 //
 // The drawing method is the one proved in the M0 globe test (src/spike/globeLayerTest.ts): the
 // camera is Mapbox's matrix times its globe-to-mercator matrix, positions are in Mapbox's globe
@@ -18,6 +21,13 @@ const SHELL_HEIGHT = 1.008;
 const FADE_FROM = 3.5;
 const FADE_TO = 4.5;
 
+/** Unit vector toward a longitude and latitude, in Mapbox globe coordinates (y points south). */
+function sunDirection(lng: number, lat: number): THREE.Vector3 {
+  const la = (lat * Math.PI) / 180;
+  const lo = (lng * Math.PI) / 180;
+  return new THREE.Vector3(Math.cos(la) * Math.sin(lo), -Math.sin(la), Math.cos(la) * Math.cos(lo));
+}
+
 const vertexShader = /* glsl */ `
   varying vec3 vPos;
   void main() {
@@ -32,6 +42,8 @@ const fragmentShader = /* glsl */ `
   uniform float uOpacity;
   uniform vec4 uHorizon;   // plane: a point p faces the camera when dot(n, p) + d >= 0
   uniform float uOctaves;
+  uniform vec3 uSun;       // direction to the sun, in globe coordinates
+  uniform float uShadows;  // 1 = draw cloud shadows, 0 = skip them (phones)
   varying vec3 vPos;
 
   float hash(vec3 p) {
@@ -60,26 +72,38 @@ const fragmentShader = /* glsl */ `
     return sum;
   }
 
-  void main() {
-    // Hide the half of the shell that is behind the globe.
-    float facing = (dot(uHorizon.xyz, vPos) + uHorizon.w) / length(vPos);
-    if (facing < 0.0) discard;
-    float rim = smoothstep(0.0, 0.10, facing);   // thin out toward the edge of the disc
-
+  // How much cloud there is in direction n (0..1), before any fading.
+  float cloudAt(vec3 n) {
     // The whole field turns slowly about the poles (the globe's y axis), and its shape drifts.
-    vec3 n = normalize(vPos);
     float a = uTime * 0.006;
     vec3 p = vec3(n.x * cos(a) - n.z * sin(a), n.y, n.x * sin(a) + n.z * cos(a));
     vec3 warp = vec3(fbm(p * 2.1 + uTime * 0.004), fbm(p * 2.1 + 31.7), fbm(p * 2.1 - 12.3));
     float density = fbm(p * 4.6 + warp * 1.9 + vec3(0.0, uTime * 0.003, 0.0));
     // Broad weather systems decide where cloud gathers; the finer field gives it its shape.
     float systems = fbm(p * 1.3 + 4.0);
-    float cover = smoothstep(0.47, 0.70, density + (systems - 0.5) * 0.35) * rim;
-    cover *= 0.62 + 0.38 * fbm(p * 13.0 + warp * 3.0);   // break up the solid middles
-    if (cover * uOpacity < 0.004) discard;
+    float cover = smoothstep(0.47, 0.70, density + (systems - 0.5) * 0.35);
+    return cover * (0.62 + 0.38 * fbm(p * 13.0 + warp * 3.0));   // break up the solid middles
+  }
 
-    vec3 color = mix(vec3(0.80, 0.85, 0.92), vec3(1.0), smoothstep(0.2, 0.9, cover));
-    gl_FragColor = vec4(color, cover * 0.9 * uOpacity);
+  void main() {
+    // Hide the half of the shell that is behind the globe.
+    float facing = (dot(uHorizon.xyz, vPos) + uHorizon.w) / length(vPos);
+    if (facing < 0.0) discard;
+    float rim = smoothstep(0.0, 0.10, facing);   // thin the clouds out toward the edge of the disc
+
+    vec3 n = normalize(vPos);
+    float day = smoothstep(-0.22, 0.38, dot(n, uSun));   // 1 in full sun, 0 well into the night side
+
+    float cloud = cloudAt(n) * rim * 0.9;
+    // A cloud's shadow falls a little way from it, on the side away from the sun.
+    float shadow = uShadows > 0.5 ? cloudAt(normalize(n + uSun * 0.035)) * 0.34 * day : 0.0;
+    float night = (1.0 - day) * 0.62;
+    float dark = 1.0 - (1.0 - shadow) * (1.0 - night);
+
+    vec3 cloudColor = mix(vec3(0.80, 0.85, 0.92), vec3(1.0), smoothstep(0.2, 0.9, cloud)) * (0.22 + 0.78 * day);
+    float alpha = (cloud + dark * (1.0 - cloud)) * uOpacity;
+    if (alpha < 0.004) discard;
+    gl_FragColor = vec4(cloudColor * cloud / max(cloud + dark * (1.0 - cloud), 0.0001), alpha);
   }
 `;
 
@@ -96,6 +120,8 @@ export function createCloudLayer(): CustomLayerInterface {
     uOpacity: { value: 0 },
     uHorizon: { value: new THREE.Vector4(0, 0, 1, 1e9) },
     uOctaves: { value: small ? 4 : 5 },
+    uSun: { value: sunDirection(-12, 16) },
+    uShadows: { value: small ? 0 : 1 },
   };
   const geometry = new THREE.SphereGeometry(GLOBE_RADIUS * SHELL_HEIGHT, 96, 64);
   const material = new THREE.ShaderMaterial({

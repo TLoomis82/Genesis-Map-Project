@@ -204,3 +204,7 @@ Still to do in M3:
 - Clouds added (`src/story/cloudLayer.ts`): a slow shell of cloud around the globe as a three.js custom layer, using
   the M0 method. Decoration only. Fades out between zoom 3.5 and 4.5. `?clouds=0` switches it off. Tested on a
   stand-in globe; not yet seen on Mapbox. It keeps the map redrawing every frame while shown: check phone speed.
+- Confirmed on Tyler's Mac (2026-11-23): draped land, clouds and readout all run at 120 fps. The clouds needed
+  both faces drawn, because Mapbox's globe coordinates mirror the sphere.
+- Sky layer now also draws cloud shadows (not on phones) and a day and night side. Whole-globe views are sized
+  to the screen and lifted clear of the verse. Not yet seen on Mapbox.

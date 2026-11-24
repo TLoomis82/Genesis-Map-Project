@@ -17,6 +17,9 @@ const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 // Labels and borders belong to the modern world, not to Genesis.
 const HIDDEN = ["showPlaceLabels", "showRoadLabels", "showPointOfInterestLabels", "showTransitLabels", "showAdminBoundaries"];
 
+/** The zoom the story's whole-globe views were written at; they are rescaled to fit the screen. */
+const WHOLE_GLOBE_ZOOM = 1.4;
+
 const easeInOut = (t: number) => t * t * (3 - 2 * t);
 
 // M2 test: add ?land=200 to the address to cover today's map with a land model.
@@ -186,9 +189,16 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || !camera) return;
+    // Whole-globe views are sized to the screen: the globe fills about four fifths of the space above
+    // the verse, on a wide monitor and on a phone alike. Close views keep the zoom they were given.
+    const box = m.getContainer();
+    const lift = box.clientHeight * 0.2; // room for the verse underneath
+    const fitted = Math.log2((0.8 * Math.min(box.clientWidth, box.clientHeight - lift) * Math.PI) / 512);
+    const wide = 1 - Math.min(Math.max((camera.zoom - 2.5) / 1.5, 0), 1); // 1 for whole-globe views, 0 from zoom 4
     m.easeTo({
       center: camera.center,
-      zoom: camera.zoom,
+      zoom: camera.zoom + (fitted - WHOLE_GLOBE_ZOOM) * wide,
+      padding: { top: 0, left: 0, right: 0, bottom: lift * wide },
       pitch: camera.pitch ?? 0,
       bearing: camera.bearing ?? 0,
       duration: camera.seconds * 1000,
