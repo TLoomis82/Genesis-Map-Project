@@ -25,6 +25,9 @@ const GLOBE_LEAD = 4;
 // For checks and screenshots only: with ?debug in the address, the page exposes a way to jump
 // to a beat and run the opening scene forward without waiting.
 const DEBUG = new URLSearchParams(window.location.search).has("debug");
+// While a land model is being tested (?land=...), the "today's continents" placeholder note would be wrong;
+// the globe shows its own note about the model instead.
+const LAND_TEST = new URLSearchParams(window.location.search).has("land");
 
 export default function StoryPlayer() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -266,7 +269,7 @@ export default function StoryPlayer() {
           <span className="tier-badge">Text</span>
           {beat.reference} (KJV)
         </p>
-        {beat.depiction && (
+        {beat.depiction && !(onGlobe && LAND_TEST) && (
           <p className="verse-depiction">
             {beat.depiction.badge && <span className="tier-badge tier-scholarly">{beat.depiction.badge}</span>}
             {beat.depiction.note}
