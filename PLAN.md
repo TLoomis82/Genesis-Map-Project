@@ -307,5 +307,10 @@ Not done, in order:
   On the globe the ark is one marker (`ark` on each flood beat in `src/story/beats.ts`, drawn by `GlobeStage`) that
   glides to its place for each beat and rests at the Ararat region's centre from 8:4 on. Feature `ark-afloat`
   carries the note. The globe half is written but NOT seen running: no Mapbox here. Tyler to check on his Mac.
+- Front door on the detailed globe (`src/board/StoryBoard.tsx`, rings drawn by `GlobeStage` from `at`/`side` on each
+  target in `src/board/board.ts`). With a Mapbox token the hub's frame holds the live globe: tap a ring and the
+  camera eases in and the scene card opens; "Whole world" eases back out. No token, or `?hub=flat`: the flat
+  picture as before. Rings for the days of creation and the flood are placed for layout only and the header says
+  so. NOT seen running (no Mapbox here): ring spacing, label overlap and phone layout need Tyler's check.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.

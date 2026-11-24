@@ -174,12 +174,25 @@ interface Props {
   onSelect: (id: string) => void;
   /** Where the ark is for the current beat, or null when it is not shown. */
   ark?: { at: [number, number]; afloat: boolean } | null;
+  /** Rings to tap, for the front door: each opens a part of the story. */
+  doors?: Door[];
+  openDoor?: string | null;
+  onDoor?: (id: string) => void;
+  /** Share of the height kept clear under the globe for words. The story keeps about a quarter. */
+  lift?: number;
+}
+
+export interface Door {
+  id: string;
+  label: string;
+  at: [number, number];
+  side: "top" | "bottom" | "left" | "right";
 }
 
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, doors, openDoor = null, onDoor, lift: liftShare = 0.26 }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -245,7 +258,7 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
     // the verse, on a wide monitor and on a phone alike. Close views keep the zoom they were given.
     m.setMaxZoom(shownLand ? MODEL_MAX_ZOOM : 22);
     const box = m.getContainer();
-    const lift = box.clientHeight * 0.26; // room for the verse underneath
+    const lift = box.clientHeight * liftShare; // room for the verse underneath
     const fitted = Math.log2((0.86 * Math.min(box.clientWidth, box.clientHeight - lift) * Math.PI) / 512);
     const wide = 1 - Math.min(Math.max((camera.zoom - 2.5) / 1.5, 0), 1); // 1 for whole-globe views, 0 from zoom 4
     m.easeTo({
@@ -267,7 +280,7 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       });
     }, camera.seconds * 1000);
     return () => window.clearTimeout(timer);
-  }, [camera, hold, ready, shownLand]);
+  }, [camera, hold, ready, shownLand, liftShare]);
 
   // The land for the current beat. Clouds are added first (above), so the land always sits beneath them.
   useEffect(() => {
@@ -321,6 +334,25 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
       });
     return () => markers.forEach((marker) => marker.remove());
   }, [pins, selectedId, onSelect, ready]);
+
+  // The front door's rings.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !doors) return;
+    const markers = doors.map((door) => {
+      const el = document.createElement("button");
+      el.className = `door door-${door.side} ${door.id === openDoor ? "is-open" : ""}`;
+      el.setAttribute("aria-label", door.label);
+      el.innerHTML = '<span class="door-pulse"></span><span class="door-ring"></span><span class="door-label"></span>';
+      el.querySelector(".door-label")!.textContent = door.label;
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onDoor?.(door.id);
+      });
+      return new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat(door.at).addTo(m);
+    });
+    return () => markers.forEach((marker) => marker.remove());
+  }, [doors, openDoor, onDoor, ready]);
 
   // The ark. One marker, moved to its place for each beat: carried over the water while the flood
   // is up, then at rest in the mountains of Ararat. The marker moves; the camera is not touched.

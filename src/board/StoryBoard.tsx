@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import GlobeStage, { type Door } from "../story/GlobeStage.tsx";
+import type { GlobeCamera } from "../story/beats.ts";
+import type { MapFeature } from "../data/types.ts";
 import hubPicture from "./hub.svg?raw";
 import { moments, storyOrder, targets, type BoardScene } from "./board.ts";
 import { kjv } from "../data/kjv.ts";
@@ -10,6 +13,14 @@ import { kjv } from "../data/kjv.ts";
 //
 // This is the plan for the finished piece and a rough of its front door. The hub here is a flat
 // picture; in the finished piece it is a live 3D scene.
+
+// With a Mapbox token the front door is the detailed globe, with a ring on it for each part of the
+// story. Without one (or with ?hub=flat) it is the flat picture of the world as Genesis pictures it.
+const ON_GLOBE = Boolean(import.meta.env.VITE_MAPBOX_TOKEN) && new URLSearchParams(window.location.search).get("hub") !== "flat";
+const HOME: [number, number] = [42, 22];
+const DOORS: Door[] = targets.map((t) => ({ id: t.id, label: t.label, at: t.at, side: t.side }));
+const NO_PINS: MapFeature[] = [];
+const nothing = () => {};
 
 const W = 1600;
 const H = 1000;
@@ -28,7 +39,13 @@ export default function StoryBoard({ onPlay }: Props) {
   const target = current?.target ?? null;
 
   const go = (sceneId: string) => setAt(storyOrder.findIndex((s) => s.scene.id === sceneId));
-  const openTarget = (targetId: string) => setAt(storyOrder.findIndex((s) => s.target.id === targetId));
+  const openTarget = useCallback((targetId: string) => setAt(storyOrder.findIndex((s) => s.target.id === targetId)), []);
+  // One eased move in to the tapped ring, and one back out.
+  const targetId = target?.id ?? null;
+  const camera = useMemo<GlobeCamera>(() => {
+    const door = DOORS.find((d) => d.id === targetId);
+    return door ? { center: door.at, zoom: 3.3, seconds: 2.4 } : { center: HOME, zoom: 1.4, seconds: 2.4 };
+  }, [targetId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -51,12 +68,17 @@ export default function StoryBoard({ onPlay }: Props) {
   return (
     <div className="board">
       <header className="board-head">
-        <h1>The world as Genesis pictures it</h1>
-        <p>Tap a ring to move in to a scene. This is the storyboard: the plan for each scene, and a way into the ones already built.</p>
+        <h1>{ON_GLOBE ? "Genesis, from the beginning to the ark at rest" : "The world as Genesis pictures it"}</h1>
+        <p>
+          {ON_GLOBE
+            ? "Tap a ring on the earth to move in to a scene; drag to turn the globe. The rings for the days of creation and the flood are placed for layout, not as locations."
+            : "Tap a ring to move in to a scene. This is the storyboard: the plan for each scene, and a way into the ones already built."}
+        </p>
       </header>
 
-      <div className="board-stage">
-        <div className="board-picture" style={{ transform: move }}>
+      <div className={`board-stage ${ON_GLOBE ? "is-globe" : ""}`}>
+        {ON_GLOBE && <GlobeStage camera={camera} hold={20} land={null} flood={null} relief={null} startCenter={HOME} pins={NO_PINS} selectedId={null} onSelect={nothing} doors={DOORS} openDoor={targetId} onDoor={openTarget} lift={0} />}
+        <div className="board-picture" style={{ transform: move, display: ON_GLOBE ? "none" : undefined }}>
           <div className="board-art" dangerouslySetInnerHTML={{ __html: hubPicture }} />
           <svg className="board-rings" viewBox={`0 0 ${W} ${H}`} aria-label="Parts of the world to tap">
             {targets.map((t) => (

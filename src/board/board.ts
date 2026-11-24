@@ -32,6 +32,14 @@ export interface BoardTarget {
   /** Position on the hub picture (its drawing is 1600 wide and 1000 tall). */
   x: number;
   y: number;
+  /**
+   * Where the ring sits on the globe front door: [longitude, latitude]. For the days of creation and
+   * the flood these are placed for layout only (spread so they can be told apart), not as locations.
+   * The garden, the way east and Ararat sit near the map's own pins for those places.
+   */
+  at: [number, number];
+  /** Which side of its ring the name sits on, so neighbours do not cover each other. */
+  side: "top" | "bottom" | "left" | "right";
   scenes: BoardScene[];
 }
 
@@ -41,6 +49,8 @@ export const targets: BoardTarget[] = [
     label: "The deep",
     x: 800,
     y: 860,
+    at: [72, -18],
+    side: "bottom",
     scenes: [
       {
         id: "beginning",
@@ -61,6 +71,8 @@ export const targets: BoardTarget[] = [
     label: "Light and dark",
     x: 330,
     y: 430,
+    at: [-2, 34],
+    side: "left",
     scenes: [
       {
         id: "day-1",
@@ -82,6 +94,8 @@ export const targets: BoardTarget[] = [
     label: "The vault and the waters above",
     x: 1262,
     y: 330,
+    at: [48, 68],
+    side: "top",
     scenes: [
       {
         id: "day-2",
@@ -103,6 +117,8 @@ export const targets: BoardTarget[] = [
     label: "Land and plants",
     x: 690,
     y: 628,
+    at: [14, 16],
+    side: "left",
     scenes: [
       {
         id: "day-3",
@@ -124,6 +140,8 @@ export const targets: BoardTarget[] = [
     label: "Sun, moon and stars",
     x: 430,
     y: 300,
+    at: [98, 36],
+    side: "right",
     scenes: [
       {
         id: "day-4",
@@ -146,6 +164,8 @@ export const targets: BoardTarget[] = [
     label: "Sea and sky",
     x: 455,
     y: 690,
+    at: [63, 10],
+    side: "right",
     scenes: [
       {
         id: "day-5",
@@ -167,6 +187,8 @@ export const targets: BoardTarget[] = [
     label: "Animals and humankind",
     x: 938,
     y: 656,
+    at: [33, -6],
+    side: "bottom",
     scenes: [
       {
         id: "day-6",
@@ -188,6 +210,8 @@ export const targets: BoardTarget[] = [
     label: "The whole, at rest",
     x: 800,
     y: 150,
+    at: [84, 56],
+    side: "right",
     scenes: [
       {
         id: "day-7",
@@ -209,6 +233,8 @@ export const targets: BoardTarget[] = [
     label: "The garden",
     x: 800,
     y: 520,
+    at: [47.5, 30.5],
+    side: "bottom",
     scenes: [
       {
         id: "eden-man",
@@ -297,6 +323,8 @@ export const targets: BoardTarget[] = [
     label: "The way east",
     x: 940,
     y: 574,
+    at: [60, 32],
+    side: "right",
     scenes: [
       {
         id: "exile",
@@ -330,6 +358,8 @@ export const targets: BoardTarget[] = [
     label: "The flood and the ark",
     x: 352,
     y: 620,
+    at: [-5, 5],
+    side: "left",
     scenes: [
       {
         id: "ark",
@@ -364,6 +394,8 @@ export const targets: BoardTarget[] = [
     label: "The mountains of Ararat",
     x: 1076,
     y: 580,
+    at: [43.5, 39.5],
+    side: "top",
     scenes: [
       {
         id: "rest-of-ark",

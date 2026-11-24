@@ -65,6 +65,10 @@ So the main stage is the Bible's own cosmos, and the realistic globe with its la
 
 ## The hub: the world as Genesis pictures it
 
+**Status (2026-11-24):** with a Mapbox token the front door is now the detailed globe with a ring for each part of
+the story; the flat picture below is the fallback (`?hub=flat`). Rings for Eden, the way east and Ararat sit near
+the map's pins; the rest are placed for layout only, and the header says so.
+
 One 3D scene, slowly turning, that the viewer can spin and tap.
 
 | Part | From the text | Taps into |
