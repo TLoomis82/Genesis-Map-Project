@@ -10,8 +10,8 @@ before it is built.
 - **The earth stays detailed.** The globe as built (land with relief, sea depths, clouds, day and night) is the world
   you see and tap. It is not redrawn as illustration.
 - **Each hand-drawn scene opens the way a drawing does** (Tyler, 2026-11-24: "like an artist just started drawing the
-  scene"): blank paper; a light pencil sketch; ink over the pencil, line by line; then colour brushed in. The
-  artist's pencil, pen and brush are seen at work. Only then does the scene move. Built into `src/illustrated/kit.tsx`.
+  scene"): blank paper; a light pencil sketch; ink over the pencil, line by line; then colour brushed in. No
+  pencil or brush is shown: it is understood that the scene is being drawn (Tyler). Only then does the scene move. Built into `src/illustrated/kit.tsx`.
 - **Every event you drill into is hand-drawn, and drawn on the fly:** lines draw themselves in as you watch, as if a
   hand were sketching the scene in front of you.
 - **The days before there is a globe (the beginning, days 1 and 2, and on until the earth is finished) are hand-drawn
@@ -115,11 +115,17 @@ One 3D scene, slowly turning, that the viewer can spin and tap.
 - **Labels:** Text for the dividing; Scholarly reading for the vault's form.
 
 ### Day 3: land and plants (Gen 1:9-13)
+- **Status: built, hand-drawn and live** (`src/illustrated/Land.tsx`). The sea draws back from a rising land; grass and herbs
+  are drawn onto it, then seven fruit trees, each with its own fruit. Drag along the land and the plants are drawn in
+  under the hand; the sea still sloshes. This replaces "steer the flight" from the realistic version.
 - **Watch:** land rises; flight up the valley as grass, herbs and fruit trees grow ahead. *Built.*
 - **Touch:** steer the flight.
 - **Labels:** Text for what appears; Illustration for the land's shape, the kinds of fruit and the speed.
 
 ### Day 4: lights (Gen 1:14-19)
+- **Status: built, hand-drawn and live** (same file). The sun rises with rays that never sit still; night falls and the
+  moon and stars are drawn in; the moon wanes and waxes through a month as the stars turn; the year passes in the
+  land's colour. Drag the sky to move the day. **Season tabs are in** (Spring, Summer, Autumn, Winter).
 - **Watch:** sun, then moon and stars; a month of moon phases; a year of sunrises. *Built.*
 - **Touch:** season tabs; drag the sun.
 - **Labels:** Text for the lights and their purpose; Scholarly reading for "seasons"; Illustration for paths and sizes.

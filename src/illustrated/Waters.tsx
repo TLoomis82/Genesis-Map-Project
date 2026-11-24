@@ -205,7 +205,7 @@ export default function Waters({ chapter, onHome }: Props) {
 
         {/* Blank paper, then the pencil finding the horizon. */}
         <Paper />
-        <Pencil d={scenery.sketchHorizon} d2={scenery.sketchHorizon2} progress={sketch} fade={sketchFade} tool />
+        <Pencil d={scenery.sketchHorizon} d2={scenery.sketchHorizon2} progress={sketch} fade={sketchFade} />
         <Pencil d={scenery.sketchWave} progress={clamp01(sketch * 1.4 - 0.5)} fade={sketchFade} />
 
         <Painted id={`paint-${chapter}`} progress={paint} view={view}>
@@ -215,7 +215,7 @@ export default function Waters({ chapter, onHome }: Props) {
           {chapter === "beginning" && (
             <>
               {scenery.scribbles.map((d, i) => (
-                <Drawn key={i} d={d} progress={strokeTurn(clamp01((t - 0.02) / 0.86), i, scenery.scribbles.length, 1.3)} stroke={i % 3 === 0 ? "#141230" : "#1c1a3a"} strokeWidth={128} tool="brush" />
+                <Drawn key={i} d={d} progress={strokeTurn(clamp01((t - 0.02) / 0.86), i, scenery.scribbles.length, 1.3)} stroke={i % 3 === 0 ? "#141230" : "#1c1a3a"} strokeWidth={128} />
               ))}
               <rect x="-400" y="-1800" width="2400" height="4600" fill="#1c1a3a" opacity={ease(t, 0.84, 1)} />
             </>
@@ -281,7 +281,6 @@ export default function Waters({ chapter, onHome }: Props) {
             key={k}
             d={handLine(k === 0 ? top : waterLine(k), 200 + k * 9 + boil, k === 0 ? 1.6 : 2.4)}
             progress={strokeTurn(inked, k, 6, 1.5)}
-            tool="pen"
             stroke={k === 0 ? INK : paint < 0.6 ? "#4d7396" : light > 0.5 ? "#bfe3ee" : "#4d7396"}
             strokeWidth={k === 0 ? 6 : 3.5}
             opacity={k === 0 ? 1 : 0.8 - k * 0.09}

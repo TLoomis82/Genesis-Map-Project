@@ -287,3 +287,11 @@ Not done, in order:
 3. Days 3 and 4 hand-drawn (they exist only in the earlier realistic style, under `?view=story`).
 4. Eden 2 to 6, east of Eden, the generations: storyboard only.
 5. Seen only as stills in a test browser: motion, the boil, sloshing under a real finger, and phone speed are unchecked.
+
+## 2026-11-24
+
+- Tyler's feedback: the sloshing is right. The drawing-in is now blank paper, pencil sketch, ink, then colour brushed
+  in, with no pencil or brush pictured.
+- Days 3 and 4 are hand-drawn and live (`src/illustrated/Land.tsx`), with season tabs on day 4. Creation days 1 to 4 and
+  the man from the dust now all exist in the hand-drawn style; the earlier realistic versions remain under `?view=story`.
+- Next: day 5 and day 6 hand-drawn; the rest of Eden; then the front door on the detailed globe and the handoff to it.

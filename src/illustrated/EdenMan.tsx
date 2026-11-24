@@ -187,7 +187,7 @@ export default function EdenMan({ onHome }: Props) {
 
         {/* Blank paper, then the pencil finding the hills and the ground. */}
         <Paper />
-        <Pencil d={scenery.hillLine} d2={scenery.hillLine2} progress={sketch} fade={sketchFade} tool />
+        <Pencil d={scenery.hillLine} d2={scenery.hillLine2} progress={sketch} fade={sketchFade} />
         <Pencil d={scenery.groundLine2} progress={clamp01(sketch * 1.4 - 0.4)} fade={sketchFade} />
 
         {/* Colour, brushed in over the sketch. */}
@@ -225,8 +225,8 @@ export default function EdenMan({ onHome }: Props) {
         </Painted>
 
         {/* Ink over the pencil: the two lines of the land, drawn with the pen before the colour goes on. */}
-        <Drawn d={scenery.hillLine} progress={strokeTurn(inked, 0, 2, 1.2)} stroke={INK} strokeWidth={4} tool="pen" />
-        <Drawn d={scenery.groundLine} progress={strokeTurn(inked, 1, 2, 1.2)} stroke={INK} strokeWidth={5} tool="pen" />
+        <Drawn d={scenery.hillLine} progress={strokeTurn(inked, 0, 2, 1.2)} stroke={INK} strokeWidth={4} />
+        <Drawn d={scenery.groundLine} progress={strokeTurn(inked, 1, 2, 1.2)} stroke={INK} strokeWidth={5} />
 
         {/* The breath: a ribbon of light drawn down to the face. */}
         <g opacity={breathFade}>

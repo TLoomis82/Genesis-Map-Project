@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { clamp01 } from "./hand.ts";
 
 // Shared parts of every hand-drawn scene:
@@ -6,8 +6,8 @@ import { clamp01 } from "./hand.ts";
 //                "boil" number that changes a few times a second so living lines never sit still
 //   useView      the part of the 1600 x 1000 drawing to show, so the subject stays in frame on a
 //                wide screen and on a tall phone alike
-//   Drawn        a line that draws itself in as its progress goes from 0 to 1, with the artist's pencil,
-//                pen or brush shown at the moving end of the stroke
+//   Drawn        a line that draws itself in as its progress goes from 0 to 1 (no pencil or brush is
+//                shown: it is understood that the scene is being drawn)
 //   Painted      colour that is brushed in, stroke by stroke, over whatever is inside it
 //   strokeTurn   gives each stroke in a set its own turn, so they are drawn one after another
 //
@@ -47,11 +47,13 @@ export function useMoments(count: number, onFrame?: (dt: number, time: number, t
   const now = useRef(0);
   const callback = useRef(onFrame);
   callback.current = onFrame;
+  // When the scene opened. Kept across pauses, so pausing never makes the drawing-in start again.
+  const opened = useRef(performance.now());
 
   useEffect(() => {
     let raf = 0;
-    const start = performance.now();
-    let last = start;
+    const start = opened.current;
+    let last = performance.now();
     let rested = 0;
     let lastBoil = 0;
     const tick = (clock: number) => {
@@ -128,50 +130,10 @@ export function useView(focusX: number, focusY: number, minWidth: number, focusD
   return { box: `${vx} ${vy} ${vw} ${vh}`, scale: vw / size.w, x: vx, y: vy, width: size.w, small: Math.min(size.w, size.h) < 600 };
 }
 
-export type Tool = "pencil" | "pen" | "brush";
-
-/** The artist's tool, drawn with its point at 0,0 and its body up and to the right. */
-function ToolMark({ kind }: { kind: Tool }) {
-  const body = kind === "pencil" ? "#e9b949" : kind === "pen" ? "#2b2748" : "#8a5a3c";
-  const point = kind === "pencil" ? "#3a3a4a" : kind === "pen" ? INK : "#c6704e";
-  return (
-    <g transform="scale(1.5)" strokeLinejoin="round">
-      {kind === "brush" ? (
-        <path d="M 0 0 q 2 -16 14 -22 l 10 10 q -6 12 -24 12 Z" fill={point} stroke={INK} strokeWidth="2" />
-      ) : (
-        <path d="M 0 0 L 8 -20 L 20 -8 Z" fill={CREAM} stroke={INK} strokeWidth="2" />
-      )}
-      {kind !== "brush" && <path d="M 0 0 L 3.5 -8.5 L 8.5 -3.5 Z" fill={point} />}
-      <path d={kind === "brush" ? "M 14 -22 L 66 -74 L 76 -64 L 24 -12 Z" : "M 8 -20 L 62 -74 L 74 -62 L 20 -8 Z"} fill={body} stroke={INK} strokeWidth="2" />
-      {kind === "pencil" && <path d="M 62 -74 L 70 -82 L 82 -70 L 74 -62 Z" fill="#d98b8b" stroke={INK} strokeWidth="2" />}
-    </g>
-  );
-}
-
-/**
- * A line that draws itself in. progress 0 = not started, 1 = whole. With a tool, the artist's pencil,
- * pen or brush is shown at the moving end while the stroke is being made.
- */
-export function Drawn({ d, progress, tool, ...rest }: { d: string; progress: number; tool?: Tool } & React.SVGProps<SVGPathElement>) {
-  const path = useRef<SVGPathElement>(null);
-  const mark = useRef<SVGGElement>(null);
-  const drawing = tool !== undefined && progress > 0.001 && progress < 0.995;
-  useLayoutEffect(() => {
-    if (!drawing || !path.current || !mark.current) return;
-    const at = path.current.getPointAtLength(path.current.getTotalLength() * clamp01(progress));
-    mark.current.setAttribute("transform", `translate(${at.x} ${at.y})`);
-  });
+/** A line that draws itself in. progress 0 = not started, 1 = whole. */
+export function Drawn({ d, progress, ...rest }: { d: string; progress: number } & React.SVGProps<SVGPathElement>) {
   if (progress <= 0.001) return null;
-  return (
-    <>
-      <path ref={path} d={d} pathLength={1} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1" strokeDashoffset={1 - clamp01(progress)} {...rest} />
-      {drawing && (
-        <g ref={mark} style={{ pointerEvents: "none" }}>
-          <ToolMark kind={tool} />
-        </g>
-      )}
-    </>
-  );
+  return <path d={d} pathLength={1} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1" strokeDashoffset={1 - clamp01(progress)} {...rest} />;
 }
 
 /** The turn of stroke i out of n, as overall progress goes 0 to 1. Each overlaps the next a little. */
@@ -182,7 +144,7 @@ export function strokeTurn(progress: number, i: number, n: number, overlap = 1.2
 
 /**
  * Colour brushed in. What is inside appears under broad strokes that sweep down the visible part of
- * the drawing, with the brush shown at work. Once the painting is done it costs nothing.
+ * the drawing, Once the painting is done it costs nothing.
  */
 export function Painted({ id, progress, view, children }: { id: string; progress: number; view: View; children: ReactNode }) {
   if (progress >= 0.999) return <>{children}</>;
@@ -203,7 +165,6 @@ export function Painted({ id, progress, view, children }: { id: string; progress
         </mask>
       </defs>
       <g mask={`url(#${id})`}>{children}</g>
-      <Drawn d={sweep} progress={progress} stroke="none" tool="brush" />
     </>
   );
 }
@@ -214,11 +175,11 @@ export function Paper() {
 }
 
 /** A light pencil line, sketched twice the way a hand finds a shape before committing to it. */
-export function Pencil({ d, d2, progress, fade, tool }: { d: string; d2?: string; progress: number; fade: number; tool?: boolean }) {
+export function Pencil({ d, d2, progress, fade }: { d: string; d2?: string; progress: number; fade: number }) {
   if (fade <= 0.01) return null;
   return (
     <g opacity={fade}>
-      <Drawn d={d} progress={progress} stroke="#7d83a8" strokeWidth={2.6} opacity={0.85} tool={tool ? "pencil" : undefined} />
+      <Drawn d={d} progress={progress} stroke="#7d83a8" strokeWidth={2.6} opacity={0.85} />
       {d2 && <Drawn d={d2} progress={clamp01(progress * 1.2 - 0.2)} stroke="#7d83a8" strokeWidth={2} opacity={0.6} />}
     </g>
   );
