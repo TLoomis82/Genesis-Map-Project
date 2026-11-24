@@ -26,12 +26,17 @@ const easeInOut = (t: number) => t * t * (3 - 2 * t);
 //   ?land=cw                            The Clarey and Werner (2023, Fig. 17) pre-flood map, traced from their
 //                                       figure. Its picture is NOT in this repository: permission from the
 //                                       copyright holders is pending. It shows only if
-//                                       public/land/private/clarey-werner-2023.jpg exists on this machine.
+//                                       public/land/private/clarey-werner-2023.jpg exists on this machine,
+//                                       VITE_SHOW_PRIVATE=1 is set in .env.local, and the app runs with `npm run dev`.
 //
 // Each model is one picture draped over the globe, made by scripts/land-texture.py. This proves the
 // drawing method; no scene uses it yet.
 const TEST_LAND = new URLSearchParams(window.location.search).get("land");
-const PRIVATE_LAND = TEST_LAND === "cw";
+// Private material shows only on a developer's machine (`npm run dev`) with VITE_SHOW_PRIVATE=1 in .env.local.
+const SHOW_PRIVATE = import.meta.env.DEV && import.meta.env.VITE_SHOW_PRIVATE === "1";
+const PRIVATE_LAND = TEST_LAND === "cw" && SHOW_PRIVATE;
+/** True when a land model should be drawn: a known age, or the private map with private material switched on. */
+const LAND_ON = TEST_LAND !== null && (PRIVATE_LAND || /^\d{3}$/.test(TEST_LAND));
 const MERCATOR_EDGE = 85.0511; // the furthest north and south a Mapbox picture can reach
 const WORLD = {
   type: "Feature" as const,
@@ -103,7 +108,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
         "space-color": "rgb(0, 0, 0)",
         "star-intensity": 0.6, // the globe is first shown at the end of day 4, when the stars are there
       });
-      if (TEST_LAND && (PRIVATE_LAND || /^\d{3}$/.test(TEST_LAND))) addTestLand(m, TEST_LAND);
+      if (LAND_ON && TEST_LAND) addTestLand(m, TEST_LAND);
       setReady(true);
     });
     map.current = m;
@@ -168,7 +173,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
   return (
     <>
       <div ref={container} className="globe" />
-      {TEST_LAND && camera && (
+      {LAND_ON && camera && (
         <p className="land-credit">
           <span className="tier-badge tier-model">Model</span>
           {PRIVATE_LAND

@@ -196,3 +196,5 @@ Still to do in M3:
   the poles (a picture cannot reach past 85 degrees).
 - Next for looks: real 3D relief from a height map (illustrative for Clarey and Werner), then our own grass and
   trees where the camera comes down.
+- Private material has two guards: it shows only under `npm run dev` with `VITE_SHOW_PRIVATE=1` in `.env.local`,
+  and every build deletes `land/private/` from its output (`vite.config.ts`).
