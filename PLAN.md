@@ -169,3 +169,30 @@ Still to do in M3:
 - Other pre-flood maps, checked 2026-11-23: flood geologists hold three views, a Pangaea-like land (Clarey and
   Werner; Baumgardner 2018), a Rodinia-like land (Snelling 2014), or Rodinia changing to Pangaea mid-flood.
   None comes from the text itself, so all stay tier `model`. The plan's default plus toggle already covers them.
+
+## Clarey and Werner 2018, read first-hand (2026-11-23)
+
+- The paper is copyright Creation Science Fellowship; the pre-flood map (Figure 8, p. 359) is marked
+  "(c) 2017 Institute for Creation Research. Used by permission." So ICR owns the map and must be asked.
+- Figure 8 shows three zones (shallow sea, lowland, upland) for North America, South America and Africa only, in a
+  Pangaea-like fit, with question marks where the authors are unsure. It has no latitude or longitude.
+- On Eden the paper proposes no location: it says the garden's position "will likely never be known" (p. 370).
+  Added as support for the `eden-lost` reading.
+- Next: trace the three zones (colour separation works) and fit them onto the Scotese 200 Ma land so both models
+  share one globe. The fit is ours, not the authors', and must be labelled so. Traced files stay in `private/`.
+- **2023 paper read too** (Clarey and Werner, Ninth ICC, pp. 412-445, copyright Cedarville University ICC). Its Figure 17
+  (p. 426) is a whole-world pre-flood map in four zones (deep sea, shallow sea, lowland, upland), including Europe and
+  Asia. The image is exactly twice as wide as tall, so it is read as a plain latitude-longitude grid of the whole globe;
+  that reading is ours and is not stated in the paper. It supersedes the 2018 half-world map for our purposes.
+- Traced by colour into `public/land/private/clarey-werner-2023.geojson` (ignored by git; sent to Tyler directly).
+  `?land=cw` shows it on a local machine only. Ask ICR and Cedarville ICC before it appears anywhere public.
+
+## Land look (2026-11-23)
+
+- Land models are now one smooth, shaded picture draped over the globe (`scripts/land-texture.py`, Mapbox image
+  source), not blocks. Scotese pictures use the real heights in the data. The Clarey and Werner picture has no
+  heights to use: its zones are theirs, the surface texture is made up, and its on-screen note says so.
+- Not yet checked on a real Mapbox globe: whether the picture wraps cleanly at the date line and what shows at
+  the poles (a picture cannot reach past 85 degrees).
+- Next for looks: real 3D relief from a height map (illustrative for Clarey and Werner), then our own grass and
+  trees where the camera comes down.

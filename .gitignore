@@ -8,3 +8,4 @@ dist
 
 # Material we may not publish (for example a map still waiting on permission). Never commit.
 private/
+public/land/private/

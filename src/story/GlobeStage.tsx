@@ -18,12 +18,21 @@ const HIDDEN = ["showPlaceLabels", "showRoadLabels", "showPointOfInterestLabels"
 
 const easeInOut = (t: number) => t * t * (3 - 2 * t);
 
-// M2 test: add ?land=085 (or 000) to the address to cover today's map with a land model made from
-// a Scotese and Wright PaleoDEM (CC BY 4.0), converted by scripts/paleodem-to-geojson.ts.
-// Ages available: 000, 085, 200, 250, 540 (millions of years on the conventional scale).
-// This only proves the drawing method: no scene uses these yet. 200 and 250 are the Pangaea-like
-// shapes the pre-flood land layer will start from.
+// M2 test: add ?land=200 to the address to cover today's map with a land model.
+//
+//   ?land=000 | 085 | 200 | 250 | 540   Scotese and Wright PaleoDEMs (CC BY 4.0), by age in millions of
+//                                       years on the conventional scale. 200 and 250 are the Pangaea-like
+//                                       shapes the pre-flood land layer will start from.
+//   ?land=cw                            The Clarey and Werner (2023, Fig. 17) pre-flood map, traced from their
+//                                       figure. Its picture is NOT in this repository: permission from the
+//                                       copyright holders is pending. It shows only if
+//                                       public/land/private/clarey-werner-2023.jpg exists on this machine.
+//
+// Each model is one picture draped over the globe, made by scripts/land-texture.py. This proves the
+// drawing method; no scene uses it yet.
 const TEST_LAND = new URLSearchParams(window.location.search).get("land");
+const PRIVATE_LAND = TEST_LAND === "cw";
+const MERCATOR_EDGE = 85.0511; // the furthest north and south a Mapbox picture can reach
 const WORLD = {
   type: "Feature" as const,
   properties: {},
@@ -31,18 +40,25 @@ const WORLD = {
 };
 
 function addTestLand(m: mapboxgl.Map, age: string) {
+  const file = PRIVATE_LAND ? "private/clarey-werner-2023.jpg" : `scotese-${age}ma.jpg`;
+  // Deep-sea colour underneath, so today's map does not show around the picture's edges.
   m.addSource("model-sea", { type: "geojson", data: WORLD });
-  m.addSource("model-land", { type: "geojson", data: `${import.meta.env.BASE_URL}land/scotese-${age}ma.geojson` });
-  m.addLayer({ id: "model-sea", type: "fill", source: "model-sea", paint: { "fill-color": "#12365a", "fill-emissive-strength": 1 } });
+  m.addLayer({ id: "model-sea", type: "fill", source: "model-sea", paint: { "fill-color": "#0c2a4e", "fill-emissive-strength": 1 } });
+  m.addSource("model-land", {
+    type: "image",
+    url: `${import.meta.env.BASE_URL}land/${file}`,
+    coordinates: [
+      [-180, MERCATOR_EDGE],
+      [180, MERCATOR_EDGE],
+      [180, -MERCATOR_EDGE],
+      [-180, -MERCATOR_EDGE],
+    ],
+  });
   m.addLayer({
     id: "model-land",
-    type: "fill",
+    type: "raster",
     source: "model-land",
-    paint: {
-      "fill-color": ["match", ["get", "band"], "mountain", "#c9bfa9", "upland", "#96966a", "#5f8c54"],
-      "fill-emissive-strength": 1,
-      "fill-antialias": false,
-    },
+    paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1 },
   });
 }
 
@@ -87,7 +103,7 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
         "space-color": "rgb(0, 0, 0)",
         "star-intensity": 0.6, // the globe is first shown at the end of day 4, when the stars are there
       });
-      if (TEST_LAND && /^\d{3}$/.test(TEST_LAND)) addTestLand(m, TEST_LAND);
+      if (TEST_LAND && (PRIVATE_LAND || /^\d{3}$/.test(TEST_LAND))) addTestLand(m, TEST_LAND);
       setReady(true);
     });
     map.current = m;
@@ -155,7 +171,9 @@ export default function GlobeStage({ camera, hold, pins, selectedId, onSelect }:
       {TEST_LAND && camera && (
         <p className="land-credit">
           <span className="tier-badge tier-model">Model</span>
-          Land test: {Number(TEST_LAND)} million years ago on the conventional scale. A test of the drawing method only. Scotese and Wright (2018), CC BY 4.0.
+          {PRIVATE_LAND
+            ? "Private test, not for publication: pre-flood land after Clarey and Werner (2023), Fig. 17. Permission pending. The zones are theirs; the surface texture and the position on the globe are ours."
+            : `Land test: ${Number(TEST_LAND)} million years ago on the conventional scale. A test of the drawing method only. Scotese and Wright (2018), CC BY 4.0.`}
         </p>
       )}
     </>
