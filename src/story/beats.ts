@@ -53,6 +53,8 @@ export interface Beat {
   stars?: number;
   /** The sun and moon drawn in their true places for this beat. Left out: neither is drawn. */
   sky?: Sky;
+  /** Which of the two this verse is framed on: it is set just clear of the earth's edge, whatever the screen. */
+  framed?: "sun" | "moon";
   /** The land's cover: bare for the dry land of 1:9-10, growing at the grass and trees of 1:11. Left out: green. */
   growth?: "bare" | "growing";
   /** What is alive on the globe: flocks, shoals, whales, herds, humankind. Left out: nothing drawn. */
@@ -168,6 +170,7 @@ interface PlanBeat {
   ark?: ArkPlace;
   stars?: number;
   sky?: Sky;
+  framed?: "sun" | "moon";
   growth?: "bare" | "growing";
   life?: LifeWant;
   today?: GlobeCamera;
@@ -214,6 +217,22 @@ export const MOON_ROUND = 172;
 export const skyWith = (subsolarLng: number, moonRound = MOON_ROUND): Sky => arrange({ sunLongitude: 0, elongation: moonRound, node: 208, subsolarLng });
 const skyAt = (subsolarLng: number): Sky => skyWith(subsolarLng);
 
+/**
+ * The story's sky turned to the hour at which the sun (or the moon) stands just clear of the earth's edge
+ * for a viewer over the given point. How wide the earth looks depends on the screen, so this is worked
+ * out from the globe as it is drawn: edge is the sine of the angle the earth's radius takes up.
+ * Only the hour is chosen; the sun and moon keep their true places relative to each other.
+ */
+export function skyFramed(on: "sun" | "moon", over: [number, number], edge: number): Sky {
+  const clear = (Math.asin(Math.min(Math.max(edge, 0.02), 0.9)) * 180) / Math.PI * 1.28 + 0.6; // degrees off the middle of the view
+  const reference = skyWith(0);
+  const body = on === "sun" ? reference.sun : reference.moon;
+  const up = body[1] + over[1]; // how far above the point behind the earth it stands, from its own latitude
+  const across = Math.sqrt(Math.max(clear * clear - up * up, 9));
+  // Turn the earth so that this body is "across" degrees to the side of the point directly behind it.
+  return skyWith(over[0] + 180 + across - body[0]);
+}
+
 const landAppears: Depiction = {
   badge: "Model",
   note: "The land is a model, not from the text. How the waters drew back, and the look of the land as it came up, are illustration.",
@@ -234,8 +253,8 @@ const globePlan: PlanBeat[] = [
   { sceneId: "day-3", verse: "1:10", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5, driftDegrees: 30 }, hold: 13, land: PRE_FLOOD, flood: { level: 0, storm: 0 }, relief: 8, stars: 0, growth: "bare", depiction: landAppears },
   { sceneId: "day-3", verse: "1:11", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 16, land: PRE_FLOOD, relief: 8, stars: 0, growth: "growing", depiction: greening },
   { sceneId: "day-3", verse: "1:12", camera: { center: PRE_FLOOD_VIEW, zoom: 2.1, seconds: 8, driftDegrees: 25 }, hold: 13, land: PRE_FLOOD, relief: 8, stars: 0, growth: "growing", depiction: greening },
-  { sceneId: "day-4", verse: "1:14", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 185) },
-  { sceneId: "day-4", verse: "1:16", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 6 }, hold: 15, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 3) },
+  { sceneId: "day-4", verse: "1:14", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 185), framed: "sun" },
+  { sceneId: "day-4", verse: "1:16", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 6 }, hold: 15, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 3), framed: "moon" },
   { sceneId: "day-4", verse: "1:18", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 6 }, hold: 14, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] - 85) },
   { sceneId: "day-5", verse: "1:20", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: living, life: lifeOf(8, 10, 0) },
   { sceneId: "day-5", verse: "1:21", camera: { center: [PRE_FLOOD_VIEW[0] + 40, PRE_FLOOD_VIEW[1]], zoom: 1.6, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: living, life: lifeOf(8, 10, 5) },
@@ -298,6 +317,7 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   ark: g.ark,
   stars: g.stars,
   sky: g.sky,
+  framed: g.framed,
   growth: g.growth,
   life: g.life,
   today: g.today,

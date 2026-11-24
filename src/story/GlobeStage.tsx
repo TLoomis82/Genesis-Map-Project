@@ -192,7 +192,7 @@ interface Props {
   /** True while the globe waits out of sight under the opening: no notes or credits are shown. */
   quiet?: boolean;
   /** Told, every frame, where the globe's disc is on the screen: its centre and radius in CSS pixels. */
-  onDisc?: (disc: { x: number; y: number; r: number }) => void;
+  onDisc?: (disc: { x: number; y: number; r: number; edge: number }) => void;
   /** True while the ark is being moved by hand: it then follows closely instead of taking the whole beat. */
   arkQuick?: boolean;
   /** Rings to tap, for the front door: each opens a part of the story. */

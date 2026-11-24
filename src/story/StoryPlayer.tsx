@@ -5,7 +5,7 @@ import { features } from "../data/features.ts";
 import { scenes } from "../data/scenes.ts";
 import type { MapFeature } from "../data/types.ts";
 import { useFps } from "../useFps.ts";
-import { beats, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, MOON_ROUND, skyWith, UNDER_WATER } from "./beats.ts";
+import { beats, FIRST_GLOBE_BEAT, floodKeys, floodOn, LAST_FLOOD_DAY, MOON_ROUND, skyFramed, skyWith, UNDER_WATER } from "./beats.ts";
 import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
@@ -59,6 +59,8 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const scene = useRef<SpaceOpening | null>(null);
   const [swiped, setSwiped] = useState(false);
+  // How wide the earth looks just now (the sine of the angle its radius takes up), for framing the sun and moon.
+  const [edge, setEdge] = useState(0.15);
   // For the parts with places people point to today: false = the land before the flood, true = today's map.
   const [todayMap, setTodayMap] = useState(false);
   const previous = useRef(0);
@@ -129,7 +131,8 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const floodDayShown = floodDayByHand ?? floodKeys.reduce((day, k) => (k.beat <= index ? k.day : day), floodKeys[0].day);
   const onDayThree = onGlobe && beat.sceneId === "day-3" && beat.flood !== undefined;
   const drawnShown = drawn ?? (beat.flood ? 1 - Math.sqrt(beat.flood.level / UNDER_WATER) : 1);
-  const skyNow = beat.sky && (hour !== null || month !== null) ? skyWith(beat.sky.sun[0] - (hour ?? 0), month ?? MOON_ROUND) : (beat.sky ?? null);
+  const skyBase = beat.sky && beat.framed && beat.camera ? skyFramed(beat.framed, beat.camera.center, edge) : (beat.sky ?? null);
+  const skyNow = skyBase && (hour !== null || month !== null) ? skyWith(skyBase.sun[0] - (hour ?? 0), month ?? MOON_ROUND) : skyBase;
   const floodShown = floodNow ? floodNow.flood : drawn !== null ? { level: UNDER_WATER * (1 - drawn) ** 2, storm: 0 } : (beat.flood ?? null);
 
   // Stepping glides; skipping to another part cuts, so nothing from the part just left drifts across the new one.
@@ -141,7 +144,10 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
     if (Math.abs(next - at.current) > 1) setSkips((n) => n + 1);
     setIndex(next);
   }, []);
-  const setDisc = useCallback((disc: { x: number; y: number; r: number }) => scene.current?.setDisc(disc), []);
+  const setDisc = useCallback((disc: { x: number; y: number; r: number; edge: number }) => {
+    scene.current?.setDisc(disc);
+    setEdge((was) => (Math.abs(was - disc.edge) > 0.012 ? disc.edge : was));
+  }, []);
   const drillFromHere = useCallback((sceneId: string) => onDrill?.(sceneId, index), [onDrill, index]);
 
   // The timeline takes a strip along the bottom; everything else on the page makes room for it.
