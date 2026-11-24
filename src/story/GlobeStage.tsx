@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Life, type LifeWant } from "./lifeLayer.ts";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { MapFeature } from "../data/types.ts";
@@ -99,24 +100,6 @@ function showLand(m: mapboxgl.Map, land: string | null) {
     { id: "model-land", type: "raster", source: "model-land", paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1 } },
     under,
   );
-  // The same land with nothing growing on it yet: laid over the green one and faded away when the
-  // story reaches the grass and the trees (Genesis 1:11). Same relief, same seas.
-  if (BARE_LANDS.includes(land)) {
-    m.addSource("model-bare", {
-      type: "image",
-      url: `${import.meta.env.BASE_URL}land/scotese-${land}ma-bare.jpg`,
-      coordinates: [
-        [-180, MERCATOR_EDGE],
-        [180, MERCATOR_EDGE],
-        [180, -MERCATOR_EDGE],
-        [-180, -MERCATOR_EDGE],
-      ],
-    });
-    m.addLayer(
-      { id: "model-bare", type: "raster", source: "model-bare", paint: { "raster-fade-duration": 0, "raster-emissive-strength": 1, "raster-opacity": 0, "raster-opacity-transition": { duration: 6000, delay: 0 } } },
-      under,
-    );
-  }
   // 3D relief from the model's own heights (the private map has no heights).
   if (!isPrivate && RELIEF > 0) {
     m.addSource("model-dem", {
@@ -194,8 +177,16 @@ interface Props {
   onSelect: (id: string) => void;
   /** Where the ark is for the current beat, or null when it is not shown. */
   ark?: { at: [number, number]; afloat: boolean } | null;
-  /** True while the land has nothing growing on it yet (before Genesis 1:11). */
-  bare?: boolean;
+  /** The land's cover: bare (before Genesis 1:11), growing (green spreads, and from where it is tapped), or green. */
+  growth?: "bare" | "growing" | "green";
+  /** Day 7: clouds and creatures slow. */
+  calm?: boolean;
+  /** What is alive on the globe for this verse, or null for nothing. */
+  lifeWant?: LifeWant | null;
+  /** Which kind of herd a tap on the land sets running, or null when taps make flocks and shoals. */
+  herdKind?: number | null;
+  /** Called when a tap on the globe did something. */
+  onTouch?: () => void;
   /** True while the globe waits out of sight under the opening: no notes or credits are shown. */
   quiet?: boolean;
   /** Told, every frame, where the globe's disc is on the screen: its centre and radius in CSS pixels. */
@@ -227,7 +218,7 @@ export interface Door {
 const ARK_DRAWING =
   '<svg viewBox="0 0 116 52" aria-hidden="true"><path d="M 6 20 H 110 Q 108 40 96 44 H 20 Q 8 40 6 20 Z" fill="#a9763f" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 30 20 V 8 H 86 V 20" fill="#c79a5e" stroke="#1d1a33" stroke-width="4" stroke-linejoin="round"/><path d="M 14 30 H 102" stroke="#1d1a33" stroke-width="2" opacity="0.5"/></svg>';
 
-export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, bare = false, quiet = false, onDisc, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
+export default function GlobeStage({ camera, hold, land, flood, relief, startCenter, pins, selectedId, onSelect, ark = null, arkQuick = false, growth = "green", calm = false, lifeWant = null, herdKind = null, onTouch, quiet = false, onDisc, doors, openDoor = null, onDoor, lift: liftShare = 0.26, stars = 0.6, drills, onDrill, sky: lights = null }: Props) {
   const arkMarker = useRef<{ marker: mapboxgl.Marker; el: HTMLDivElement; at: [number, number] } | null>(null);
   const sky = useRef<SkyLayer | null>(null);
   const shownLand = chooseLand(land);
@@ -325,18 +316,100 @@ export default function GlobeStage({ camera, hold, land, flood, relief, startCen
     }
   }, [shownLand, ready]);
 
-  // Nothing growing yet, or green: one slow fade between the two pictures of the same land.
+  // The land's cover (bare, growing, green) and the calm of the seventh day, both drawn by the sky layer.
+  useEffect(() => {
+    const layer = sky.current;
+    if (!layer || !ready) return;
+    const state = shownLand && BARE_LANDS.includes(shownLand) ? growth : "green";
+    layer.setGrowth(state, shownLand ? `${import.meta.env.BASE_URL}land/scotese-${shownLand}ma-bare.jpg` : undefined);
+    if (state !== "growing" || !camera) return;
+    // A few places where the green begins by itself, round the middle of the view, one after another.
+    const [lng, lat] = camera.center;
+    [[-20, 14], [26, -12], [4, 34], [-34, -26], [44, 22], [-8, -44]].forEach(([dx, dy], i) => layer.seed(lng + dx, lat + dy, 1.5 + i * 1.3));
+    // Only when the cover changes, not on every camera move.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [growth, shownLand, ready]);
+  useEffect(() => {
+    if (ready) sky.current?.setCalm(calm);
+  }, [calm, ready]);
+
+  const discRadius = useRef(200);
+  // Life on the globe: a canvas over the map, and each creature put on it by the map's own projection.
+  const edge = useRef(0.2);
+  const life = useRef<Life | null>(null);
+  const alive = lifeWant !== null && (lifeWant.flocks + lifeWant.shoals + lifeWant.whales + lifeWant.herds[0] + lifeWant.herds[1] + lifeWant.herds[2] > 0 || lifeWant.people);
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || !m.getLayer("model-bare")) return;
-    m.setPaintProperty("model-bare", "raster-opacity", bare ? 1 : 0);
-  }, [bare, shownLand, ready]);
+    if (!m || !ready || !alive) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "life-canvas";
+    m.getContainer().append(canvas);
+    const unit = (lng: number, lat: number) => {
+      const la = (lat * Math.PI) / 180;
+      const lo = (lng * Math.PI) / 180;
+      return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)];
+    };
+    const made = new Life(
+      canvas,
+      {
+        project(lng, lat) {
+          const c = m.getCenter();
+          const a = unit(lng, lat);
+          const b = unit(c.lng, c.lat);
+          const facing = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+          if (facing < edge.current + 0.03) return { x: 0, y: 0, visible: false };
+          const p = m.project([lng, lat]);
+          return { x: p.x, y: p.y, visible: true };
+        },
+        disc() {
+          const p = m.project(m.getCenter());
+          return { x: p.x, y: p.y, r: discRadius.current };
+        },
+      },
+      `${import.meta.env.BASE_URL}land/height/scotese-200ma.jpg`,
+    );
+    made.start();
+    life.current = made;
+    return () => {
+      made.dispose();
+      canvas.remove();
+      life.current = null;
+    };
+  }, [alive, ready]);
+  useEffect(() => {
+    if (!life.current || !lifeWant) return;
+    if (camera) life.current.home = camera.center;
+    life.current.set(lifeWant);
+  }, [lifeWant, alive, camera, ready]);
+
+  // A tap on the globe: green starts there while the land is growing; a shoal, flock or herd while there is life.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const onTap = (e: mapboxgl.MapMouseEvent) => {
+      let did = false;
+      if (growth === "growing") {
+        sky.current?.seed(e.lngLat.lng, e.lngLat.lat);
+        did = true;
+      }
+      if (life.current?.tap(e.lngLat.lng, e.lngLat.lat, herdKind)) did = true;
+      if (did) onTouch?.();
+    };
+    m.on("click", onTap);
+    return () => {
+      m.off("click", onTap);
+    };
+  }, [growth, herdKind, onTouch, ready]);
 
   // Where the globe's disc is on the screen, for the opening to sit its waters exactly on it.
   useEffect(() => {
     const layer = sky.current;
     if (!layer || !ready) return;
-    layer.onDisc = onDisc ?? null;
+    layer.onDisc = (disc) => {
+      edge.current = disc.edge;
+      discRadius.current = disc.r;
+      onDisc?.(disc);
+    };
     return () => {
       layer.onDisc = null;
     };

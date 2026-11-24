@@ -11,6 +11,7 @@ import Eden, { type EdenChapter } from "./illustrated/Eden.tsx";
 import Generations from "./illustrated/Generations.tsx";
 import Land, { type LandChapter } from "./illustrated/Land.tsx";
 import GlobeTest from "./spike/GlobeTest.tsx";
+import LifeTest from "./spike/LifeTest.tsx";
 import { beats } from "./story/beats.ts";
 
 // Three views:
@@ -27,6 +28,7 @@ const initial: View = asked === "globe" ? "globe" : asked === "scene" ? "scene" 
 const showSwitch = initial === "globe" || params.has("debug");
 
 export default function App() {
+  if (asked === "life") return <LifeTest />;
   const [view, setView] = useState<View>(initial);
   const [startBeat, setStartBeat] = useState(0);
   // The handoff from the sketched creation to the detailed globe: the drawing swells and fades, the world fades in.

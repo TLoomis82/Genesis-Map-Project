@@ -1,5 +1,6 @@
 import { spaceSteps } from "../opening/spaceSteps.ts";
 import { arrange, type Sky } from "../data/astronomy.ts";
+import type { LifeWant } from "./lifeLayer.ts";
 import { floodDay, floodEvents } from "../data/chronology.ts";
 import type { Depiction } from "../opening/steps.ts";
 import { kjv } from "../data/kjv.ts";
@@ -52,8 +53,10 @@ export interface Beat {
   stars?: number;
   /** The sun and moon drawn in their true places for this beat. Left out: neither is drawn. */
   sky?: Sky;
-  /** True while the land has nothing growing on it yet: the dry land of 1:9-10, before the grass of 1:11. */
-  bare?: boolean;
+  /** The land's cover: bare for the dry land of 1:9-10, growing at the grass and trees of 1:11. Left out: green. */
+  growth?: "bare" | "growing";
+  /** What is alive on the globe: flocks, shoals, whales, herds, humankind. Left out: nothing drawn. */
+  life?: LifeWant;
   /**
    * The same verse seen on today's map, for the parts of the story that have places people point to today
    * (the proposed sites of Eden, the way east). The story itself stays on the land before the flood; the
@@ -165,9 +168,25 @@ interface PlanBeat {
   ark?: ArkPlace;
   stars?: number;
   sky?: Sky;
-  bare?: boolean;
+  growth?: "bare" | "growing";
+  life?: LifeWant;
   today?: GlobeCamera;
 }
+
+// Life on the globe, by verse. The numbers only set how full the picture is.
+const lifeOf = (flocks: number, shoals: number, whales: number, herd = 0, people = false, calm = false): LifeWant => ({ flocks, shoals, whales, herds: [herd, herd, herd], people, calm });
+const greening: Depiction = {
+  badge: "Illustration",
+  note: "The green spreading over the land, where it starts and how fast, are illustration. The text says the earth brought forth grass, herb and fruit tree on the third day.",
+};
+const living: Depiction = {
+  badge: "Illustration",
+  note: "The flocks, shoals, whales and herds are illustration, and far from to scale: seen from here, each would be the size of a country. The text gives the kinds and their realms, not places or numbers.",
+};
+const atRest: Depiction = {
+  badge: "Illustration",
+  note: "All that the six days made, shown together and slowed. The text says God rested on the seventh day, blessed it and sanctified it.",
+};
 
 // From Eden to the ark the story is still before the flood, so it stays on the land before the flood. No
 // place on that land can be pinned: the pins are present-day positions and are shown only on today's map.
@@ -209,15 +228,20 @@ const arkAt = (lng: number, lat: number, afloat = true): ArkPlace => ({ at: [lng
 
 const globePlan: PlanBeat[] = [
   // Day 3 and day 4. The globe is first seen under water, as the opening left it; then the land comes up.
-  { sceneId: "day-3", verse: "1:9", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 12, land: PRE_FLOOD, flood: { level: 1400, storm: 0 }, relief: 8, stars: 0, bare: true, depiction: landAppears },
-  { sceneId: "day-3", verse: "1:10", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5, driftDegrees: 30 }, hold: 13, land: PRE_FLOOD, flood: { level: 0, storm: 0 }, stars: 0, bare: true, depiction: landAppears },
-  { sceneId: "day-3", verse: "1:11", camera: { center: PRE_FLOOD_VIEW, zoom: 2.5, pitch: 30, seconds: 8 }, hold: 13, land: PRE_FLOOD, stars: 0, depiction: landAppears },
+  { sceneId: "day-3", verse: "1:9", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 12, land: PRE_FLOOD, flood: { level: 1400, storm: 0 }, relief: 8, stars: 0, growth: "bare", depiction: landAppears },
+  { sceneId: "day-3", verse: "1:10", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5, driftDegrees: 30 }, hold: 13, land: PRE_FLOOD, flood: { level: 0, storm: 0 }, relief: 8, stars: 0, growth: "bare", depiction: landAppears },
+  { sceneId: "day-3", verse: "1:11", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 16, land: PRE_FLOOD, relief: 8, stars: 0, growth: "growing", depiction: greening },
+  { sceneId: "day-3", verse: "1:12", camera: { center: PRE_FLOOD_VIEW, zoom: 2.1, seconds: 8, driftDegrees: 25 }, hold: 13, land: PRE_FLOOD, relief: 8, stars: 0, growth: "growing", depiction: greening },
   { sceneId: "day-4", verse: "1:14", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 185) },
   { sceneId: "day-4", verse: "1:16", camera: { center: PRE_FLOOD_VIEW, zoom: 0.4, seconds: 6 }, hold: 15, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] + 3) },
   { sceneId: "day-4", verse: "1:18", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 6 }, hold: 14, land: PRE_FLOOD, depiction: lightsSet, sky: skyAt(PRE_FLOOD_VIEW[0] - 85) },
-  { sceneId: "day-5", verse: "1:20", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 4 }, land: PRE_FLOOD },
-  { sceneId: "day-6", verse: "1:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.4, pitch: 35, seconds: 8 }, land: PRE_FLOOD },
-  { sceneId: "day-7", verse: "2:2", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30, land: PRE_FLOOD },
+  { sceneId: "day-5", verse: "1:20", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 5 }, hold: 14, land: PRE_FLOOD, depiction: living, life: lifeOf(8, 10, 0) },
+  { sceneId: "day-5", verse: "1:21", camera: { center: [PRE_FLOOD_VIEW[0] + 40, PRE_FLOOD_VIEW[1]], zoom: 1.6, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: living, life: lifeOf(8, 10, 5) },
+  { sceneId: "day-5", verse: "1:22", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8 }, hold: 14, land: PRE_FLOOD, depiction: living, life: lifeOf(20, 26, 6) },
+  { sceneId: "day-6", verse: "1:24", camera: { center: PRE_FLOOD_VIEW, zoom: 1.9, seconds: 8 }, hold: 15, land: PRE_FLOOD, depiction: living, life: lifeOf(14, 18, 4, 7) },
+  { sceneId: "day-6", verse: "1:27", camera: { center: PRE_FLOOD_VIEW, zoom: 1.9, seconds: 6 }, hold: 15, land: PRE_FLOOD, depiction: living, life: lifeOf(14, 18, 4, 8, true) },
+  { sceneId: "day-7", verse: "2:1", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8 }, hold: 12, land: PRE_FLOOD, depiction: atRest, life: lifeOf(14, 18, 4, 8, true, true) },
+  { sceneId: "day-7", verse: "2:2", camera: { center: PRE_FLOOD_VIEW, zoom: 1.4, seconds: 8, driftDegrees: 120 }, hold: 30, land: PRE_FLOOD, depiction: atRest, life: lifeOf(14, 18, 4, 8, true, true) },
   { sceneId: "eden", verse: "2:10", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, seconds: 9 }, hold: 20, land: PRE_FLOOD, depiction: beforeFlood, today: { center: edenFrame, zoom: 4.3, seconds: 6 } },
   { sceneId: "exile", verse: "3:24", camera: { center: PRE_FLOOD_VIEW, zoom: 2.6, bearing: -8, seconds: 6 }, land: PRE_FLOOD, depiction: beforeFlood, today: { center: edenFrame, zoom: 4.3, bearing: -8, seconds: 6 } },
   { sceneId: "cain", verse: "4:16", camera: { center: [PRE_FLOOD_VIEW[0] + 14, PRE_FLOOD_VIEW[1]], zoom: 2.4, seconds: 9 }, land: PRE_FLOOD, depiction: beforeFlood, today: { center: [edenFrame[0] + 6, edenFrame[1]], zoom: 4.0, seconds: 6 } },
@@ -262,7 +286,8 @@ const globeBeats: Beat[] = globePlan.map((g) => ({
   ark: g.ark,
   stars: g.stars,
   sky: g.sky,
-  bare: g.bare,
+  growth: g.growth,
+  life: g.life,
   today: g.today,
   drills: DRILLS[g.sceneId] ?? [],
 }));

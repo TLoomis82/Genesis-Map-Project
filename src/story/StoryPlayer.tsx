@@ -10,6 +10,7 @@ import { exploreModes } from "./explore.ts";
 import GlobeStage from "./GlobeStage.tsx";
 import InfoCard, { TIER_LABEL } from "./InfoCard.tsx";
 import StoryTimeline from "./StoryTimeline.tsx";
+import { KINDS } from "./lifeLayer.ts";
 
 // Plays the whole story, one verse (a "beat") at a time. This is the main line of the piece.
 // It opens on empty space; then the deep, seen from far off where the earth will be, which can be
@@ -73,6 +74,23 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
   const current = scenes.find((s) => s.id === beat.sceneId);
   const onGlobe = beat.camera !== undefined;
   const isLast = index === beats.length - 1;
+  // What a tap on the globe does at this verse, and the label that says so.
+  const [herdKind, setHerdKind] = useState(0);
+  const [tapped, setTapped] = useState(false);
+  const touched = useCallback(() => setTapped(true), []);
+  const hasHerds = onGlobe && beat.life !== undefined && beat.life.herds[0] > 0 && !beat.life.calm;
+  const tapHint = !onGlobe
+    ? null
+    : beat.growth === "growing"
+      ? "Touch the land and green spreads from your finger"
+      : beat.life?.calm
+        ? "Nothing to do here. Turn it if you like."
+        : hasHerds
+          ? "Tap the land to set a herd running"
+          : beat.life
+            ? "Tap the sea for a shoal, the land for a flock"
+            : null;
+  useEffect(() => setTapped(false), [tapHint]);
   const onToday = todayMap && beat.today !== undefined;
 
   // What this scene may show: its features, less anything above tier "text" when the switch is on.
@@ -230,7 +248,11 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
         <GlobeStage
           camera={onToday ? beat.today! : (beat.camera ?? WAITING_CAMERA)}
           quiet={!onGlobe}
-          bare={onGlobe ? beat.bare : true}
+          growth={onGlobe ? (beat.growth ?? "green") : "bare"}
+          lifeWant={onGlobe ? (beat.life ?? null) : null}
+          herdKind={hasHerds ? herdKind : null}
+          calm={beat.life?.calm ?? false}
+          onTouch={touched}
           onDisc={setDisc}
           hold={beat.hold}
           land={onToday ? null : ((beat.camera ? beat.land : firstGlobe.land) ?? null)}
@@ -315,6 +337,20 @@ export default function StoryPlayer({ startBeat = 0, onHome, onDrill }: Props) {
 
       {selected && <InfoCard feature={selected} textOnly={textOnly} onSelect={setSelectedId} onClose={() => setSelectedId(null)} />}
 
+      {tapHint && !tapped && (
+        <p className="opening-hint" key={tapHint}>
+          {tapHint}
+        </p>
+      )}
+      {hasHerds && (
+        <div className="kind-tabs" role="group" aria-label="Which kind a tap sets running">
+          {KINDS.map((kind, k) => (
+            <button key={kind} className={herdKind === k ? "is-on" : ""} onClick={() => setHerdKind(k)}>
+              {kind}
+            </button>
+          ))}
+        </div>
+      )}
       {/* What the hand can do on the globe at this verse. Always labelled. */}
       {(onDayThree || (onGlobe && beat.sky) || inFlood) && (
         <div className="hand-panel">

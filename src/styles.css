@@ -1750,3 +1750,38 @@ body,
     --cell: 34px;
   }
 }
+
+/* Life on the globe: flocks, shoals, whales and herds, drawn over the map. Taps pass through to the map. */
+.life-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+/* Day 6: which kind of creature a tap sets running. */
+.kind-tabs {
+  position: fixed;
+  left: 50%;
+  top: calc(112px + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+}
+.kind-tabs button {
+  padding: 6px 12px;
+  border: 1px solid rgba(251, 238, 203, 0.5);
+  border-radius: 999px;
+  background: rgba(8, 13, 28, 0.6);
+  color: #fbeecb;
+  font: italic 13px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kind-tabs button.is-on {
+  background: #eeb04a;
+  border-color: #eeb04a;
+  color: #1d1a33;
+}

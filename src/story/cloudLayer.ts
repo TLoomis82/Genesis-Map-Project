@@ -53,6 +53,10 @@ const fragmentShader = /* glsl */ `
   uniform float uHasHeight;    // 1 when a height picture is loaded
   uniform float uLevel;        // flood water level, metres above the old sea level
   uniform float uStorm;        // 0 = fair weather, 1 = the sky closed over
+  uniform sampler2D uBare;     // the land with nothing growing on it (Web Mercator picture)
+  uniform float uHasBare;      // 1 when that picture is loaded
+  uniform float uBareOn;       // 1 while the land is still bare wherever green has not reached
+  uniform vec4 uSeeds[10];     // where green starts from (a direction) and when (w, in uTime seconds)
   varying vec3 vPos;
 
   float hash(vec3 p) {
@@ -120,6 +124,27 @@ const fragmentShader = /* glsl */ `
       waterColor *= 0.90 + 0.20 * noise(n * 90.0 + vec3(uTime * 0.05, 0.0, uTime * 0.03));
     }
 
+    // Bare land, until the green reaches it. Green spreads from each seed like ink soaking into paper.
+    float bare = 0.0;
+    vec3 bareColor = vec3(0.0);
+    if (uBareOn * uHasBare > 0.01) {
+      float latB = asin(clamp(-n.y, -1.0, 1.0));
+      float v = 0.5 - log(tan(0.78539816 + latB * 0.5)) / 6.2831853;
+      if (v > 0.0 && v < 1.0) {
+        float grown = 0.0;
+        float ragged = (noise(n * 11.0) - 0.5) * 0.20 + (noise(n * 31.0) - 0.5) * 0.07;
+        for (int i = 0; i < 10; i++) {
+          float age = uTime - uSeeds[i].w;
+          if (age < 0.0) continue;
+          float d = acos(clamp(dot(n, uSeeds[i].xyz), -1.0, 1.0));
+          float reach = age * 0.11 + ragged;
+          grown = max(grown, smoothstep(reach, reach - 0.045, d));
+        }
+        bare = uBareOn * (1.0 - grown);
+        bareColor = texture2D(uBare, vec2(atan(n.x, n.z) / 6.2831853 + 0.5, v)).rgb;
+      }
+    }
+
     float cloud = cloudAt(n) * rim * (0.85 + 0.1 * uStorm);
     // A cloud's shadow falls a little way from it, on the side away from the sun.
     float shadow = uShadows > 0.5 ? cloudAt(normalize(n + uSun * 0.035)) * 0.34 * day : 0.0;
@@ -130,9 +155,10 @@ const fragmentShader = /* glsl */ `
     cloudColor = mix(cloudColor, vec3(0.52, 0.55, 0.60), uStorm * 0.7) * (0.22 + 0.78 * day);
 
     // Bottom to top: flood water, then darkness (night and cloud shadow), then cloud.
-    float seen = 1.0 - (1.0 - water) * (1.0 - dark) * (1.0 - cloud);
+    float seen = 1.0 - (1.0 - bare) * (1.0 - water) * (1.0 - dark) * (1.0 - cloud);
     if (seen * uOpacity < 0.004) discard;
-    vec3 color = waterColor * water * (1.0 - dark) * (1.0 - cloud) + cloudColor * cloud;
+    vec3 under = mix(bareColor * bare, waterColor, water);   // bare land, with any flood water over it
+    vec3 color = under * (1.0 - dark) * (1.0 - cloud) + cloudColor * cloud;
     gl_FragColor = vec4(color / max(seen, 0.0001), seen * uOpacity);
   }
 `;
@@ -167,8 +193,15 @@ export interface SkyLayer {
   layer: CustomLayerInterface;
   /** Where the sun and moon are (the points on earth beneath them), or null for the usual light and no sun or moon drawn. */
   setSky(sky: { sun: [number, number]; moon: [number, number] } | null): void;
-  /** Called every frame with the globe's disc on the screen: centre and radius in CSS pixels. */
-  onDisc: ((disc: { x: number; y: number; r: number }) => void) | null;
+  /** Day 7: the clouds slow almost to stillness. */
+  setCalm(calm: boolean): void;
+  /** The land's cover: bare, growing from seeds, or green. The bare picture's address is needed for the first two. */
+  setGrowth(state: "bare" | "growing" | "green", bareUrl?: string): void;
+  /** Start green spreading from a point on the land, now or after a delay in seconds. */
+  seed(lng: number, lat: number, delay?: number): void;
+  /** Called every frame with the globe's disc on the screen: centre and radius in CSS pixels, and
+   * edge, how far round the globe can be seen (the cosine of the angle from the middle of the view to the rim). */
+  onDisc: ((disc: { x: number; y: number; r: number; edge: number }) => void) | null;
   /** Called every frame with where the sun and moon fall on the screen, while a sky is set. */
   onLights: ((lights: Lights | null) => void) | null;
   /** Glide the water level and the weather toward new values, or jump straight to them. */
@@ -196,6 +229,10 @@ export function createCloudLayer(): SkyLayer {
     uHasHeight: { value: 0 },
     uLevel: { value: 0 },
     uStorm: { value: 0 },
+    uBare: { value: null as THREE.Texture | null },
+    uHasBare: { value: 0 },
+    uBareOn: { value: 0 },
+    uSeeds: { value: Array.from({ length: 10 }, () => new THREE.Vector4(0, 0, 1, 1e9)) },
   };
   const geometry = new THREE.SphereGeometry(GLOBE_RADIUS * SHELL_HEIGHT, 96, 64);
   const material = new THREE.ShaderMaterial({
@@ -213,8 +250,12 @@ export function createCloudLayer(): SkyLayer {
 
   let renderer: THREE.WebGLRenderer | null = null;
   let map: MapboxMap | null = null;
-  const started = performance.now();
-  let last = started;
+  let last = performance.now();
+  let pace = 1;
+  let wantPace = 1;
+  let wantBare = 0;
+  let nextSeed = 0;
+  let bareUrl: string | null = null;
   const want: FloodState = { level: 0, storm: 0 };
   const loader = new THREE.TextureLoader();
   let heightsUrl: string | null = null;
@@ -314,7 +355,7 @@ export function createCloudLayer(): SkyLayer {
         b3.set(0.31, 0.74, 0.59).cross(a3).normalize();
         const middle = onScreen(a3.clone().multiplyScalar(GLOBE_RADIUS * s), box.clientWidth, box.clientHeight);
         const edge = onScreen(a3.clone().multiplyScalar(GLOBE_RADIUS * s).addScaledVector(b3, GLOBE_RADIUS * c), box.clientWidth, box.clientHeight);
-        api.onDisc({ x: middle.x, y: middle.y, r: Math.hypot(edge.x - middle.x, edge.y - middle.y) });
+        api.onDisc({ x: middle.x, y: middle.y, r: Math.hypot(edge.x - middle.x, edge.y - middle.y), edge: s });
       }
       if (measuring && skyOn && api.onLights) {
         const box = map.getContainer();
@@ -339,7 +380,10 @@ export function createCloudLayer(): SkyLayer {
       if (plane && plane.length === 4) uniforms.uHorizon.value.set(plane[0], plane[1], plane[2], plane[3]);
       else uniforms.uHorizon.value.set(0, 0, 1, 1e9);
 
-      uniforms.uTime.value = (now - started) / 1000;
+      // The sky's own clock: it runs slow on the seventh day.
+      pace += (wantPace - pace) * (1 - Math.exp(-dt * 0.5));
+      uniforms.uTime.value += dt * pace;
+      uniforms.uBareOn.value += (wantBare - uniforms.uBareOn.value) * (1 - Math.exp(-dt * 1.2));
       camera.projectionMatrix.fromArray(matrix).multiply(globeToMercatorMatrix.fromArray(globeToMercator!));
       try {
         renderer.resetState();
@@ -362,6 +406,32 @@ export function createCloudLayer(): SkyLayer {
     layer: layer as unknown as CustomLayerInterface,
     onLights: null,
     onDisc: null,
+    setCalm(calm) {
+      wantPace = calm ? 0.2 : 1;
+    },
+    setGrowth(state, bareUrlWanted) {
+      // "bare": nothing growing. "growing": green spreads from wherever it is seeded. "green": all grown.
+      wantBare = state === "green" ? 0 : 1;
+      if (state === "bare") uniforms.uSeeds.value.forEach((seed) => (seed.w = 1e9));
+      if (state !== "green" && bareUrlWanted && bareUrlWanted !== bareUrl) {
+        bareUrl = bareUrlWanted;
+        loader.load(bareUrlWanted, (texture) => {
+          texture.flipY = false; // row 0 of the picture is the north edge
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.minFilter = THREE.LinearFilter;
+          texture.generateMipmaps = false;
+          texture.needsUpdate = true;
+          uniforms.uBare.value = texture;
+          uniforms.uHasBare.value = 1;
+          map?.triggerRepaint();
+        });
+      }
+    },
+    seed(lng, lat, delay = 0) {
+      const at = sunDirection(lng, lat);
+      uniforms.uSeeds.value[nextSeed].set(at.x, at.y, at.z, uniforms.uTime.value + delay);
+      nextSeed = (nextSeed + 1) % uniforms.uSeeds.value.length;
+    },
     setSky(sky) {
       skyOn = sky !== null;
       wantSun.copy(sky ? sunDirection(sky.sun[0], sky.sun[1]) : usualSun);

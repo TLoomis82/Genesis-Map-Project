@@ -367,5 +367,17 @@ Not done, in order:
   world changes to today's arrangement only at 7:24, in the flood, as before.
 - Drill-in dots are laid out on the screen as a ring round the middle of the view and then pinned to the globe once
   the camera rests, names on the outside, so six dots (Eden) do not cover each other or the pins.
+- Life and growth on the globe (Tyler: "rethink what to add to the earth for the trees, birds, animals and rest"):
+  - Grass and trees, 1:11-12: green spreads over the bare land from a few places and from wherever the land is
+    tapped. Drawn in the sky layer's shader from the bare picture (`setGrowth`, `seed` in `cloudLayer.ts`); the
+    separate Mapbox layer for the bare picture is gone.
+  - Day 5 (1:20, 1:21, 1:22) and day 6 (1:24, 1:27): `src/story/lifeLayer.ts`, a canvas over the map. Flocks, shoals
+    kept to the sea, whales that spout, herds kept to the land in three colours for the three kinds, humankind as
+    two lights in the middle of the view (labelled as layout). Tap the sea for a shoal, the land for a flock; on
+    day 6 pick a kind and tap the land for a herd. Numbers rise at "be fruitful".
+  - Day 7 (2:1, 2:2): everything from the six days stays, slowed; the clouds slow too. Label: "Nothing to do here.
+    Turn it if you like."
+  - The life layer can be seen without Mapbox at `?view=life&life=5` (or 6, 7): checked there. On the globe itself,
+    and the spreading green, NOT seen.
 - Still on the detailed globe, by design: the flood and the ark at rest.
 - Next: Tyler's feedback on all chapters; then the front door on the detailed globe and the handoff to it.
