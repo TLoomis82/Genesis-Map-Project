@@ -930,3 +930,19 @@ body,
     display: none;
   }
 }
+
+.board-frame {
+  margin: 0 0 14px;
+}
+
+.board-frame img {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+}
+
+.board-frame figcaption {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #8f9db5;
+}

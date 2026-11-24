@@ -19,6 +19,8 @@ export interface BoardScene {
   text: string;
   reading?: string;
   illustration?: string;
+  /** A style frame for this scene (a picture in public/style/), where one has been drawn. */
+  frame?: string;
   /** Scene id in the playable story, when some version of it can be played now. */
   sceneId?: string;
   built: "playable" | "playable as a placeholder" | "storyboard only";
@@ -218,6 +220,7 @@ export const targets: BoardTarget[] = [
         touch: "Afterward, turn the view around him.",
         text: "Formed of the dust of the ground; the breath of life breathed into his nostrils; man became a living soul.",
         illustration: "How the forming looked. God is shown only by what happens: no figure.",
+        frame: "eden-man.jpg",
         built: "storyboard only",
       },
       {

@@ -38,8 +38,9 @@ So the main stage is the Bible's own cosmos, and the realistic globe with its la
 7. **One illustrated style everywhere, consistent with BibleProject's illustrations** (Tyler, 2026-11-23): the hub,
    every scene, the cards and the "Where on earth?" layer should feel like one piece of work.
    **Illustrated, not realistic.** Flat shapes, a small set of colours, paper grain, in the spirit of BibleProject's
-   explainer art. All artwork is our own: nothing of theirs is copied or imitated closely. The first style frame is
-   `docs/style/hub-style-frame-1.png`.
+   explainer art. All artwork is our own: nothing of theirs is copied or imitated closely. Style frames so far:
+   `docs/style/hub-style-frame-1.png` (the hub) and `docs/style/eden-man-style-frame-2.png` (the man from the dust).
+   The realistic scenes built earlier (days 1 to 4) will be redrawn in this style later.
 8. **A short line of narration per scene**, on screen under the verse, saying what to notice. It restates the text
    or names a labelled reading; it never adds a claim.
 

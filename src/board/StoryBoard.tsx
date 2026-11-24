@@ -148,6 +148,13 @@ function SceneCard({ scene, place, siblings, onSibling, onPrev, onNext, count, o
         </div>
       )}
 
+      {scene.frame && (
+        <figure className="board-frame">
+          <img src={`${import.meta.env.BASE_URL}style/${scene.frame}`} alt={`Style frame: ${scene.title}`} loading="lazy" />
+          <figcaption>Style frame: how this scene is meant to look.</figcaption>
+        </figure>
+      )}
+
       <blockquote className="board-verse">
         {scene.verses.map((v) => (
           <p key={v}>
